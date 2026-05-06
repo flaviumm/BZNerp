@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { deleteErpRecord, isDatabaseConfigured, loadErpData, logAuditEvent, nextDocumentNumber, saveErpRecord, shouldBlockUnconfiguredDatabase, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
 import { getCurrentProfile, getInitialSession, listenAuthChanges, signInWithEmail, signOutUser, signUpWithEmail } from "./src/lib/authRepository";
+import { calculateQuotePricing, laborRates, materialPriceCatalog, quoteParameters, quotePricingSources } from "./src/lib/pricingData";
 
 const initialCompanies = [
   { id: 1, name: "Neuquen Energy Services", type: "Oil & Gas", city: "Anelo", status: "Prospecto", contact: "Mariana Rios", phone: "+54 299 443-1020", next: "Llamar compras", value: 18500000 },
@@ -648,12 +649,30 @@ function CRM({ opportunities, setOpportunities, persistUpdate, openEditor, remov
 }
 
 function Presupuestos({ quotes, setQuotes, persistUpdate, openEditor, removeRecord }) {
-  const [calculator, setCalculator] = useState({ materials: 1800000, labor: 950000, overhead: 18, margin: 32 });
-  const cost = Number(calculator.materials) + Number(calculator.labor);
-  const overheadAmount = cost * (Number(calculator.overhead) / 100);
-  const priceBeforeTax = (cost + overheadAmount) / (1 - Number(calculator.margin) / 100);
-  const tax = priceBeforeTax * 0.21;
-  const suggested = priceBeforeTax + tax;
+  const [materialLines, setMaterialLines] = useState([
+    { materialId: "nqn-cano-rectangular-6m", quantity: 4 },
+    { materialId: "nqn-electrodo-conarco-325", quantity: 2 },
+  ]);
+  const [laborLines, setLaborLines] = useState([
+    { laborId: "soldador", hours: 12 },
+    { laborId: "ayudante", hours: 6 },
+  ]);
+  const [extras, setExtras] = useState({ energyKwh: 10, travelKm: 20, other: 0 });
+  const enrichedMaterials = materialLines.map((line) => {
+    const material = materialPriceCatalog.find((item) => item.id === line.materialId) || materialPriceCatalog[0];
+    return { ...line, ...material, unitCost: material.basePrice };
+  });
+  const enrichedLabor = laborLines.map((line) => {
+    const labor = laborRates.find((item) => item.id === line.laborId) || laborRates[0];
+    return { ...line, ...labor, hourCost: labor.quoteHour };
+  });
+  const directExtras = [
+    { name: "Energia electrica", quantity: extras.energyKwh, unitCost: quoteParameters.energyPerKwh },
+    { name: "Traslado ida y vuelta", quantity: Number(extras.travelKm || 0) * 2, unitCost: quoteParameters.travelPerKm },
+    { name: "Otros directos", quantity: 1, unitCost: extras.other },
+  ];
+  const pricing = calculateQuotePricing({ materialLines: enrichedMaterials, laborLines: enrichedLabor, directExtras });
+  const categories = [...new Set(materialPriceCatalog.map((item) => item.category))];
 
   function approveQuote(number) {
     const current = quotes.find((item) => item.number === number);
@@ -662,10 +681,18 @@ function Presupuestos({ quotes, setQuotes, persistUpdate, openEditor, removeReco
     persistUpdate("quotes", number, updated);
   }
 
+  function updateMaterialLine(index, patch) {
+    setMaterialLines((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
+  }
+
+  function updateLaborLine(index, patch) {
+    setLaborLines((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
+  }
+
   return (
     <div className="space-y-5 p-4 md:p-6">
-      <SectionTitle title="Presupuestos" subtitle="Cotizaciones, validez y calculo de precio sugerido" />
-      <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
+      <SectionTitle title="Presupuestos" subtitle="Cotizaciones con base de materiales Neuquen, referencia A&C y formula Bizon" />
+      <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
         <DataTable
           headers={["Numero", "Cliente", "Servicio", "Subtotal", "IVA", "Total", "Estado", "Valido hasta", "Acciones"]}
           rows={quotes.map((quote) => [
@@ -685,16 +712,67 @@ function Presupuestos({ quotes, setQuotes, persistUpdate, openEditor, removeReco
           ])}
         />
         <Panel className="p-4">
-          <SectionTitle title="Calculadora" subtitle="Costo + indirectos + margen + IVA" />
-          <div className="mt-4 grid gap-3">
-            <Field label="Materiales"><TextInput type="number" value={calculator.materials} onChange={(event) => setCalculator({ ...calculator, materials: event.target.value })} /></Field>
-            <Field label="Mano de obra"><TextInput type="number" value={calculator.labor} onChange={(event) => setCalculator({ ...calculator, labor: event.target.value })} /></Field>
-            <Field label="Indirectos %"><TextInput type="number" value={calculator.overhead} onChange={(event) => setCalculator({ ...calculator, overhead: event.target.value })} /></Field>
-            <Field label="Margen objetivo %"><TextInput type="number" value={calculator.margin} onChange={(event) => setCalculator({ ...calculator, margin: event.target.value })} /></Field>
-            <div className="rounded-lg bg-zinc-950 p-4 text-white">
-              <p className="text-sm text-zinc-300">Precio sugerido</p>
-              <p className="mt-1 text-2xl font-black">{money(suggested)}</p>
+          <SectionTitle title="Cotizador Bizon" subtitle="Directo + indirectos + contingencia + ganancia + IIBB + IVA" />
+          <div className="mt-4 grid gap-4">
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-black text-zinc-950">Materiales</p>
+                <Button variant="ghost" onClick={() => setMaterialLines((items) => [...items, { materialId: materialPriceCatalog[0].id, quantity: 1 }])}>Agregar</Button>
+              </div>
+              {materialLines.map((line, index) => {
+                const material = materialPriceCatalog.find((item) => item.id === line.materialId) || materialPriceCatalog[0];
+                return (
+                  <div key={`${line.materialId}-${index}`} className="grid gap-2 rounded-lg border border-[#e4e4de] bg-[#fbfbf8] p-3">
+                    <Select value={line.materialId} onChange={(event) => updateMaterialLine(index, { materialId: event.target.value })}>
+                      {categories.map((category) => (
+                        <optgroup key={category} label={category}>
+                          {materialPriceCatalog.filter((item) => item.category === category).map((item) => (
+                            <option key={item.id} value={item.id}>{item.name}</option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </Select>
+                    <div className="grid grid-cols-[1fr_110px] gap-2">
+                      <p className="text-xs text-zinc-500">{material.provider} - {material.unit} - {money(material.basePrice)}</p>
+                      <TextInput type="number" min="0" step="0.01" value={line.quantity} onChange={(event) => updateMaterialLine(index, { quantity: event.target.value })} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
+            <div className="grid gap-2">
+              <p className="text-sm font-black text-zinc-950">Mano de obra</p>
+              {laborLines.map((line, index) => {
+                const labor = laborRates.find((item) => item.id === line.laborId) || laborRates[0];
+                return (
+                  <div key={`${line.laborId}-${index}`} className="grid grid-cols-[1fr_96px] gap-2">
+                    <Select value={line.laborId} onChange={(event) => updateLaborLine(index, { laborId: event.target.value })}>
+                      {laborRates.map((item) => <option key={item.id} value={item.id}>{item.trade} - {money(item.quoteHour)}/h</option>)}
+                    </Select>
+                    <TextInput type="number" min="0" step="0.5" value={line.hours} onChange={(event) => updateLaborLine(index, { hours: event.target.value })} />
+                  </div>
+                );
+              })}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <Field label="kWh"><TextInput type="number" value={extras.energyKwh} onChange={(event) => setExtras({ ...extras, energyKwh: event.target.value })} /></Field>
+              <Field label="Km ida"><TextInput type="number" value={extras.travelKm} onChange={(event) => setExtras({ ...extras, travelKm: event.target.value })} /></Field>
+              <Field label="Otros"><TextInput type="number" value={extras.other} onChange={(event) => setExtras({ ...extras, other: event.target.value })} /></Field>
+            </div>
+            <div className="grid gap-2 rounded-lg border border-[#e4e4de] bg-white p-3 text-sm">
+              <div className="flex justify-between"><span>Materiales</span><strong>{money(pricing.materials)}</strong></div>
+              <div className="flex justify-between"><span>Mano de obra</span><strong>{money(pricing.labor)}</strong></div>
+              <div className="flex justify-between"><span>Energia/traslado/otros</span><strong>{money(pricing.extras)}</strong></div>
+              <div className="flex justify-between"><span>Indirectos + contingencia</span><strong>{money(pricing.overhead + pricing.contingency)}</strong></div>
+              <div className="flex justify-between"><span>Ganancia objetivo</span><strong>{money(pricing.profit)}</strong></div>
+              <div className="flex justify-between"><span>IIBB + IVA</span><strong>{money(pricing.iibb + pricing.iva)}</strong></div>
+            </div>
+            <div className="rounded-lg bg-zinc-950 p-4 text-white">
+              <p className="text-sm text-zinc-300">Precio sugerido redondeado</p>
+              <p className="mt-1 text-2xl font-black">{money(pricing.roundedTotal)}</p>
+              <p className="mt-1 text-xs text-zinc-400">Margen sin IVA: {pct(pricing.marginOnSaleWithoutIva * 100)}</p>
+            </div>
+            <p className="text-xs text-zinc-500">Fuentes: {quotePricingSources.map((source) => `${source.name} ${source.date}`).join(" / ")}</p>
           </div>
         </Panel>
       </div>

@@ -11,6 +11,7 @@
 7. Ejecutar `database/documents.sql` para adjuntos y bucket privado de documentos.
 8. Ejecutar `database/audit.sql` para historial de cambios.
 9. Ejecutar `database/calendar.sql` para campos de agenda/calendario.
+10. Ejecutar `database/pricing.sql` para catalogo de precios, mano de obra y parametros de cotizacion.
 
 `schema.sql` arranca con policies abiertas para facilitar el MVP. `auth_policies.sql` las reemplaza por acceso autenticado y permisos por rol.
 
@@ -85,6 +86,7 @@ Deploy recomendado:
 - Calendario integrado con vencimientos, OT, compras, facturas, tareas y eventos manuales.
 - Backups y restauracion documentados en `BACKUP.md`, con scripts `npm.cmd run backup` y `npm.cmd run restore`.
 - Reportes gerenciales integrados.
+- Cotizador de presupuestos con materiales Neuquen/Alto Valle, referencia historica A&C y formula comercial Bizon.
 
 ## Backups
 

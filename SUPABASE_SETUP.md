@@ -20,6 +20,7 @@ En `SQL Editor`, ejecutar en este orden:
 5. `database/documents.sql`
 6. `database/audit.sql`
 7. `database/calendar.sql`
+8. `database/pricing.sql`
 
 ## 3. Activar login
 
