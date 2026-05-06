@@ -94,6 +94,12 @@ const screens = [
   { key: "reportes", label: "Reportes", icon: "RE", roles: ["admin", "direccion"] },
 ];
 
+const menuSections = [
+  { title: "Gestion comercial", keys: ["dashboard", "clientes", "crm", "presupuestos"] },
+  { title: "Operacion", keys: ["ot", "inventario", "compras", "finanzas", "rrhh"] },
+  { title: "Control", keys: ["tareas", "calendario", "documentos", "auditoria", "reportes"] },
+];
+
 function money(value) {
   return new Intl.NumberFormat("es-AR", {
     style: "currency",
@@ -260,9 +266,13 @@ function menuMetricFor(key, data) {
 }
 
 function Sidebar({ active, setActive, availableScreens, data, profile, databaseStatus }) {
+  const allowedKeys = new Set(availableScreens.map((item) => item.key));
+  const roleLabel = profile?.role || "sin perfil";
+  const hasDatabaseError = databaseStatus === "Error de base";
+
   return (
-    <aside className="hidden min-h-screen w-80 shrink-0 border-r border-[#1f1f1f] bg-[#050505] p-5 lg:block">
-      <div className="mb-8">
+    <aside className="hidden h-screen w-80 shrink-0 border-r border-[#1f1f1f] bg-[#050505] p-5 lg:block">
+      <div className="flex h-full flex-col">
         <div className="rounded-xl bg-black p-3">
           <img src="/brand/logo_principal_horizontal.png" alt="Bizon Soluciones Industriales" className="h-auto w-full" />
         </div>
@@ -274,33 +284,62 @@ function Sidebar({ active, setActive, availableScreens, data, profile, databaseS
           </div>
           <div className="flex items-center justify-between gap-3">
             <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Rol</span>
-            <span className="rounded-full bg-[#ff7900] px-2 py-0.5 text-xs font-black text-black">{profile?.role || "-"}</span>
+            <span className="rounded-full bg-[#ff7900] px-2 py-0.5 text-xs font-black text-black">{roleLabel}</span>
           </div>
           <div className="flex items-center justify-between gap-3">
             <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Base</span>
             <span className="max-w-32 truncate text-xs font-semibold text-zinc-300">{databaseStatus}</span>
           </div>
         </div>
-      </div>
-        <nav className="space-y-1">
-          {availableScreens.map((item) => {
-            const metric = menuMetricFor(item.key, data);
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setActive(item.key)}
-                className={`group flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-semibold transition ${active === item.key ? "bg-[#ff7900] text-black" : "text-zinc-400 hover:bg-[#171717] hover:text-white"}`}
-              >
-                <IconMark active={active === item.key}>{item.icon}</IconMark>
-                <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black ${active === item.key ? "bg-black/10 text-black" : "bg-[#151515] text-zinc-400 group-hover:bg-[#252525] group-hover:text-white"}`}>
-                  {metric.value} {metric.label}
-                </span>
-              </button>
-            );
-          })}
+        {hasDatabaseError && (
+          <div className="mt-3 rounded-xl border border-[#5b241a] bg-[#1b0d09] p-3 text-xs font-semibold text-[#ffb199]">
+            Perfil y datos no cargados. Ejecutar SQL de Supabase y asignar rol admin.
+          </div>
+        )}
+        <nav className="mt-5 min-h-0 flex-1 space-y-5 overflow-y-auto pr-1">
+          {menuSections.map((section) => (
+            <div key={section.title}>
+              <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-wide text-zinc-600">{section.title}</p>
+              <div className="space-y-1">
+                {section.keys.map((key) => screens.find((item) => item.key === key)).filter(Boolean).map((item) => {
+                  const metric = menuMetricFor(item.key, data);
+                  const allowed = allowedKeys.has(item.key);
+                  const isActive = active === item.key;
+
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      disabled={!allowed}
+                      onClick={() => allowed && setActive(item.key)}
+                      title={allowed ? item.label : `Bloqueado para rol ${roleLabel}`}
+                      className={`group flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-semibold transition ${
+                        isActive
+                          ? "bg-[#ff7900] text-black"
+                          : allowed
+                            ? "text-zinc-400 hover:bg-[#171717] hover:text-white"
+                            : "cursor-not-allowed text-zinc-700"
+                      }`}
+                    >
+                      <IconMark active={isActive}>{item.icon}</IconMark>
+                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black ${
+                        isActive
+                          ? "bg-black/10 text-black"
+                          : allowed
+                            ? "bg-[#151515] text-zinc-400 group-hover:bg-[#252525] group-hover:text-white"
+                            : "bg-[#111] text-zinc-700"
+                      }`}>
+                        {allowed ? `${metric.value} ${metric.label}` : "bloq."}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
+      </div>
     </aside>
   );
 }
