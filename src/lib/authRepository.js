@@ -25,10 +25,13 @@ export async function signInWithEmail(email, password) {
 }
 
 export async function signUpWithEmail(email, password, fullName) {
+  const emailRedirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
+      emailRedirectTo,
       data: {
         full_name: fullName,
       },

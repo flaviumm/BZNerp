@@ -27,6 +27,17 @@ En `Authentication > Providers`, dejar activo `Email`.
 
 Para pruebas rapidas, en `Authentication > Sign In / Providers > Email`, se puede desactivar temporalmente la confirmacion de email. Para operacion real, conviene activarla.
 
+En `Authentication > URL Configuration`, configurar:
+
+```text
+Site URL: https://bznerp.vercel.app
+Redirect URLs:
+https://bznerp.vercel.app
+https://bznerp.vercel.app/**
+```
+
+Si el email de confirmacion manda a `localhost`, esta configuracion esta pendiente o el usuario fue creado antes de corregirla.
+
 ## 4. Crear primer usuario admin
 
 1. Entrar al ERP y usar `Crear usuario`.
