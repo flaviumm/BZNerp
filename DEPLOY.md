@@ -44,6 +44,8 @@ VITE_SUPABASE_ANON_KEY=TU_ANON_KEY
 
 En Vercel, Netlify o Render usar las mismas variables de entorno.
 
+En produccion el modo demo queda bloqueado por defecto si faltan `VITE_SUPABASE_URL` o `VITE_SUPABASE_ANON_KEY`. Ver `SUPABASE_SETUP.md` para la puesta real con login y roles.
+
 ## 3. Correr local
 
 ```bash

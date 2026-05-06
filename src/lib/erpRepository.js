@@ -1,6 +1,6 @@
-import { isDatabaseConfigured, supabase } from "./supabaseClient";
+import { isDatabaseConfigured, shouldBlockUnconfiguredDatabase, supabase } from "./supabaseClient";
 
-export { isDatabaseConfigured };
+export { isDatabaseConfigured, shouldBlockUnconfiguredDatabase };
 
 const modules = {
   companies: {

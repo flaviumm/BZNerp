@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { deleteErpRecord, isDatabaseConfigured, loadErpData, logAuditEvent, nextDocumentNumber, saveErpRecord, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
+import { deleteErpRecord, isDatabaseConfigured, loadErpData, logAuditEvent, nextDocumentNumber, saveErpRecord, shouldBlockUnconfiguredDatabase, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
 import { getCurrentProfile, getInitialSession, listenAuthChanges, signInWithEmail, signOutUser, signUpWithEmail } from "./src/lib/authRepository";
 
 const initialCompanies = [
@@ -1375,10 +1375,34 @@ function LoginScreen({ onSessionReady }) {
   );
 }
 
+function DatabaseSetupScreen() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-[#f5f5f3] p-4">
+      <Panel className="w-full max-w-xl p-5">
+        <div className="mb-5">
+          <img src="/brand/isotipo_bizon.png" alt="Bizon" className="mb-4 h-14 w-14 rounded-lg bg-black object-contain p-1" />
+          <p className="text-xs font-bold uppercase tracking-wide text-[#ff7900]">Bizon ERP Industrial</p>
+          <h1 className="mt-1 text-2xl font-black text-zinc-950">Configurar base real</h1>
+          <p className="mt-2 text-sm text-zinc-500">Produccion requiere Supabase para habilitar login, roles y datos persistentes.</p>
+        </div>
+        <div className="grid gap-3 text-sm text-zinc-700">
+          <p>Crear el proyecto en Supabase, ejecutar los SQL de la carpeta <strong>database</strong> y cargar estas variables en Vercel:</p>
+          <div className="rounded-lg border border-[#e4e4de] bg-[#fbfbf8] p-3 font-mono text-xs text-zinc-900">
+            <p>VITE_SUPABASE_URL</p>
+            <p>VITE_SUPABASE_ANON_KEY</p>
+          </div>
+          <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800">El modo demo queda bloqueado en produccion para evitar operar con datos locales por error.</p>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
 export default function MiniErpBizonPrototype() {
+  const useLocalDemo = !isDatabaseConfigured && !shouldBlockUnconfiguredDatabase;
   const [active, setActive] = useState("dashboard");
-  const [session, setSession] = useState(isDatabaseConfigured ? null : { user: { id: "demo" } });
-  const [profile, setProfile] = useState(isDatabaseConfigured ? null : { id: "demo", fullName: "Modo demo", role: "admin" });
+  const [session, setSession] = useState(isDatabaseConfigured ? null : useLocalDemo ? { user: { id: "demo" } } : null);
+  const [profile, setProfile] = useState(isDatabaseConfigured ? null : useLocalDemo ? { id: "demo", fullName: "Modo demo", role: "admin" } : null);
   const [authLoading, setAuthLoading] = useState(isDatabaseConfigured);
   const [companies, setCompanies] = useState(initialCompanies);
   const [opportunities, setOpportunities] = useState(initialOpportunities);
@@ -1393,8 +1417,8 @@ export default function MiniErpBizonPrototype() {
   const [auditLog, setAuditLog] = useState(initialAuditLog);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
-  const [localDatabaseReady, setLocalDatabaseReady] = useState(isDatabaseConfigured);
-  const [databaseStatus, setDatabaseStatus] = useState(isDatabaseConfigured ? "Conectando..." : "Base local");
+  const [localDatabaseReady, setLocalDatabaseReady] = useState(isDatabaseConfigured || shouldBlockUnconfiguredDatabase);
+  const [databaseStatus, setDatabaseStatus] = useState(isDatabaseConfigured ? "Conectando..." : useLocalDemo ? "Base local" : "Configurar Supabase");
 
   useEffect(() => {
     let cancelled = false;
@@ -1440,7 +1464,7 @@ export default function MiniErpBizonPrototype() {
   }, []);
 
   useEffect(() => {
-    if (isDatabaseConfigured) return;
+    if (!useLocalDemo) return;
 
     try {
       const stored = window.localStorage.getItem(localDatabaseKey);
@@ -1515,7 +1539,7 @@ export default function MiniErpBizonPrototype() {
   }), [companies, opportunities, quotes, workOrders, inventoryItems, purchaseOrders, customerInvoices, staff, taskList, documents, auditLog]);
 
   useEffect(() => {
-    if (isDatabaseConfigured || !localDatabaseReady) return;
+    if (!useLocalDemo || !localDatabaseReady) return;
 
     window.localStorage.setItem(localDatabaseKey, JSON.stringify(data));
   }, [data, localDatabaseReady]);
@@ -1852,6 +1876,10 @@ export default function MiniErpBizonPrototype() {
     reportes: <Reportes {...screenProps} />,
   }[active] || <Dashboard {...screenProps} />;
 
+  if (shouldBlockUnconfiguredDatabase) {
+    return <DatabaseSetupScreen />;
+  }
+
   if (authLoading) {
     return (
       <div className="grid min-h-screen place-items-center bg-[#f5f5f3] p-4">
@@ -1877,7 +1905,7 @@ export default function MiniErpBizonPrototype() {
             databaseStatus={databaseStatus}
             profile={profile}
             onExportBackup={exportBackup}
-            onResetLocal={!isDatabaseConfigured ? resetLocalDatabase : null}
+            onResetLocal={useLocalDemo ? resetLocalDatabase : null}
             onSignOut={isDatabaseConfigured ? handleSignOut : null}
             onNew={() => setModalOpen(true)}
           />
