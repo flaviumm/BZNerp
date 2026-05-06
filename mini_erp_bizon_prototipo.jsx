@@ -234,27 +234,72 @@ function Header({ activeLabel, onNew, databaseStatus, profile, onSignOut, onExpo
   );
 }
 
-function Sidebar({ active, setActive, availableScreens }) {
+function menuMetricFor(key, data) {
+  const stockAlerts = (data.inventory || []).filter((item) => Number(item.stock || 0) <= Number(item.min || 0)).length;
+  const openTasks = (data.tasks || []).filter((item) => item.priority === "Alta").length;
+  const calendarItems = (data.tasks || []).filter((item) => item.due).length + (data.workOrders || []).filter((item) => item.start || item.end).length;
+
+  const metrics = {
+    dashboard: { value: (data.companies || []).length + (data.opportunities || []).length, label: "reg." },
+    clientes: { value: (data.companies || []).length, label: "clientes" },
+    crm: { value: (data.opportunities || []).length, label: "ops." },
+    presupuestos: { value: (data.quotes || []).length, label: "pres." },
+    ot: { value: (data.workOrders || []).length, label: "OT" },
+    inventario: { value: stockAlerts, label: "alertas" },
+    compras: { value: (data.purchases || []).length, label: "OC" },
+    finanzas: { value: (data.invoices || []).length, label: "fact." },
+    rrhh: { value: (data.employees || []).length, label: "pers." },
+    tareas: { value: openTasks, label: "alta" },
+    calendario: { value: calendarItems, label: "fechas" },
+    documentos: { value: (data.documents || []).length, label: "docs" },
+    auditoria: { value: (data.auditLog || []).length, label: "eventos" },
+    reportes: { value: 4, label: "vistas" },
+  };
+
+  return metrics[key] || { value: 0, label: "items" };
+}
+
+function Sidebar({ active, setActive, availableScreens, data, profile, databaseStatus }) {
   return (
-    <aside className="hidden min-h-screen w-72 shrink-0 border-r border-[#1f1f1f] bg-[#050505] p-5 lg:block">
+    <aside className="hidden min-h-screen w-80 shrink-0 border-r border-[#1f1f1f] bg-[#050505] p-5 lg:block">
       <div className="mb-8">
         <div className="rounded-xl bg-black p-3">
           <img src="/brand/logo_principal_horizontal.png" alt="Bizon Soluciones Industriales" className="h-auto w-full" />
         </div>
         <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-[#ff7900]">ERP operativo</p>
+        <div className="mt-4 grid gap-2 rounded-xl border border-[#1f1f1f] bg-[#0b0b0b] p-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Usuario</span>
+            <span className="max-w-36 truncate text-xs font-semibold text-zinc-200">{profile?.fullName || "Sin usuario"}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Rol</span>
+            <span className="rounded-full bg-[#ff7900] px-2 py-0.5 text-xs font-black text-black">{profile?.role || "-"}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Base</span>
+            <span className="max-w-32 truncate text-xs font-semibold text-zinc-300">{databaseStatus}</span>
+          </div>
+        </div>
       </div>
         <nav className="space-y-1">
-          {availableScreens.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => setActive(item.key)}
-              className={`group flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-semibold transition ${active === item.key ? "bg-[#ff7900] text-black" : "text-zinc-400 hover:bg-[#171717] hover:text-white"}`}
-            >
-              <IconMark active={active === item.key}>{item.icon}</IconMark>
-              <span>{item.label}</span>
-            </button>
-          ))}
+          {availableScreens.map((item) => {
+            const metric = menuMetricFor(item.key, data);
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setActive(item.key)}
+                className={`group flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-semibold transition ${active === item.key ? "bg-[#ff7900] text-black" : "text-zinc-400 hover:bg-[#171717] hover:text-white"}`}
+              >
+                <IconMark active={active === item.key}>{item.icon}</IconMark>
+                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black ${active === item.key ? "bg-black/10 text-black" : "bg-[#151515] text-zinc-400 group-hover:bg-[#252525] group-hover:text-white"}`}>
+                  {metric.value} {metric.label}
+                </span>
+              </button>
+            );
+          })}
         </nav>
     </aside>
   );
@@ -1898,7 +1943,7 @@ export default function MiniErpBizonPrototype() {
   return (
     <div className="min-h-screen bg-[#f5f5f3] text-zinc-900">
       <div className="flex">
-        <Sidebar active={active} setActive={setActive} availableScreens={availableScreens} />
+        <Sidebar active={active} setActive={setActive} availableScreens={availableScreens} data={data} profile={profile} databaseStatus={databaseStatus} />
         <main className="min-h-screen flex-1">
           <Header
             activeLabel={activeLabel}
