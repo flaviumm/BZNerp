@@ -240,59 +240,29 @@ function Header({ activeLabel, onNew, databaseStatus, profile, onSignOut, onExpo
   );
 }
 
-function menuMetricFor(key, data) {
-  const stockAlerts = (data.inventory || []).filter((item) => Number(item.stock || 0) <= Number(item.min || 0)).length;
-  const openTasks = (data.tasks || []).filter((item) => item.priority === "Alta").length;
-  const calendarItems = (data.tasks || []).filter((item) => item.due).length + (data.workOrders || []).filter((item) => item.start || item.end).length;
-
-  const metrics = {
-    dashboard: { value: (data.companies || []).length + (data.opportunities || []).length, label: "reg." },
-    clientes: { value: (data.companies || []).length, label: "clientes" },
-    crm: { value: (data.opportunities || []).length, label: "ops." },
-    presupuestos: { value: (data.quotes || []).length, label: "pres." },
-    ot: { value: (data.workOrders || []).length, label: "OT" },
-    inventario: { value: stockAlerts, label: "alertas" },
-    compras: { value: (data.purchases || []).length, label: "OC" },
-    finanzas: { value: (data.invoices || []).length, label: "fact." },
-    rrhh: { value: (data.employees || []).length, label: "pers." },
-    tareas: { value: openTasks, label: "alta" },
-    calendario: { value: calendarItems, label: "fechas" },
-    documentos: { value: (data.documents || []).length, label: "docs" },
-    auditoria: { value: (data.auditLog || []).length, label: "eventos" },
-    reportes: { value: 4, label: "vistas" },
-  };
-
-  return metrics[key] || { value: 0, label: "items" };
-}
-
-function Sidebar({ active, setActive, availableScreens, data, profile, databaseStatus }) {
+function Sidebar({ active, setActive, availableScreens, profile, databaseStatus }) {
   const allowedKeys = new Set(availableScreens.map((item) => item.key));
   const roleLabel = profile?.role || "sin perfil";
+  const userName = profile?.fullName || "Sin usuario";
   const hasDatabaseError = databaseStatus === "Error de base";
 
   return (
-    <aside className="hidden h-screen w-80 shrink-0 border-r border-[#1f1f1f] bg-[#050505] p-5 lg:block">
+    <aside className="hidden h-screen w-72 shrink-0 border-r border-[#1f1f1f] bg-[#050505] p-5 lg:block">
       <div className="flex h-full flex-col">
-        <div className="rounded-xl bg-black p-3">
+        <div className="rounded-lg bg-black p-3">
           <img src="/brand/logo_principal_horizontal.png" alt="Bizon Soluciones Industriales" className="h-auto w-full" />
         </div>
-        <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-[#ff7900]">ERP operativo</p>
-        <div className="mt-4 grid gap-2 rounded-xl border border-[#1f1f1f] bg-[#0b0b0b] p-3">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Usuario</span>
-            <span className="max-w-36 truncate text-xs font-semibold text-zinc-200">{profile?.fullName || "Sin usuario"}</span>
+        <div className="mt-5 flex items-center gap-3 border-b border-[#1f1f1f] pb-5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-sm font-black text-black">
+            {userName.slice(0, 1).toUpperCase()}
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Rol</span>
-            <span className="rounded-full bg-[#ff7900] px-2 py-0.5 text-xs font-black text-black">{roleLabel}</span>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Base</span>
-            <span className="max-w-32 truncate text-xs font-semibold text-zinc-300">{databaseStatus}</span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-bold text-white">{userName}</p>
+            <p className="mt-0.5 truncate text-xs font-medium text-zinc-500">{roleLabel}</p>
           </div>
         </div>
         {hasDatabaseError && (
-          <div className="mt-3 rounded-xl border border-[#5b241a] bg-[#1b0d09] p-3 text-xs font-semibold text-[#ffb199]">
+          <div className="mt-4 rounded-lg border border-[#5b241a] bg-[#1b0d09] p-3 text-xs font-semibold text-[#ffb199]">
             Perfil y datos no cargados. Ejecutar SQL de Supabase y asignar rol admin.
           </div>
         )}
@@ -302,7 +272,6 @@ function Sidebar({ active, setActive, availableScreens, data, profile, databaseS
               <p className="mb-2 px-3 text-[11px] font-black uppercase tracking-wide text-zinc-600">{section.title}</p>
               <div className="space-y-1">
                 {section.keys.map((key) => screens.find((item) => item.key === key)).filter(Boolean).map((item) => {
-                  const metric = menuMetricFor(item.key, data);
                   const allowed = allowedKeys.has(item.key);
                   const isActive = active === item.key;
 
@@ -323,15 +292,6 @@ function Sidebar({ active, setActive, availableScreens, data, profile, databaseS
                     >
                       <IconMark active={isActive}>{item.icon}</IconMark>
                       <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-black ${
-                        isActive
-                          ? "bg-black/10 text-black"
-                          : allowed
-                            ? "bg-[#151515] text-zinc-400 group-hover:bg-[#252525] group-hover:text-white"
-                            : "bg-[#111] text-zinc-700"
-                      }`}>
-                        {allowed ? `${metric.value} ${metric.label}` : "bloq."}
-                      </span>
                     </button>
                   );
                 })}
@@ -1982,7 +1942,7 @@ export default function MiniErpBizonPrototype() {
   return (
     <div className="min-h-screen bg-[#f5f5f3] text-zinc-900">
       <div className="flex">
-        <Sidebar active={active} setActive={setActive} availableScreens={availableScreens} data={data} profile={profile} databaseStatus={databaseStatus} />
+        <Sidebar active={active} setActive={setActive} availableScreens={availableScreens} profile={profile} databaseStatus={databaseStatus} />
         <main className="min-h-screen flex-1">
           <Header
             activeLabel={activeLabel}
