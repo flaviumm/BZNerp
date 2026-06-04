@@ -1,9 +1,17 @@
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text not null default 'Usuario Bizon',
-  role text not null default 'ventas' check (role in ('admin', 'direccion', 'ventas', 'operaciones', 'compras', 'finanzas', 'rrhh')),
+  role text not null default 'ventas' check (role in ('admin', 'direccion', 'ventas', 'operaciones', 'compras', 'finanzas', 'rrhh', 'cliente')),
+  status text not null default 'pending' check (status in ('pending', 'active', 'suspended')),
+  menu_keys text[],
   created_at timestamptz not null default now()
 );
+
+alter table profiles
+add column if not exists status text not null default 'pending' check (status in ('pending', 'active', 'suspended'));
+
+alter table profiles
+add column if not exists menu_keys text[];
 
 alter table profiles enable row level security;
 
@@ -14,11 +22,12 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, full_name, role)
+  insert into public.profiles (id, full_name, role, status)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', new.email, 'Usuario Bizon'),
-    'ventas'
+    'ventas',
+    'pending'
   )
   on conflict (id) do nothing;
 
@@ -41,6 +50,16 @@ as $$
   select role from public.profiles where id = auth.uid();
 $$;
 
+create or replace function public.current_account_status()
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select status from public.profiles where id = auth.uid();
+$$;
+
 create or replace function public.can_read_module(module text)
 returns boolean
 language sql
@@ -50,13 +69,15 @@ set search_path = public
 as $$
   select case
     when auth.uid() is null then false
+    when public.current_account_status() <> 'active' then false
     when public.current_role() in ('admin', 'direccion') then true
     when module in ('companies', 'opportunities', 'quotes') and public.current_role() = 'ventas' then true
     when module in ('work_orders', 'inventory_items') and public.current_role() = 'operaciones' then true
     when module in ('inventory_items', 'purchase_orders') and public.current_role() = 'compras' then true
     when module in ('invoices', 'quotes') and public.current_role() = 'finanzas' then true
     when module in ('employees') and public.current_role() = 'rrhh' then true
-    when module in ('tasks', 'document_files') then true
+    when module = 'tasks' and public.current_role() in ('admin', 'direccion', 'ventas', 'operaciones', 'compras', 'finanzas', 'rrhh') then true
+    when module = 'document_files' and public.current_role() in ('admin', 'direccion', 'ventas', 'operaciones', 'compras', 'finanzas') then true
     else false
   end;
 $$;
@@ -70,13 +91,15 @@ set search_path = public
 as $$
   select case
     when auth.uid() is null then false
+    when public.current_account_status() <> 'active' then false
     when public.current_role() = 'admin' then true
     when module in ('companies', 'opportunities', 'quotes') and public.current_role() = 'ventas' then true
     when module in ('work_orders') and public.current_role() = 'operaciones' then true
     when module in ('inventory_items', 'purchase_orders') and public.current_role() = 'compras' then true
     when module in ('invoices') and public.current_role() = 'finanzas' then true
     when module in ('employees') and public.current_role() = 'rrhh' then true
-    when module in ('tasks', 'document_files') then true
+    when module = 'tasks' and public.current_role() in ('admin', 'direccion', 'ventas', 'operaciones', 'compras', 'finanzas', 'rrhh') then true
+    when module = 'document_files' and public.current_role() in ('admin', 'direccion', 'ventas', 'operaciones', 'compras', 'finanzas') then true
     else false
   end;
 $$;
@@ -148,8 +171,8 @@ drop policy if exists "tasks_insert_by_role" on tasks;
 drop policy if exists "tasks_update_by_role" on tasks;
 drop policy if exists "tasks_delete_by_role" on tasks;
 
-create policy "profiles_read_self" on profiles for select using (auth.uid() = id or public.current_role() in ('admin', 'direccion'));
-create policy "profiles_update_admin" on profiles for update using (public.current_role() = 'admin') with check (public.current_role() = 'admin');
+create policy "profiles_read_self" on profiles for select using (auth.uid() = id or (public.current_role() in ('admin', 'direccion') and public.current_account_status() = 'active'));
+create policy "profiles_update_admin" on profiles for update using (public.current_role() = 'admin' and public.current_account_status() = 'active') with check (public.current_role() = 'admin' and public.current_account_status() = 'active');
 
 create policy "companies_read_by_role" on companies for select using (public.can_read_module('companies'));
 create policy "companies_insert_by_role" on companies for insert with check (public.can_write_module('companies'));

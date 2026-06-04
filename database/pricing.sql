@@ -56,19 +56,19 @@ drop policy if exists "quote_calculation_profiles_read_by_role" on quote_calcula
 drop policy if exists "quote_calculation_profiles_write_admin" on quote_calculation_profiles;
 
 create policy "material_price_catalog_read_by_role" on material_price_catalog
-for select using (auth.uid() is not null);
+for select using (auth.uid() is not null and public.current_account_status() = 'active');
 create policy "material_price_catalog_write_admin" on material_price_catalog
-for all using (public.current_role() in ('admin', 'direccion', 'compras')) with check (public.current_role() in ('admin', 'direccion', 'compras'));
+for all using (public.current_account_status() = 'active' and public.current_role() in ('admin', 'direccion', 'compras')) with check (public.current_account_status() = 'active' and public.current_role() in ('admin', 'direccion', 'compras'));
 
 create policy "labor_rate_catalog_read_by_role" on labor_rate_catalog
-for select using (auth.uid() is not null);
+for select using (auth.uid() is not null and public.current_account_status() = 'active');
 create policy "labor_rate_catalog_write_admin" on labor_rate_catalog
-for all using (public.current_role() in ('admin', 'direccion', 'rrhh')) with check (public.current_role() in ('admin', 'direccion', 'rrhh'));
+for all using (public.current_account_status() = 'active' and public.current_role() in ('admin', 'direccion', 'rrhh')) with check (public.current_account_status() = 'active' and public.current_role() in ('admin', 'direccion', 'rrhh'));
 
 create policy "quote_calculation_profiles_read_by_role" on quote_calculation_profiles
-for select using (auth.uid() is not null);
+for select using (auth.uid() is not null and public.current_account_status() = 'active');
 create policy "quote_calculation_profiles_write_admin" on quote_calculation_profiles
-for all using (public.current_role() in ('admin', 'direccion')) with check (public.current_role() in ('admin', 'direccion'));
+for all using (public.current_account_status() = 'active' and public.current_role() in ('admin', 'direccion')) with check (public.current_account_status() = 'active' and public.current_role() in ('admin', 'direccion'));
 
 insert into quote_calculation_profiles (id, name, iva, iibb, target_profit, admin_overhead, technical_contingency, energy_per_kwh, travel_per_km, round_to, validity_days)
 values ('bizon-metalurgico-2026-03', 'Bizon metalurgico marzo 2026', 0.21, 0.035, 0.25, 0.10, 0.05, 150, 700, 1000, 7)

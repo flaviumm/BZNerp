@@ -23,4 +23,4 @@ using (public.current_role() in ('admin', 'direccion'));
 create policy "audit_log_insert_authenticated"
 on audit_log
 for insert
-with check (auth.uid() is not null);
+with check (auth.uid() is not null and public.current_account_status() = 'active');

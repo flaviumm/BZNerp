@@ -24,6 +24,12 @@ declare
   current_counter document_counters%rowtype;
   generated_number text;
 begin
+  if auth.uid() is null
+     or public.current_account_status() <> 'active'
+     or public.current_role() not in ('admin', 'direccion', 'ventas', 'operaciones', 'compras', 'finanzas') then
+    raise exception 'Not authorized to generate document numbers';
+  end if;
+
   select *
   into current_counter
   from document_counters

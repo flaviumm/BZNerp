@@ -46,8 +46,20 @@ export async function signOutUser() {
   if (error) throw error;
 }
 
+function mapProfile(profile) {
+  return {
+    id: profile.id,
+    fullName: profile.full_name,
+    role: profile.role,
+    status: profile.status || "pending",
+    companyName: profile.company_name || "",
+    menuKeys: Array.isArray(profile.menu_keys) ? profile.menu_keys : null,
+    createdAt: profile.created_at,
+  };
+}
+
 export async function getCurrentProfile() {
-  if (!isDatabaseConfigured) return { fullName: "Modo demo", role: "admin" };
+  if (!isDatabaseConfigured) return { fullName: "Modo demo", role: "admin", status: "active", menuKeys: null };
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
@@ -55,10 +67,55 @@ export async function getCurrentProfile() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role")
+    .select("id, full_name, role, status, company_name, menu_keys")
     .eq("id", userData.user.id)
     .single();
 
   if (error) throw error;
-  return { id: data.id, fullName: data.full_name, role: data.role };
+  return mapProfile(data);
+}
+
+export async function listUserProfiles() {
+  if (!isDatabaseConfigured) return [];
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, role, status, company_name, menu_keys, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data.map(mapProfile);
+}
+
+export async function updateUserProfile(id, patch) {
+  if (!isDatabaseConfigured) return null;
+
+  const payload = {};
+  if (patch.fullName !== undefined) payload.full_name = patch.fullName;
+  if (patch.role !== undefined) payload.role = patch.role;
+  if (patch.status !== undefined) payload.status = patch.status;
+  if (patch.companyName !== undefined) payload.company_name = patch.companyName || null;
+  if (patch.menuKeys !== undefined) payload.menu_keys = Array.isArray(patch.menuKeys) && patch.menuKeys.length ? patch.menuKeys : null;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(payload)
+    .eq("id", id)
+    .select("id, full_name, role, status, company_name, menu_keys, created_at")
+    .single();
+
+  if (error) throw error;
+  return mapProfile(data);
+}
+
+export async function createUserAccount({ fullName, email, password, role, status, companyName, menuKeys }) {
+  if (!isDatabaseConfigured) return null;
+
+  const { data, error } = await supabase.functions.invoke("admin-create-user", {
+    body: { fullName, email, password, role, status, companyName, menuKeys },
+  });
+
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data.user;
 }

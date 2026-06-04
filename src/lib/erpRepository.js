@@ -2,6 +2,30 @@ import { isDatabaseConfigured, shouldBlockUnconfiguredDatabase, supabase } from 
 
 export { isDatabaseConfigured, shouldBlockUnconfiguredDatabase };
 
+function normalizeContacts(item) {
+  const contacts = Array.isArray(item.contacts) && item.contacts.length ? item.contacts : [{ name: item.contact, role: "Principal", phone: item.phone, email: "" }];
+  const companyDetails = {
+    taxId: item.taxId || "",
+    clientCategory: item.clientCategory || "",
+    address: item.address || "",
+    locality: item.locality || item.city || "",
+    websites: Array.isArray(item.websites) ? item.websites : [],
+    socialNetworks: Array.isArray(item.socialNetworks) ? item.socialNetworks : [],
+    clients: item.clients || "",
+    notes: item.notes || "",
+  };
+
+  return contacts.map((contact, index) => ({
+    ...contact,
+    companyDetails: index === 0 ? { ...(contact.companyDetails || {}), ...companyDetails } : contact.companyDetails,
+  }));
+}
+
+function companyDetailsFromContacts(contacts) {
+  const primary = Array.isArray(contacts) ? contacts[0] : null;
+  return primary?.companyDetails || {};
+}
+
 const modules = {
   companies: {
     table: "companies",
@@ -12,10 +36,34 @@ const modules = {
       status: item.status,
       contact: item.contact,
       phone: item.phone,
+      contacts: normalizeContacts(item),
       next_action: item.next,
       value: Number(item.value || 0),
     }),
-    fromDb: (item) => ({ id: item.id, name: item.name, type: item.type, city: item.city, status: item.status, contact: item.contact, phone: item.phone, next: item.next_action, value: Number(item.value || 0) }),
+    fromDb: (item) => {
+      const contacts = Array.isArray(item.contacts) && item.contacts.length ? item.contacts : [{ name: item.contact, role: "Principal", phone: item.phone, email: "" }];
+      const details = companyDetailsFromContacts(contacts);
+      return {
+        id: item.id,
+        name: item.name,
+        type: item.type,
+        city: details.locality || item.city,
+        status: item.status,
+        contact: item.contact,
+        phone: item.phone,
+        contacts,
+        next: item.next_action,
+        value: Number(item.value || 0),
+        taxId: details.taxId || "",
+        clientCategory: details.clientCategory || "",
+        address: details.address || "",
+        locality: details.locality || item.city || "",
+        websites: Array.isArray(details.websites) ? details.websites : [],
+        socialNetworks: Array.isArray(details.socialNetworks) ? details.socialNetworks : [],
+        clients: details.clients || "",
+        notes: details.notes || "",
+      };
+    },
   },
   opportunities: {
     table: "opportunities",
@@ -41,8 +89,10 @@ const modules = {
       total: Number(item.total || 0),
       status: item.status,
       valid_until: item.validUntil,
+      line_items: item.lineItems || [],
+      client_details: item.clientDetails || {},
     }),
-    fromDb: (item) => ({ number: item.number, client: item.client, service: item.service, subtotal: Number(item.subtotal || 0), tax: Number(item.tax || 0), total: Number(item.total || 0), status: item.status, validUntil: item.valid_until }),
+    fromDb: (item) => ({ number: item.number, client: item.client, service: item.service, subtotal: Number(item.subtotal || 0), tax: Number(item.tax || 0), total: Number(item.total || 0), status: item.status, validUntil: item.valid_until, lineItems: Array.isArray(item.line_items) ? item.line_items : [], clientDetails: item.client_details || {} }),
   },
   workOrders: {
     table: "work_orders",

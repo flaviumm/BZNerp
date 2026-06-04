@@ -11,7 +11,17 @@
 
 ## 2. Crear estructura de base
 
-En `SQL Editor`, ejecutar en este orden:
+Opcion recomendada con Supabase CLI:
+
+```bash
+npm.cmd run supabase -- login --token TU_ACCESS_TOKEN
+npm.cmd run supabase -- link --project-ref TU_PROJECT_REF
+npm.cmd run db:push
+```
+
+Esto ejecuta las migraciones versionadas de `supabase/migrations`.
+
+Opcion manual en `SQL Editor`, ejecutar en este orden:
 
 1. `database/schema.sql`
 2. `database/seed.sql`
@@ -21,6 +31,10 @@ En `SQL Editor`, ejecutar en este orden:
 6. `database/audit.sql`
 7. `database/calendar.sql`
 8. `database/pricing.sql`
+
+Los scripts estan preparados para una base nueva de produccion. `seed.sql` se puede ejecutar mas de una vez: actualiza los registros iniciales por clave natural y evita duplicados.
+
+Para una puesta limpia, conviene ejecutar todos los scripts antes de cargar usuarios reales. Si la base ya tiene datos productivos, hacer backup antes de repetir `schema.sql` o `seed.sql`.
 
 ## 3. Activar login
 
@@ -61,7 +75,26 @@ Roles validos:
 - `finanzas`
 - `rrhh`
 
-## 5. Cargar variables en Vercel
+Verificar el usuario admin:
+
+```sql
+select id, full_name, role
+from profiles
+order by created_at desc;
+```
+
+## 5. Checklist de produccion
+
+Antes de redeploy:
+
+- `Authentication > Providers > Email` activo.
+- Confirmacion de email activa para operacion real.
+- `Authentication > URL Configuration` apuntando a `https://bznerp.vercel.app`.
+- Bucket `erp-documents` creado como privado por `database/documents.sql`.
+- `VITE_ALLOW_DEMO_MODE=false` en Vercel.
+- No cargar `SUPABASE_SERVICE_ROLE_KEY` en variables `VITE_*`.
+
+## 6. Cargar variables en Vercel
 
 Desde la terminal del proyecto:
 
@@ -83,7 +116,7 @@ Despues redeploy:
 vercel --prod
 ```
 
-## 6. Seguridad
+## 7. Seguridad
 
 - No subir `.env.local`.
 - No usar `SUPABASE_SERVICE_ROLE_KEY` en Vercel frontend.
