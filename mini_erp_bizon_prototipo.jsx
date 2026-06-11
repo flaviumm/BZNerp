@@ -86,6 +86,7 @@ const screens = [
   { key: "importar", label: "Importar leads", icon: "upload", roles: ["admin", "direccion", "ventas"] },
   { key: "presupuestos", label: "Presupuestos", icon: "file", roles: ["admin", "direccion", "ventas", "finanzas", "cliente"] },
   { key: "cotizador", label: "Cotizador", icon: "chart", roles: ["admin", "direccion", "ventas", "finanzas"] },
+  { key: "ventas", label: "Proceso ventas", icon: "map", roles: ["admin", "direccion", "ventas"] },
   { key: "ot", label: "Ordenes de trabajo", icon: "wrench", roles: ["admin", "direccion", "operaciones", "cliente"] },
   { key: "inventario", label: "Inventario", icon: "box", roles: ["admin", "direccion", "operaciones", "compras"] },
   { key: "compras", label: "Compras", icon: "cart", roles: ["admin", "direccion", "compras"] },
@@ -100,7 +101,7 @@ const screens = [
 ];
 
 const menuSections = [
-  { title: "Gestion comercial", keys: ["dashboard", "clientes", "crm", "importar", "presupuestos", "cotizador"] },
+  { title: "Gestion comercial", keys: ["dashboard", "clientes", "crm", "importar", "presupuestos", "cotizador", "ventas"] },
   { title: "Operacion", keys: ["ot", "inventario", "compras", "finanzas", "rrhh"] },
   { title: "Control", keys: ["tareas", "calendario", "documentos", "auditoria", "usuarios", "reportes"] },
 ];
@@ -449,6 +450,7 @@ function MenuGlyph({ name }) {
     userCog: <><circle cx="9" cy="8" r="3" /><path d="M3 20a6 6 0 0 1 10-4.5" /><circle cx="18" cy="17" r="2" /><path d="M18 13v1M18 20v1M14 17h1M21 17h1" /></>,
     chart: <><path d="M4 19V5M4 19h17" /><path d="M8 16v-5M13 16V8M18 16v-8" /></>,
     upload: <><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" /></>,
+    map: <><polygon points="3,6 9,3 15,6 21,3 21,18 15,21 9,18 3,21" /><line x1="9" y1="3" x2="9" y2="18" /><line x1="15" y1="6" x2="15" y2="21" /></>,
   };
 
   return <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" {...common}>{paths[name] || paths.layout}</svg>;
@@ -1982,17 +1984,20 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
   const [validUntil, setValidUntil] = useState(defaultValidUntil);
   const [lineItems, setLineItems] = useState([]);
   const [materialQuery, setMaterialQuery] = useState("");
-  const [selectedMaterialId, setSelectedMaterialId] = useState(materialPriceCatalog[0]?.id || "");
+  const [materialProvider, setMaterialProvider] = useState("");
+  const [lightboxImage, setLightboxImage] = useState(null);
+  const [selectedMaterialId, setSelectedMaterialId] = useState("");
   const [materialQuantity, setMaterialQuantity] = useState(1);
   const [selectedLaborId, setSelectedLaborId] = useState(laborRates[0]?.id || "");
   const [laborHours, setLaborHours] = useState(1);
   const [generatedQuote, setGeneratedQuote] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  const filteredMaterials = materialPriceCatalog
-    .filter((item) => `${item.name} ${item.category} ${item.spec} ${item.provider} ${item.sku}`.toLowerCase().includes(materialQuery.toLowerCase()))
-    .slice(0, 80);
-  const selectedMaterial = materialPriceCatalog.find((item) => item.id === selectedMaterialId) || filteredMaterials[0] || materialPriceCatalog[0];
+  const filteredMaterials = materialQuery.trim().length < 2 ? [] : materialPriceCatalog
+    .filter((item) => (!materialProvider || item.provider === materialProvider) &&
+      `${item.name} ${item.category} ${item.spec} ${item.provider} ${item.sku} ${item.brand}`.toLowerCase().includes(materialQuery.toLowerCase()))
+    .slice(0, 60);
+  const selectedMaterial = materialPriceCatalog.find((item) => item.id === selectedMaterialId) || null;
   const selectedLabor = laborRates.find((item) => item.id === selectedLaborId) || laborRates[0];
   const subtotal = lineItems.reduce((total, line) => total + quoteLineTotal(line), 0);
   const tax = Math.round(subtotal * Number(quoteParameters.iva || 0));
@@ -2229,30 +2234,67 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
         <div className="grid gap-5 xl:grid-cols-2">
           <div className="grid gap-3">
             <SectionTitle title="Base de materiales" subtitle={`${materialPriceCatalog.length} materiales disponibles para agregar al detalle`} />
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_96px_max-content] md:items-end">
+            <div className="grid gap-3 md:grid-cols-[160px_minmax(0,1fr)_96px_max-content] md:items-end">
+              <Field label="Proveedor">
+                <Select value={materialProvider} onChange={(event) => { setMaterialProvider(event.target.value); setSelectedMaterialId(""); }}>
+                  <option value="">Todos</option>
+                  {["Carlos Isla", "Neucon", "Ferromundo"].map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </Select>
+              </Field>
               <Field label="Buscar material">
-                <TextInput value={materialQuery} onChange={(event) => setMaterialQuery(event.target.value)} placeholder="Hierro, chapa, aislante, SKU, proveedor" />
+                <TextInput value={materialQuery} onChange={(event) => { setMaterialQuery(event.target.value); setSelectedMaterialId(""); }} placeholder="Nombre, categoría, SKU, marca…" />
               </Field>
               <Field label="Cantidad">
                 <TextInput type="number" min="0" step="0.01" value={materialQuantity} onChange={(event) => setMaterialQuantity(event.target.value)} />
               </Field>
               <Button onClick={addMaterialLine} disabled={!selectedMaterial}>Agregar material</Button>
             </div>
-            <Field label="Material">
-              <Select value={selectedMaterial?.id || ""} onChange={(event) => setSelectedMaterialId(event.target.value)}>
-                {filteredMaterials.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} - {item.category} - {money(catalogPrice(item))}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            {selectedMaterial && (
-              <div className="rounded-lg border border-[#ececf0] bg-[#fafaf8] p-3 text-sm text-zinc-600">
-                <p className="font-semibold text-zinc-950">{selectedMaterial.name}</p>
-                <p>{selectedMaterial.spec}</p>
-                <p className="mt-1">Unidad: {selectedMaterial.unit || "-"} · Proveedor: {selectedMaterial.provider || "-"} · Precio: <strong>{money(catalogPrice(selectedMaterial))}</strong></p>
+            {filteredMaterials.length > 0 && (
+              <div className="max-h-72 overflow-y-auto rounded-lg border border-[#ececf0] divide-y divide-[#ececf0]">
+                {filteredMaterials.map((item) => {
+                  const isSelected = selectedMaterial?.id === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setSelectedMaterialId(item.id)}
+                      className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${isSelected ? "bg-zinc-900 text-white" : "bg-white hover:bg-zinc-50 text-zinc-800"}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`shrink-0 w-12 h-12 rounded overflow-hidden flex items-center justify-center ${isSelected ? "bg-zinc-700" : "bg-zinc-100"} ${item.imagen ? "cursor-zoom-in" : ""}`}
+                          onClick={item.imagen ? (e) => { e.stopPropagation(); setLightboxImage({ src: item.imagen, name: item.name }); } : undefined}
+                        >
+                          {item.imagen
+                            ? <img src={item.imagen} alt={item.name} className="w-full h-full object-contain" loading="lazy" onError={(e) => { e.target.style.display = "none"; }} />
+                            : <span className="text-lg">{item.provider === "Carlos Isla" ? "🏗️" : item.provider === "Neucon" ? "🧱" : "🔧"}</span>
+                          }
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className={`font-semibold leading-snug truncate ${isSelected ? "text-white" : "text-zinc-900"}`}>{item.name}</p>
+                          {item.spec && <p className={`text-xs mt-0.5 ${isSelected ? "text-zinc-300" : "text-zinc-500"}`}>{item.spec}</p>}
+                          <p className={`text-xs mt-0.5 ${isSelected ? "text-zinc-400" : "text-zinc-400"}`}>
+                            {[item.brand, item.sku, item.unit ? `Unidad: ${item.unit}` : null, item.provider].filter(Boolean).join(" · ")}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className={`font-bold text-sm whitespace-nowrap ${isSelected ? "text-white" : "text-zinc-900"}`}>{money(catalogPrice(item))}</p>
+                          {item.stock !== null && (
+                            <p className={`text-xs mt-0.5 ${item.stock > 0 ? (isSelected ? "text-green-300" : "text-green-600") : (isSelected ? "text-red-300" : "text-red-500")}`}>
+                              {item.stock > 0 ? `Stock: ${item.stock}` : "Sin stock"}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
+            )}
+            {materialQuery && filteredMaterials.length === 0 && (
+              <p className="text-sm text-zinc-400 text-center py-4">Sin resultados para "{materialQuery}"</p>
             )}
           </div>
 
@@ -2355,6 +2397,34 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
         </div>
         <p className="mt-4 text-xs text-zinc-500">La numeracion se asigna automaticamente al generar el PDF usando el contador de Presupuestos.</p>
       </Panel>
+
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() => setLightboxImage(null)}
+        >
+          <div
+            className="relative max-w-xl w-full bg-white rounded-xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
+              <p className="text-sm font-semibold text-zinc-800 truncate pr-4">{lightboxImage.name}</p>
+              <button
+                onClick={() => setLightboxImage(null)}
+                className="shrink-0 text-zinc-400 hover:text-zinc-700 text-xl leading-none"
+              >✕</button>
+            </div>
+            <div className="flex items-center justify-center bg-zinc-50 p-6 min-h-[280px]">
+              <img
+                src={lightboxImage.src}
+                alt={lightboxImage.name}
+                className="max-h-72 max-w-full object-contain"
+                onError={(e) => { e.target.src = ""; e.target.alt = "Sin imagen"; }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3441,6 +3511,247 @@ function GlobalStyles() {
   );
 }
 
+function ScriptBox({ boxId, text, copied, onCopy }) {
+  return (
+    <div className="relative mt-3 rounded-xl border border-[#ececf0] bg-[#f9f8f6] p-4">
+      <button
+        type="button"
+        onClick={() => onCopy(text, boxId)}
+        className="absolute right-3 top-3 rounded-lg border border-[#e4e4e7] bg-white px-2 py-1 text-[11px] font-semibold text-zinc-600 transition hover:border-[#ff7900] hover:text-[#ff7900]"
+      >
+        {copied === boxId ? "Copiado ✓" : "Copiar"}
+      </button>
+      <pre className="mr-16 whitespace-pre-wrap font-[inherit] text-[13px] leading-relaxed text-zinc-700">{text}</pre>
+    </div>
+  );
+}
+
+function ProcesoVentas() {
+  const [copied, setCopied] = useState(null);
+
+  function copyText(text, id) {
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(id);
+      setTimeout(() => setCopied(null), 1500);
+    });
+  }
+
+  const box = (id, text) => <ScriptBox key={id} boxId={id} text={text} copied={copied} onCopy={copyText} />;
+
+  const processSteps = [
+    { stage: "Etapa 1", title: "Preparar contacto", desc: "Identificar empresa, rubro, contacto probable y posible necesidad.", meta: "Meta: evitar mensaje genérico.", decision: false },
+    { stage: "Etapa 2", title: "Primer WhatsApp", desc: "Mensaje corto, claro y profesional. Pedir contacto correcto o permiso para presentar servicios.", meta: "Meta: lograr respuesta.", decision: false },
+    { stage: "Decisión", title: "¿Responde?", desc: "Sí: clasificar necesidad. No: seguimiento cada 2 a 5 días.", meta: "Meta: no quemar el contacto.", decision: true },
+    { stage: "Etapa 3", title: "Diagnóstico", desc: "Preguntar si tercerizan, qué necesitan y quién decide.", meta: "Meta: detectar oportunidad real.", decision: false },
+    { stage: "Etapa 4", title: "Valor", desc: "Presentar a Bizon como solución técnica seria, disponible y capaz.", meta: "Meta: diferenciarte.", decision: false },
+    { stage: "Etapa 5", title: "Cierre suave", desc: "Reunión, visita técnica, carpeta, registro proveedor o cotización.", meta: "Meta: próximo paso concreto.", decision: false },
+  ];
+
+  const followUpDays = [
+    { day: "Día 0", title: "Primer contacto", desc: "Mensaje personalizado para ubicar decisor o abrir conversación." },
+    { day: "Día 2", title: "Seguimiento 1", desc: "\"Hola, [Nombre]. Te consulto si pudiste ver mi mensaje. Queremos presentarnos como proveedor técnico para futuras necesidades.\"" },
+    { day: "Día 5", title: "Seguimiento 2", desc: "\"¿Actualmente están incorporando proveedores o cotizando trabajos técnicos?\"" },
+    { day: "Día 10", title: "Valor útil", desc: "Enviar presentación corta o recordar un servicio puntual: urgencias, mantenimiento, obra o electricidad." },
+    { day: "Día 15", title: "Cierre elegante", desc: "\"Para no insistirte, te dejo nuestros datos. Cuando necesiten cotizar, quedamos disponibles.\"" },
+  ];
+
+  const matrixRows = [
+    { resp: "\"Mandame información\"", og: "\"Claro. Para enviarte algo útil, ¿conviene enfocarlo en mantenimiento, soldadura, electricidad, reparaciones o registro como proveedor?\"", cons: "\"Claro. ¿Te sirve que lo enfoque en trabajos para obra, estructuras, electricidad o soluciones para proyectos de arquitectura?\"" },
+    { resp: "\"Ya tenemos proveedor\"", og: "\"Perfecto. Muchas empresas igual nos tienen como alternativa para urgencias, paradas, exceso de trabajo o cotizaciones comparativas.\"", cons: "\"Perfecto. Podemos quedar como segunda opción para trabajos puntuales, refuerzos de obra o cuando necesiten resolver algo rápido.\"" },
+    { resp: "\"No me interesa\"", og: "\"Entiendo. ¿Es porque tienen todo cubierto o porque ahora no hay necesidad? Te lo consulto para no enviarte algo que no corresponda.\"", cons: "\"Entiendo. ¿Actualmente no están incorporando proveedores o no están con obras que requieran estos servicios?\"" },
+    { resp: "\"Pasame precio\"", og: "\"Para cotizar responsablemente necesitamos alcance, ubicación, condiciones y urgencia. Si me pasás esos datos, lo revisamos bien.\"", cons: "\"Podemos cotizar por fotos, planos o visita. Así evitamos pasar un número que después no represente bien el trabajo.\"" },
+    { resp: "\"Hablá con compras\"", og: "\"Perfecto. ¿Me podrías pasar contacto de compras o el procedimiento para alta de proveedor?\"", cons: "\"Perfecto. ¿Compras centraliza proveedores o lo define cada jefe de obra/proyecto?\"" },
+    { resp: "\"Tenemos algo para cotizar\"", og: "\"Excelente. Pasame fotos, alcance, ubicación, fecha estimada y requisitos de ingreso/documentación. Lo revisamos para cotizar.\"", cons: "\"Excelente. Podés pasarme fotos, planos, medidas, ubicación y plazo esperado. Si hace falta, coordinamos visita a obra.\"" },
+  ];
+
+  const funnelSteps = [
+    { label: "100 contactos cargados", w: "100%" },
+    { label: "60 WhatsApp personalizados enviados", w: "85%" },
+    { label: "25 respuestas o derivaciones", w: "70%" },
+    { label: "12 presentaciones / registros proveedor", w: "55%" },
+    { label: "5 oportunidades de reunión o cotización", w: "40%" },
+  ];
+
+  return (
+    <div className="space-y-8 p-4 md:p-8">
+      <div>
+        <h1 className="text-[28px] font-semibold tracking-tight text-zinc-950">Proceso comercial por WhatsApp</h1>
+        <p className="mt-1.5 max-w-3xl text-[14px] text-zinc-500">Flujo práctico para contactar empresas Oil & Gas, constructoras, arquitectos y estudios. El objetivo es identificar necesidad, llegar al decisor, generar confianza y avanzar hacia registro como proveedor, visita técnica, reunión o cotización.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {["Soldadura industrial", "Electricidad industrial", "Reparaciones", "Construcción", "WhatsApp B2B"].map((tag) => (
+            <Badge key={tag} tone="zinc">{tag}</Badge>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-5 flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">1</span>
+          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Mapa general del proceso</h2>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          {processSteps.map((step, i) => (
+            <Panel key={i} className={`p-4 ${step.decision ? "bg-amber-50" : ""}`}>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#ff7900]">{step.stage}</p>
+              <p className="mt-1.5 text-[13px] font-semibold text-zinc-900">{step.title}</p>
+              <p className="mt-1 text-[12px] text-zinc-500">{step.desc}</p>
+              <p className="mt-2 text-[11px] font-medium text-zinc-400">{step.meta}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-5 flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">2</span>
+          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Dos caminos comerciales</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-[22px] border border-[#ececf0] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #4a55c8" }}>
+            <h3 className="font-semibold text-zinc-950">Empresas Oil & Gas / Industria</h3>
+            <p className="mt-2 text-[13px] text-zinc-500"><span className="font-semibold text-zinc-700">Dolores:</span> urgencias operativas, paradas, seguridad, documentación, mantenimiento correctivo, proveedores disponibles.</p>
+            <ul className="mt-3 space-y-1.5 text-[13px] text-zinc-600">
+              <li>• <span className="font-medium">Enfoque:</span> continuidad operativa y respuesta técnica.</li>
+              <li>• <span className="font-medium">Decisor:</span> mantenimiento, operaciones, compras, HSE, ingeniería.</li>
+              <li>• <span className="font-medium">Cierre:</span> registro proveedor, visita/relevamiento o cotización técnica.</li>
+            </ul>
+          </div>
+          <div className="rounded-[22px] border border-[#ececf0] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #ff7900" }}>
+            <h3 className="font-semibold text-zinc-950">Constructoras / Arquitectos / Estudios</h3>
+            <p className="mt-2 text-[13px] text-zinc-500"><span className="font-semibold text-zinc-700">Dolores:</span> cumplimiento de obra, coordinación, proveedores que no responden, trabajos metálicos y eléctricos puntuales.</p>
+            <ul className="mt-3 space-y-1.5 text-[13px] text-zinc-600">
+              <li>• <span className="font-medium">Enfoque:</span> apoyo en obra, resolución y cumplimiento.</li>
+              <li>• <span className="font-medium">Decisor:</span> dueño, jefe de obra, arquitecto, compras o administración técnica.</li>
+              <li>• <span className="font-medium">Cierre:</span> carpeta, reunión breve, cotización por planos/fotos o visita a obra.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-5 flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">3</span>
+          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Speech WhatsApp para Oil & Gas</h2>
+        </div>
+        <div className="rounded-[22px] border border-[#ececf0] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #4a55c8" }}>
+          <div className="space-y-5">
+            <div>
+              <p className="text-[13px] font-semibold text-zinc-800">Primer contacto</p>
+              {box("og-1", "Hola, [Nombre]. ¿Cómo estás? Soy [Tu nombre], de Bizon Soluciones Industriales.\n\nBrindamos servicios de soldadura industrial, electricidad industrial, reparaciones y trabajos técnicos para empresas, bases, plantas y operaciones.\n\nQuería consultar quién ve en [Empresa] el tema de proveedores técnicos para mantenimiento, reparaciones, obra o urgencias operativas.")}
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-zinc-800">Cuando responde la persona correcta</p>
+              {box("og-2", "Gracias, [Nombre]. Te cuento brevemente.\n\nEn Bizon trabajamos como apoyo técnico para empresas que necesitan resolver trabajos de soldadura industrial, electricidad, reparaciones, mantenimiento correctivo o trabajos especiales en campo/planta.\n\nLa idea es presentarnos como proveedor alternativo para urgencias, trabajos programados o futuras cotizaciones.\n\n¿Actualmente trabajan con proveedores externos para este tipo de servicios?")}
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-zinc-800">Diagnóstico</p>
+              {box("og-3", "Para orientarme mejor, ¿qué tipo de trabajos suelen tercerizar más?\n\n1. Soldadura industrial\n2. Electricidad / tableros / instalaciones\n3. Reparaciones y mantenimiento\n4. Estructuras metálicas\n5. Trabajos en obra, base o planta\n6. Urgencias o paradas\n\nCon eso te envío una presentación más enfocada y no algo genérico.")}
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-zinc-800">Cierre</p>
+              {box("og-4", "Perfecto, [Nombre]. ¿Cuál sería el proceso para que Bizon quede registrado como proveedor o pueda ser considerado en próximas cotizaciones?\n\nTambién podemos coordinar una visita/relevamiento si tienen algún trabajo pendiente o necesidad actual.")}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-5 flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">4</span>
+          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Speech WhatsApp para constructoras y arquitectos</h2>
+        </div>
+        <div className="rounded-[22px] border border-[#ececf0] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #ff7900" }}>
+          <div className="space-y-5">
+            <div>
+              <p className="text-[13px] font-semibold text-zinc-800">Primer contacto para constructora</p>
+              {box("cons-1", "Hola, [Nombre]. ¿Cómo estás? Soy [Tu nombre], de Bizon Soluciones Industriales.\n\nTrabajamos con servicios de soldadura, electricidad, reparaciones y apoyo técnico para obras y empresas constructoras.\n\nQuería consultar quién ve en [Empresa] la incorporación o evaluación de proveedores para trabajos en obra, estructuras metálicas, electricidad o reparaciones.")}
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-zinc-800">Primer contacto para arquitectos / estudios</p>
+              {box("cons-2", "Hola, [Nombre]. ¿Cómo estás? Soy [Tu nombre], de Bizon Soluciones Industriales.\n\nQuería presentarnos como apoyo técnico para estudios de arquitectura y obras: realizamos trabajos de soldadura, estructuras metálicas, electricidad, reparaciones y soluciones constructivas.\n\n¿Suelen trabajar con proveedores externos para ejecutar este tipo de trabajos en sus proyectos?")}
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-zinc-800">Diagnóstico para obra</p>
+              {box("cons-3", "Para entender si podemos serles útiles, te consulto:\n\n¿Actualmente tienen obras en ejecución o próximas donde necesiten apoyo en soldadura, estructuras, electricidad, reparaciones o trabajos especiales?\n\nPodemos cotizar por planos, fotos, visita a obra o alcance preliminar.")}
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-zinc-800">Cierre</p>
+              {box("cons-4", "Si te parece, te envío una presentación breve de Bizon con servicios y datos de contacto.\n\nY si tienen algún trabajo puntual, nos pueden pasar fotos, planos o ubicación para revisar y cotizar.")}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-5 flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">5</span>
+          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Mapa de respuestas según reacción</h2>
+        </div>
+        <Panel className="overflow-hidden p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px]">
+              <thead>
+                <tr className="border-b border-[#ececf0] bg-[#fff4ea]">
+                  <th className="w-44 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#ff7900]">Respuesta</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#4a55c8]">Oil & Gas / Industria</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#d85f00]">Constructoras / Arquitectos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {matrixRows.map((row, i) => (
+                  <tr key={i} className={`border-b border-[#ececf0] last:border-0 ${i % 2 === 1 ? "bg-[#fafaf9]" : ""}`}>
+                    <td className="w-44 border-r border-[#ececf0] px-4 py-3 align-top text-[12px] font-semibold text-zinc-800">{row.resp}</td>
+                    <td className="border-r border-[#ececf0] px-4 py-3 align-top text-[12px] text-zinc-600">{row.og}</td>
+                    <td className="px-4 py-3 align-top text-[12px] text-zinc-600">{row.cons}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      </div>
+
+      <div>
+        <div className="mb-5 flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">6</span>
+          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Secuencia de seguimiento</h2>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+          {followUpDays.map((d, i) => (
+            <Panel key={i} className="p-4">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#ff7900]">{d.day}</p>
+              <p className="mt-1.5 text-[13px] font-semibold text-zinc-900">{d.title}</p>
+              <p className="mt-1.5 text-[12px] text-zinc-500 leading-relaxed">{d.desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-5 flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">7</span>
+          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Embudo comercial sugerido</h2>
+        </div>
+        <Panel className="p-6">
+          <div className="mx-auto flex max-w-xl flex-col items-center gap-2">
+            {funnelSteps.map((step, i) => (
+              <div key={i} className="rounded-xl border border-[#ffe0c2] bg-[#fff4ea] px-4 py-3 text-center text-[13px] font-semibold text-[#d85f00]" style={{ width: step.w }}>
+                {step.label}
+              </div>
+            ))}
+          </div>
+          <p className="mt-5 text-center text-[12.5px] text-zinc-500">La métrica clave no es solo venta inmediata: es contacto correcto, empresa registrada, cotización abierta y reunión técnica generada.</p>
+        </Panel>
+      </div>
+
+      <div className="rounded-[22px] border border-[#ffe0c2] bg-[#fff8f0] p-5" style={{ borderLeft: "4px solid #ff7900" }}>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-[#ff7900]">Frase central</p>
+        <p className="mt-2 text-[14px] font-semibold leading-relaxed text-zinc-900">Bizon no se presenta como un proveedor más de soldadura o electricidad; se presenta como una solución técnica confiable para empresas que necesitan resolver trabajos industriales, obras, reparaciones y urgencias con rapidez, cumplimiento y responsabilidad.</p>
+      </div>
+    </div>
+  );
+}
+
 export default function MiniErpBizonPrototype() {
   const useLocalDemo = !isDatabaseConfigured && !shouldBlockUnconfiguredDatabase;
   const [active, setActive] = useState("dashboard");
@@ -4042,6 +4353,7 @@ export default function MiniErpBizonPrototype() {
     importar: <ImportarLeads {...screenProps} />,
     presupuestos: <Presupuestos {...screenProps} />,
     cotizador: <Cotizador {...screenProps} />,
+    ventas: <ProcesoVentas />,
     ot: <OrdenesTrabajo {...screenProps} />,
     inventario: <Inventario {...screenProps} inventory={data.inventory} />,
     compras: <Compras {...screenProps} purchases={data.purchases} />,
