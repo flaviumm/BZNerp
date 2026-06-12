@@ -130,6 +130,7 @@ function sum(list, field) {
 }
 
 function quoteLineTotal(line) {
+  if (line.type === "title") return 0;
   return Number(line.quantity || 0) * Number(line.unitPrice || 0);
 }
 
@@ -167,22 +168,95 @@ function openQuotePdfWindow() {
 function generateQuotePdf(quote, targetWindow = null) {
   if (!quote?.number) return;
 
-  const lineItems = Array.isArray(quote.lineItems) && quote.lineItems.length
+  const allLines = Array.isArray(quote.lineItems) && quote.lineItems.length
     ? quote.lineItems
     : [{ detail: quote.service, quantity: 1, unitPrice: quote.total, total: quote.total }];
   const client = quote.clientDetails || {};
   const logoUrl = `${window.location.origin}/brand/logo_principal_horizontal.png`;
-  const rows = lineItems.map((line) => {
-    const total = Number(line.total ?? quoteLineTotal(line));
-    return `
-      <tr>
-        <td>${htmlEscape(line.detail)}</td>
-        <td class="num">${Number(line.quantity || 0).toLocaleString("es-AR", { maximumFractionDigits: 2 })}</td>
-        <td class="num">${money(line.unitPrice)}</td>
-        <td class="num strong">${money(total)}</td>
-      </tr>
-    `;
-  }).join("");
+
+  // Agrupar renglones en secciones separadas por filas tipo "title"
+  const sections = [];
+  let cur = { title: null, items: [] };
+  for (const line of allLines) {
+    if (line.type === "title") {
+      sections.push(cur);
+      cur = { title: line.detail || "", items: [] };
+    } else {
+      cur.items.push(line);
+    }
+  }
+  sections.push(cur);
+  const validSections = sections.filter((s) => s.title !== null || s.items.length > 0);
+  const hasSections = validSections.some((s) => s.title !== null);
+
+  // Paleta de colores por seccion
+  const palette = [
+    { hd: "#1e40af", lt: "#EFF6FF", br: "#93C5FD" },
+    { hd: "#92400e", lt: "#FFFBEB", br: "#FCD34D" },
+    { hd: "#14532d", lt: "#F0FDF4", br: "#86EFAC" },
+    { hd: "#581c87", lt: "#FAF5FF", br: "#D8B4FE" },
+    { hd: "#134e4a", lt: "#F0FDFA", br: "#5EEAD4" },
+  ];
+
+  let ci = 0;
+  let tableRows = "";
+
+  for (const section of validSections) {
+    const col = palette[ci % palette.length];
+    if (section.title !== null) ci++;
+
+    // Encabezado de seccion
+    if (section.title !== null) {
+      tableRows += `
+        <tr>
+          <td colspan="4" style="background:${col.hd};color:#fff;font-weight:700;font-size:12px;padding:10px 14px;letter-spacing:0.07em;text-transform:uppercase;border:none;">${htmlEscape(section.title)}</td>
+        </tr>`;
+    }
+
+    // Renglones de la seccion
+    let secTotal = 0;
+    for (const line of section.items) {
+      const lt = Number(line.total ?? quoteLineTotal(line));
+      secTotal += lt;
+      const rowBg = section.title !== null ? `background:${col.lt};` : "";
+      const rowBd = section.title !== null ? `border-bottom:1px solid ${col.br};` : "border-bottom:1px solid #e4e4e7;";
+
+      if (line.type === "labor") {
+        const m = line.meta || {};
+        const typeLabel = [m.category, m.agreement].filter(Boolean).join(" · ");
+        const qty = Number(line.quantity || 0).toLocaleString("es-AR", { maximumFractionDigits: 2 });
+        tableRows += `
+          <tr style="${rowBg}">
+            <td style="padding:10px 14px;${rowBd}">
+              <div style="font-weight:600;color:#18181b;">${htmlEscape(line.detail)}</div>
+              ${typeLabel ? `<div style="font-size:11px;color:#71717a;margin-top:3px;">${htmlEscape(typeLabel)}</div>` : ""}
+            </td>
+            <td class="num" style="padding:10px 14px;${rowBd}color:#52525b;">${qty} h</td>
+            <td class="num" style="padding:10px 14px;${rowBd}color:#52525b;">${money(line.unitPrice)}/h</td>
+            <td class="num strong" style="padding:10px 14px;${rowBd}">${money(lt)}</td>
+          </tr>`;
+      } else {
+        tableRows += `
+          <tr style="${rowBg}">
+            <td style="padding:10px 14px;${rowBd}">${htmlEscape(line.detail)}</td>
+            <td class="num" style="padding:10px 14px;${rowBd}">${Number(line.quantity || 0).toLocaleString("es-AR", { maximumFractionDigits: 2 })}</td>
+            <td class="num" style="padding:10px 14px;${rowBd}">${money(line.unitPrice)}</td>
+            <td class="num strong" style="padding:10px 14px;${rowBd}">${money(lt)}</td>
+          </tr>`;
+      }
+    }
+
+    // Subtotal de seccion (sin impuestos)
+    if (section.items.length > 0 && hasSections) {
+      const label = section.title ? `Subtotal — ${section.title}` : "Subtotal";
+      tableRows += `
+        <tr>
+          <td colspan="3" style="padding:8px 14px;background:${col.lt};border-top:2px solid ${col.br};text-align:right;font-size:12px;font-weight:700;color:${col.hd};">${htmlEscape(label)}</td>
+          <td class="num" style="padding:8px 14px;background:${col.lt};border-top:2px solid ${col.br};font-weight:700;color:${col.hd};white-space:nowrap;">${money(secTotal)}</td>
+        </tr>`;
+    }
+  }
+
   const clientRows = [
     ["Empresa", quote.client],
     ["CUIT", client.taxId],
@@ -210,20 +284,21 @@ function generateQuotePdf(quote, targetWindow = null) {
           h1 { margin: 0; font-size: 28px; letter-spacing: 0; }
           .meta { text-align: right; font-size: 13px; color: #52525b; }
           .meta strong { display: block; color: #18181b; font-size: 20px; margin-top: 5px; }
-          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 24px 0; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 24px 0 20px; }
           .box { border: 1px solid #e4e4e7; padding: 14px; border-radius: 6px; }
-          .box h2 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; color: #71717a; }
+          .box h2 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #71717a; font-weight: 700; }
           .box p { margin: 5px 0; font-size: 13px; }
-          .box span { display: inline-block; width: 86px; color: #71717a; font-weight: 700; }
-          table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
-          th { background: #18181b; color: white; padding: 10px; text-align: left; }
-          td { border-bottom: 1px solid #e4e4e7; padding: 10px; vertical-align: top; }
+          .box span { display: inline-block; width: 80px; color: #71717a; font-weight: 700; }
+          table { width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #e4e4e7; border-radius: 6px; overflow: hidden; }
+          thead tr { background: #18181b; }
+          th { color: white; padding: 10px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+          td { vertical-align: top; }
           .num { text-align: right; white-space: nowrap; }
           .strong { font-weight: 700; }
-          .totals { width: 330px; margin-left: auto; margin-top: 20px; font-size: 14px; }
-          .totals div { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e4e4e7; }
-          .totals .grand { font-size: 19px; font-weight: 700; color: #ff7900; border-bottom: 0; }
-          footer { margin-top: 32px; color: #71717a; font-size: 12px; line-height: 1.45; }
+          .totals { width: 340px; margin-left: auto; margin-top: 24px; font-size: 13px; border: 1px solid #e4e4e7; border-radius: 6px; overflow: hidden; }
+          .totals div { display: flex; justify-content: space-between; padding: 9px 14px; border-bottom: 1px solid #e4e4e7; }
+          .totals .grand { font-size: 18px; font-weight: 700; color: #ff7900; border-bottom: 0; padding: 12px 14px; background: #fff8f3; }
+          footer { margin-top: 36px; color: #71717a; font-size: 11px; line-height: 1.6; border-top: 1px solid #e4e4e7; padding-top: 14px; }
           @media print { body { background: white; } .sheet { margin: 0; width: auto; min-height: auto; } }
         </style>
       </head>
@@ -238,41 +313,39 @@ function generateQuotePdf(quote, targetWindow = null) {
               <p>Valido hasta: ${htmlEscape(quote.validUntil || "-")}</p>
             </div>
           </header>
-          <section class="grid">
+          <section class="info-grid">
             <div class="box">
               <h2>Cliente</h2>
               ${clientRows || `<p><span>Empresa</span>${htmlEscape(quote.client)}</p>`}
             </div>
             <div class="box">
-              <h2>Trabajo</h2>
-              <p><span>Detalle</span>${htmlEscape(quote.service)}</p>
+              <h2>Obra / Trabajo</h2>
+              <p><span>Descripcion</span>${htmlEscape(quote.service || "-")}</p>
               <p><span>Estado</span>${htmlEscape(quote.status || "Borrador")}</p>
             </div>
           </section>
           <table>
             <thead>
               <tr>
-                <th>Detalle del producto</th>
+                <th>Descripcion</th>
                 <th class="num">Cantidad</th>
                 <th class="num">Precio unitario</th>
-                <th class="num">Precio total</th>
+                <th class="num">Total</th>
               </tr>
             </thead>
-            <tbody>${rows}</tbody>
+            <tbody>${tableRows}</tbody>
           </table>
           <section class="totals">
             <div><span>Subtotal</span><strong>${money(quote.subtotal)}</strong></div>
-            <div><span>IVA / impuestos</span><strong>${money(quote.tax)}</strong></div>
+            <div><span>IVA (21%)</span><strong>${money(quote.tax)}</strong></div>
             <div class="grand"><span>Total</span><strong>${money(quote.total)}</strong></div>
           </section>
           <footer>
-            Presupuesto emitido por Bizon. Los precios quedan sujetos a confirmacion de disponibilidad, alcance tecnico y condiciones comerciales finales.
+            Presupuesto emitido por Bizon Metalurgica. Los precios estan expresados sin IVA salvo indicacion contraria y quedan sujetos a confirmacion de disponibilidad, alcance tecnico y condiciones comerciales finales.
           </footer>
         </main>
         <script>
-          window.addEventListener("load", () => {
-            setTimeout(() => window.print(), 250);
-          });
+          window.addEventListener("load", () => { setTimeout(() => window.print(), 250); });
         </script>
       </body>
     </html>
@@ -1980,7 +2053,6 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
   const [clientMode, setClientMode] = useState("existing");
   const [selectedCompany, setSelectedCompany] = useState(companies[0]?.name || "");
   const [clientDetails, setClientDetails] = useState({ name: companies[0]?.name || "", taxId: "", contact: companies[0]?.contact || "", phone: companies[0]?.phone || "", email: "", address: "" });
-  const [service, setService] = useState("Trabajo metalurgico");
   const [validUntil, setValidUntil] = useState(defaultValidUntil);
   const [lineItems, setLineItems] = useState([]);
   const [materialQuery, setMaterialQuery] = useState("");
@@ -1988,8 +2060,11 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
   const [lightboxImage, setLightboxImage] = useState(null);
   const [selectedMaterialId, setSelectedMaterialId] = useState("");
   const [materialQuantity, setMaterialQuantity] = useState(1);
+  const [laborAgreement, setLaborAgreement] = useState("");
   const [selectedLaborId, setSelectedLaborId] = useState(laborRates[0]?.id || "");
   const [laborHours, setLaborHours] = useState(1);
+  const [laborDescription, setLaborDescription] = useState("");
+  const [titleInput, setTitleInput] = useState("");
   const [generatedQuote, setGeneratedQuote] = useState(null);
   const [saving, setSaving] = useState(false);
 
@@ -1998,7 +2073,7 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
       `${item.name} ${item.category} ${item.spec} ${item.provider} ${item.sku} ${item.brand}`.toLowerCase().includes(materialQuery.toLowerCase()))
     .slice(0, 60);
   const selectedMaterial = materialPriceCatalog.find((item) => item.id === selectedMaterialId) || null;
-  const selectedLabor = laborRates.find((item) => item.id === selectedLaborId) || laborRates[0];
+  const selectedLabor = laborRates.find((item) => item.id === selectedLaborId) || null;
   const subtotal = lineItems.reduce((total, line) => total + quoteLineTotal(line), 0);
   const tax = Math.round(subtotal * Number(quoteParameters.iva || 0));
   const total = subtotal + tax;
@@ -2030,6 +2105,12 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
   function addLine() {
     setGeneratedQuote(null);
     setLineItems((items) => [...items, { id: Date.now(), detail: "", quantity: 1, unitPrice: 0 }]);
+  }
+
+  function addTitleLine() {
+    setGeneratedQuote(null);
+    setLineItems((items) => [...items, { id: Date.now(), type: "title", detail: titleInput.trim() }]);
+    setTitleInput("");
   }
 
   function removeLine(index) {
@@ -2078,7 +2159,7 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
       provider: "Mano de obra Bizon",
       source: "Tarifario interno",
     };
-    const detail = `${selectedLabor.trade} - ${selectedLabor.category} - ${selectedLabor.agreement}`;
+    const detail = laborDescription.trim() || `${selectedLabor.trade} - ${selectedLabor.category} - ${selectedLabor.agreement}`;
 
     setGeneratedQuote(null);
     setLineItems((items) => [...items, {
@@ -2090,13 +2171,14 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
       sourceId: selectedLabor.id,
       meta,
     }]);
+    setLaborDescription("");
   }
 
   function buildQuote(number) {
     const normalizedLines = lineItems.map((line) => ({
-      detail: line.detail || "Producto sin detalle",
-      quantity: Number(line.quantity || 0),
-      unitPrice: Number(line.unitPrice || 0),
+      detail: line.type === "title" ? (line.detail || "") : (line.detail || "Producto sin detalle"),
+      quantity: line.type === "title" ? 0 : Number(line.quantity || 0),
+      unitPrice: line.type === "title" ? 0 : Number(line.unitPrice || 0),
       total: quoteLineTotal(line),
       type: line.type || "manual",
       sourceId: line.sourceId || "",
@@ -2105,7 +2187,7 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
     return {
       number,
       client: clientDetails.name || selectedCompany || "Cliente sin nombre",
-      service: service || normalizedLines[0]?.detail || "Presupuesto",
+      service: normalizedLines.find((l) => l.type !== "title")?.detail || "Presupuesto",
       subtotal,
       tax,
       total,
@@ -2225,9 +2307,17 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
       </Panel>
 
       <Panel className="p-5 shadow-none">
-        <Field label="Titulo / detalle general del trabajo">
-          <TextInput value={service} onChange={(event) => { setGeneratedQuote(null); setService(event.target.value); }} placeholder="Ej. Estructura metalica para nave" />
-        </Field>
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_max-content] items-end">
+          <Field label="Titulo de seccion">
+            <TextInput
+              value={titleInput}
+              onChange={(event) => setTitleInput(event.target.value)}
+              onKeyDown={(event) => { if (event.key === "Enter") addTitleLine(); }}
+              placeholder="Ej. Materiales, Mano de obra, Trabajos de campo..."
+            />
+          </Field>
+          <Button variant="ghost" onClick={addTitleLine}>Agregar titulo</Button>
+        </div>
       </Panel>
 
       <Panel className="p-5 shadow-none">
@@ -2300,10 +2390,19 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
 
           <div className="grid gap-3">
             <SectionTitle title="Mano de obra" subtitle="Carga de horas por oficio con tarifa de cotizacion" />
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_96px_max-content] md:items-end">
+            <div className="grid gap-3 md:grid-cols-[200px_minmax(0,1fr)_96px_max-content] md:items-end">
+              <Field label="Convenio">
+                <Select value={laborAgreement} onChange={(event) => { setLaborAgreement(event.target.value); setSelectedLaborId(""); }}>
+                  <option value="">Todos</option>
+                  {[...new Set(laborRates.map((r) => r.agreement))].map((ag) => (
+                    <option key={ag} value={ag}>{ag}</option>
+                  ))}
+                </Select>
+              </Field>
               <Field label="Oficio">
                 <Select value={selectedLaborId} onChange={(event) => setSelectedLaborId(event.target.value)}>
-                  {laborRates.map((item) => (
+                  <option value="">Seleccionar oficio...</option>
+                  {laborRates.filter((r) => !laborAgreement || r.agreement === laborAgreement).map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.trade} - {money(item.quoteHour)}/h
                     </option>
@@ -2315,11 +2414,23 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
               </Field>
               <Button onClick={addLaborLine} disabled={!selectedLabor}>Agregar horas</Button>
             </div>
+            <Field label="Descripcion del trabajo cotizado">
+              <textarea
+                value={laborDescription}
+                onChange={(event) => setLaborDescription(event.target.value)}
+                placeholder="Ej. Soldadura de estructura metalica, corte y preparacion de materiales..."
+                rows={2}
+                className="w-full rounded-lg border border-[#ececf0] bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-300 resize-none"
+              />
+            </Field>
             {selectedLabor && (
               <div className="rounded-lg border border-[#ececf0] bg-[#fafaf8] p-3 text-sm text-zinc-600">
                 <p className="font-semibold text-zinc-950">{selectedLabor.trade}</p>
                 <p>{selectedLabor.category}</p>
                 <p className="mt-1">Convenio: {selectedLabor.agreement} · Tarifa: <strong>{money(selectedLabor.quoteHour)}/h</strong></p>
+                {selectedLabor.baseHour && selectedLabor.quoteHour !== selectedLabor.baseHour && (
+                  <p className="mt-0.5 text-xs text-zinc-400">Base: {money(selectedLabor.baseHour)}/h + 40% costo laboral + 30% ganancia</p>
+                )}
               </div>
             )}
           </div>
@@ -2343,38 +2454,56 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
               </tr>
             </thead>
             <tbody className="divide-y divide-[#eeeeec]">
-              {lineItems.map((line, index) => (
-                <tr key={line.id || index} className="align-top">
-                  <td className="px-4 py-4">
-                    <TextInput value={line.detail} onChange={(event) => updateLine(index, { detail: event.target.value })} placeholder="Producto, trabajo o servicio cotizado" />
-                    {(line.meta?.unit || line.meta?.provider || line.meta?.sku || line.meta?.source || line.meta?.spec) && (
-                      <div className="mt-2 grid gap-1 text-xs font-medium text-zinc-500">
-                        {line.meta?.spec && <p>{line.meta.spec}</p>}
-                        <p>
-                          {[
-                            line.meta?.unit ? `Unidad: ${line.meta.unit}` : "",
-                            line.meta?.provider ? `Proveedor: ${line.meta.provider}` : "",
-                            line.meta?.sku ? `SKU: ${line.meta.sku}` : "",
-                            line.meta?.source ? `Base: ${line.meta.source}` : "",
-                          ].filter(Boolean).join(" | ")}
-                        </p>
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-4">
-                    <TextInput type="number" min="0" step="0.01" value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
-                  </td>
-                  <td className="px-4 py-4">
-                    <TextInput type="number" min="0" step="0.01" value={line.unitPrice} onChange={(event) => updateLine(index, { unitPrice: event.target.value })} />
-                  </td>
-                  <td className="px-4 py-4 text-right">
-                    <p className="text-base font-semibold text-zinc-950">{money(quoteLineTotal(line))}</p>
-                  </td>
-                  <td className="px-4 py-4 text-right">
-                    <Button variant="danger" onClick={() => removeLine(index)}>Quitar</Button>
-                  </td>
-                </tr>
-              ))}
+              {lineItems.map((line, index) => {
+                if (line.type === "title") {
+                  return (
+                    <tr key={line.id || index} className="bg-zinc-50">
+                      <td className="px-4 py-3" colSpan={4}>
+                        <TextInput
+                          value={line.detail}
+                          onChange={(event) => updateLine(index, { detail: event.target.value })}
+                          placeholder="Titulo de seccion (ej. Materiales, Mano de obra...)"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Button variant="danger" onClick={() => removeLine(index)}>Quitar</Button>
+                      </td>
+                    </tr>
+                  );
+                }
+                return (
+                  <tr key={line.id || index} className="align-top">
+                    <td className="px-4 py-4">
+                      <TextInput value={line.detail} onChange={(event) => updateLine(index, { detail: event.target.value })} placeholder="Producto, trabajo o servicio cotizado" />
+                      {(line.meta?.unit || line.meta?.provider || line.meta?.sku || line.meta?.source || line.meta?.spec) && (
+                        <div className="mt-2 grid gap-1 text-xs font-medium text-zinc-500">
+                          {line.meta?.spec && <p>{line.meta.spec}</p>}
+                          <p>
+                            {[
+                              line.meta?.unit ? `Unidad: ${line.meta.unit}` : "",
+                              line.meta?.provider ? `Proveedor: ${line.meta.provider}` : "",
+                              line.meta?.sku ? `SKU: ${line.meta.sku}` : "",
+                              line.meta?.source ? `Base: ${line.meta.source}` : "",
+                            ].filter(Boolean).join(" | ")}
+                          </p>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      <TextInput type="number" min="0" step="0.01" value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} />
+                    </td>
+                    <td className="px-4 py-4">
+                      <TextInput type="number" min="0" step="0.01" value={line.unitPrice} onChange={(event) => updateLine(index, { unitPrice: event.target.value })} />
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <p className="text-base font-semibold text-zinc-950">{money(quoteLineTotal(line))}</p>
+                    </td>
+                    <td className="px-4 py-4 text-right">
+                      <Button variant="danger" onClick={() => removeLine(index)}>Quitar</Button>
+                    </td>
+                  </tr>
+                );
+              })}
               {!lineItems.length && (
                 <tr>
                   <td className="px-4 py-6 text-sm text-zinc-500" colSpan={5}>

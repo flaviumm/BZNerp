@@ -41,6 +41,10 @@ export const laborRates = [
   { id: "electricista-obra", trade: "Electricista obra", agreement: "UOCRA CCT 76/75", category: "Oficial - Lineas e Instalacion", baseHour: 5113, monthlyBonus: 134100, monthlyHours: 176, loadFactor: 0.65, quoteHour: 15800.63 },
   { id: "electricista-obra-especializado", trade: "Electricista obra especializado", agreement: "UOCRA CCT 76/75", category: "Oficial Especializado - Lineas e Instalacion", baseHour: 6279, monthlyBonus: 147000, monthlyHours: 176, loadFactor: 0.65, quoteHour: 19133.72 },
   { id: "ayudante", trade: "Ayudante", agreement: "UOM CCT 260/75", category: "Medio Oficial", baseHour: 4796.27, monthlyBonus: 35000, monthlyHours: 176, loadFactor: 0.65, quoteHour: 13434.41 },
+  { id: "uocra-oficial-especializado-zona-b", trade: "Oficial Especializado (Zona B)", agreement: "UOCRA CCT 76/75", category: "Oficial Especializado - Zona B", baseHour: 6792, quoteHour: 12361.44 },
+  { id: "uocra-oficial-zona-b", trade: "Oficial (Zona B)", agreement: "UOCRA CCT 76/75", category: "Oficial - Zona B", baseHour: 5813, quoteHour: 10579.66 },
+  { id: "uocra-medio-oficial", trade: "Medio Oficial", agreement: "UOCRA CCT 76/75", category: "Medio Oficial", baseHour: 4832, quoteHour: 8794.24 },
+  { id: "uocra-ayudante", trade: "Ayudante UOCRA", agreement: "UOCRA CCT 76/75", category: "Ayudante", baseHour: 4451, quoteHour: 8100.82 },
 ];
 
 export const materialPriceCatalog = [
