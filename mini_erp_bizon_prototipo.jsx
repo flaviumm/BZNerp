@@ -246,8 +246,8 @@ function generateQuotePdf(quote, targetWindow = null) {
       }
     }
 
-    // Subtotal de seccion (sin impuestos)
-    if (section.items.length > 0 && hasSections) {
+    // Subtotal de seccion (solo cuando la sección tiene título explícito)
+    if (section.items.length > 0 && hasSections && section.title !== null) {
       const label = section.title ? `Subtotal — ${section.title}` : "Subtotal";
       tableRows += `
         <tr>
@@ -2060,6 +2060,7 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
   const [lightboxImage, setLightboxImage] = useState(null);
   const [selectedMaterialId, setSelectedMaterialId] = useState("");
   const [materialQuantity, setMaterialQuantity] = useState(1);
+  const [jobTitle, setJobTitle] = useState("");
   const [laborAgreement, setLaborAgreement] = useState("");
   const [selectedLaborId, setSelectedLaborId] = useState(laborRates[0]?.id || "");
   const [laborHours, setLaborHours] = useState(1);
@@ -2108,6 +2109,7 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
   }
 
   function addTitleLine() {
+    if (!titleInput.trim()) return;
     setGeneratedQuote(null);
     setLineItems((items) => [...items, { id: Date.now(), type: "title", detail: titleInput.trim() }]);
     setTitleInput("");
@@ -2115,7 +2117,7 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
 
   function removeLine(index) {
     setGeneratedQuote(null);
-    setLineItems((items) => items.length === 1 ? items : items.filter((_, itemIndex) => itemIndex !== index));
+    setLineItems((items) => items.filter((_, itemIndex) => itemIndex !== index));
   }
 
   function addMaterialLine() {
@@ -2187,7 +2189,7 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
     return {
       number,
       client: clientDetails.name || selectedCompany || "Cliente sin nombre",
-      service: normalizedLines.find((l) => l.type !== "title")?.detail || "Presupuesto",
+      service: jobTitle.trim() || normalizedLines.find((l) => l.type !== "title")?.detail || "Presupuesto",
       subtotal,
       tax,
       total,
@@ -2307,16 +2309,25 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
       </Panel>
 
       <Panel className="p-5 shadow-none">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_max-content] items-end">
-          <Field label="Titulo de seccion">
+        <div className="grid gap-4">
+          <Field label="Nombre del trabajo (aparece en el PDF)">
             <TextInput
-              value={titleInput}
-              onChange={(event) => setTitleInput(event.target.value)}
-              onKeyDown={(event) => { if (event.key === "Enter") addTitleLine(); }}
-              placeholder="Ej. Materiales, Mano de obra, Trabajos de campo..."
+              value={jobTitle}
+              onChange={(event) => { setGeneratedQuote(null); setJobTitle(event.target.value); }}
+              placeholder="Ej. Estructura metalica para nave industrial"
             />
           </Field>
-          <Button variant="ghost" onClick={addTitleLine}>Agregar titulo</Button>
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_max-content] items-end">
+            <Field label="Titulo de seccion">
+              <TextInput
+                value={titleInput}
+                onChange={(event) => setTitleInput(event.target.value)}
+                onKeyDown={(event) => { if (event.key === "Enter") addTitleLine(); }}
+                placeholder="Ej. Materiales, Mano de obra, Trabajos de campo..."
+              />
+            </Field>
+            <Button variant="ghost" onClick={addTitleLine}>Agregar titulo</Button>
+          </div>
         </div>
       </Panel>
 
@@ -2415,12 +2426,10 @@ function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, 
               <Button onClick={addLaborLine} disabled={!selectedLabor}>Agregar horas</Button>
             </div>
             <Field label="Descripcion del trabajo cotizado">
-              <textarea
+              <TextArea
                 value={laborDescription}
                 onChange={(event) => setLaborDescription(event.target.value)}
                 placeholder="Ej. Soldadura de estructura metalica, corte y preparacion de materiales..."
-                rows={2}
-                className="w-full rounded-lg border border-[#ececf0] bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-300 resize-none"
               />
             </Field>
             {selectedLabor && (
