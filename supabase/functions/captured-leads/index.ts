@@ -109,7 +109,8 @@ Deno.serve(async (request) => {
 
       if (request.method === 'PATCH') {
         const body = await request.json();
-        const { data, error } = await adminClient.from('captured_leads').update(body).eq('id', id).eq('organization_id', organizationId).select('*').single();
+        const { organization_id: _ignoredOrgId, id: _ignoredId, ...safeUpdate } = body;
+        const { data, error } = await adminClient.from('captured_leads').update(safeUpdate).eq('id', id).eq('organization_id', organizationId).select('*').single();
         if (error) return json({ error: error.message }, 400);
         return json({ lead: data });
       }
@@ -197,6 +198,14 @@ Deno.serve(async (request) => {
         }
 
         if (action === 'create-followup') {
+          const { data: ownedLead, error: ownedLeadError } = await adminClient
+            .from('captured_leads')
+            .select('id')
+            .eq('id', id)
+            .eq('organization_id', organizationId)
+            .single();
+          if (ownedLeadError || !ownedLead) return json({ error: 'Lead no encontrado' }, 404);
+
           // create a lead_tasks entry
           const task = {
             organization_id: organizationId,
@@ -213,6 +222,14 @@ Deno.serve(async (request) => {
         }
 
         if (action === 'log-interaction') {
+          const { data: ownedLead, error: ownedLeadError } = await adminClient
+            .from('captured_leads')
+            .select('id')
+            .eq('id', id)
+            .eq('organization_id', organizationId)
+            .single();
+          if (ownedLeadError || !ownedLead) return json({ error: 'Lead no encontrado' }, 404);
+
           const interaction = {
             organization_id: organizationId,
             lead_id: id,
