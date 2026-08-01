@@ -127,3 +127,27 @@ export async function createUserAccount({ fullName, email, password, role, statu
   if (data?.error) throw new Error(data.error);
   return data.user;
 }
+
+export async function listOrganizations() {
+  if (!isDatabaseConfigured) return [];
+
+  const { data, error } = await supabase
+    .from("organizations")
+    .select("id, name, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data.map((org) => ({ id: org.id, name: org.name, createdAt: org.created_at }));
+}
+
+export async function createOrganization({ organizationName, email, password, fullName }) {
+  if (!isDatabaseConfigured) return null;
+
+  const { data, error } = await supabase.functions.invoke("create-organization", {
+    body: { organizationName, email, password, fullName },
+  });
+
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return { organization: data.organization, user: data.user };
+}
