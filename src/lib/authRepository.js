@@ -11,7 +11,8 @@ export async function getInitialSession() {
 export function listenAuthChanges(callback) {
   if (!isDatabaseConfigured) return () => {};
 
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    console.log("[auth] event:", event, "session:", session ? session.user?.email : null);
     callback(session);
   });
 
@@ -58,20 +59,25 @@ function mapProfile(profile) {
   };
 }
 
-export async function getCurrentProfile() {
+export async function getCurrentProfile(userId) {
   if (!isDatabaseConfigured) return { fullName: "Modo demo", role: "admin", status: "active", menuKeys: null };
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
-  if (!userData.user) return null;
+  let id = userId;
+  if (!id) {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError) throw userError;
+    if (!userData.user) return null;
+    id = userData.user.id;
+  }
 
   const { data, error } = await supabase
     .from("profiles")
     .select("id, full_name, role, status, company_name, menu_keys")
-    .eq("id", userData.user.id)
-    .single();
+    .eq("id", id)
+    .maybeSingle();
 
   if (error) throw error;
+  if (!data) return null; // No existe perfil para este usuario (no usar .single() para evitar 406)
   return mapProfile(data);
 }
 
