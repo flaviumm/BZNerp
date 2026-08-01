@@ -5,28 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const roles = new Set(["admin", "direccion", "ventas", "operaciones", "compras", "finanzas", "rrhh", "cliente"]);
-const statuses = new Set(["pending", "active", "suspended"]);
-const screenKeys = new Set([
-  "dashboard",
-  "clientes",
-  "crm",
-  "importar",
-  "presupuestos",
-  "cotizador",
-  "ot",
-  "inventario",
-  "compras",
-  "finanzas",
-  "rrhh",
-  "tareas",
-  "calendario",
-  "documentos",
-  "auditoria",
-  "usuarios",
-  "reportes",
-]);
-
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -59,32 +37,35 @@ Deno.serve(async (request) => {
 
     const { data: callerProfile, error: profileError } = await adminClient
       .from("profiles")
-      .select("role, status, organization_id")
+      .select("is_super_admin")
       .eq("id", callerData.user.id)
       .single();
 
-    if (
-      profileError ||
-      callerProfile?.role !== "admin" ||
-      callerProfile?.status !== "active" ||
-      !callerProfile?.organization_id
-    ) {
-      return json({ error: "Solo un administrador activo de una organizacion puede crear usuarios." }, 403);
+    if (profileError || !callerProfile?.is_super_admin) {
+      return json({ error: "Solo un super-admin puede crear organizaciones." }, 403);
     }
 
     const body = await request.json();
+    const organizationName = String(body.organizationName || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
     const fullName = String(body.fullName || email).trim();
-    const role = roles.has(body.role) ? body.role : "ventas";
-    const status = statuses.has(body.status) ? body.status : "pending";
-    const companyName = String(body.companyName || "").trim() || null;
-    const menuKeys = Array.isArray(body.menuKeys)
-      ? body.menuKeys.filter((key: unknown) => screenKeys.has(String(key))).map(String)
-      : [];
 
+    if (!organizationName) {
+      return json({ error: "El nombre de la organizacion es obligatorio." }, 400);
+    }
     if (!email || !password || password.length < 6) {
       return json({ error: "Email y password de al menos 6 caracteres son obligatorios." }, 400);
+    }
+
+    const { data: organization, error: organizationError } = await adminClient
+      .from("organizations")
+      .insert({ name: organizationName })
+      .select("id, name, created_at")
+      .single();
+
+    if (organizationError) {
+      return json({ error: organizationError.message }, 400);
     }
 
     const { data: created, error: createError } = await adminClient.auth.admin.createUser({
@@ -101,18 +82,10 @@ Deno.serve(async (request) => {
     const { data: profile, error: upsertError } = await adminClient
       .from("profiles")
       .upsert(
-        {
-          id: created.user.id,
-          full_name: fullName,
-          role,
-          status,
-          company_name: companyName,
-          menu_keys: menuKeys.length ? menuKeys : null,
-          organization_id: callerProfile.organization_id,
-        },
+        { id: created.user.id, full_name: fullName, role: "admin", status: "active", organization_id: organization.id },
         { onConflict: "id" }
       )
-      .select("id, full_name, role, status, company_name, menu_keys, organization_id, created_at")
+      .select("id, full_name, role, status, organization_id, created_at")
       .single();
 
     if (upsertError) {
@@ -120,19 +93,18 @@ Deno.serve(async (request) => {
     }
 
     return json({
+      organization,
       user: {
         id: profile.id,
         fullName: profile.full_name,
         role: profile.role,
         status: profile.status,
-        companyName: profile.company_name || "",
-        menuKeys: Array.isArray(profile.menu_keys) ? profile.menu_keys : null,
         organizationId: profile.organization_id,
         createdAt: profile.created_at,
       },
     });
   } catch (error) {
-    return json({ error: error.message || "No se pudo crear el usuario." }, 500);
+    return json({ error: error.message || "No se pudo crear la organizacion." }, 500);
   }
 });
 
