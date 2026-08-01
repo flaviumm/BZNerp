@@ -63,47 +63,56 @@ async function cleanup(ids) {
 }
 
 async function main() {
-  const orgA = await createTestOrgAndAdmin("A");
-  const orgB = await createTestOrgAndAdmin("B");
+  const organizationIds = [];
+  const userIds = [];
 
-  const { data: companyA, error: companyAError } = await orgA.userClient
-    .from("companies")
-    .insert({ name: `Cliente Org A ${Date.now()}` })
-    .select("id, organization_id")
-    .single();
-  assertTrue(!companyAError, `org A admin can create a company (error: ${companyAError?.message})`);
-  assertTrue(companyA?.organization_id === orgA.organization.id, "created company is auto-stamped with org A's organization_id");
+  try {
+    const orgA = await createTestOrgAndAdmin("A");
+    organizationIds.push(orgA.organization.id);
+    userIds.push(orgA.userId);
 
-  const { data: crossReadAttempt, error: crossReadError } = await orgB.userClient
-    .from("companies")
-    .select("id")
-    .eq("id", companyA.id);
-  assertTrue(!crossReadError, `org B querying org A's company id does not error (error: ${crossReadError?.message})`);
-  assertTrue((crossReadAttempt || []).length === 0, "org B cannot read org A's company (RLS filters it out)");
+    const orgB = await createTestOrgAndAdmin("B");
+    organizationIds.push(orgB.organization.id);
+    userIds.push(orgB.userId);
 
-  const { data: ownReadAttempt, error: ownReadError } = await orgA.userClient
-    .from("companies")
-    .select("id")
-    .eq("id", companyA.id);
-  assertTrue(!ownReadError && (ownReadAttempt || []).length === 1, "org A can read its own company");
+    const { data: companyA, error: companyAError } = await orgA.userClient
+      .from("companies")
+      .insert({ name: `Cliente Org A ${Date.now()}` })
+      .select("id, organization_id")
+      .single();
+    assertTrue(!companyAError, `org A admin can create a company (error: ${companyAError?.message})`);
+    assertTrue(companyA?.organization_id === orgA.organization.id, "created company is auto-stamped with org A's organization_id");
 
-  const { error: superAdminPromoteError } = await adminClient
-    .from("profiles")
-    .update({ is_super_admin: true })
-    .eq("id", orgA.userId);
-  assertTrue(!superAdminPromoteError, `promoting org A's user to super_admin for the next check (error: ${superAdminPromoteError?.message})`);
+    const { data: crossReadAttempt, error: crossReadError } = await orgB.userClient
+      .from("companies")
+      .select("id")
+      .eq("id", companyA?.id ?? null);
+    assertTrue(!crossReadError, `org B querying org A's company id does not error (error: ${crossReadError?.message})`);
+    assertTrue((crossReadAttempt || []).length === 0, "org B cannot read org A's company (RLS filters it out)");
 
-  const superAdminSession = await orgA.userClient.auth.refreshSession();
-  const { data: superAdminRead, error: superAdminReadError } = await orgA.userClient
-    .from("companies")
-    .select("id")
-    .eq("id", companyA.id);
-  assertTrue(!superAdminReadError && (superAdminRead || []).length === 1, "super-admin can still read org A's company after promotion");
+    const { data: ownReadAttempt, error: ownReadError } = await orgA.userClient
+      .from("companies")
+      .select("id")
+      .eq("id", companyA?.id ?? null);
+    assertTrue(!ownReadError && (ownReadAttempt || []).length === 1, "org A can read its own company");
 
-  await cleanup({
-    organizationIds: [orgA.organization.id, orgB.organization.id],
-    userIds: [orgA.userId, orgB.userId],
-  });
+    const { error: superAdminPromoteError } = await adminClient
+      .from("profiles")
+      .update({ is_super_admin: true })
+      .eq("id", orgA.userId);
+    assertTrue(!superAdminPromoteError, `promoting org A's user to super_admin for the next check (error: ${superAdminPromoteError?.message})`);
+
+    await orgA.userClient.auth.refreshSession();
+    const { data: superAdminRead, error: superAdminReadError } = await orgA.userClient
+      .from("companies")
+      .select("id")
+      .eq("id", companyA?.id ?? null);
+    assertTrue(!superAdminReadError && (superAdminRead || []).length === 1, "super-admin can still read org A's company after promotion");
+  } finally {
+    if (organizationIds.length || userIds.length) {
+      await cleanup({ organizationIds, userIds });
+    }
+  }
 
   if (failures > 0) {
     console.error(`\n${failures} isolation check(s) failed.`);
