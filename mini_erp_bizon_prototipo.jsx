@@ -100,6 +100,7 @@ const screens = [
   { key: "auditoria", label: "Auditoria", icon: "activity", roles: ["admin", "direccion"] },
   { key: "usuarios", label: "Usuarios", icon: "userCog", roles: ["admin"] },
   { key: "reportes", label: "Reportes", icon: "chart", roles: ["admin", "direccion"] },
+  { key: "organizaciones", label: "Organizaciones", icon: "building", roles: [] },
 ];
 
 const menuSections = [
@@ -526,6 +527,7 @@ function MenuGlyph({ name }) {
     chart: <><path d="M4 19V5M4 19h17" /><path d="M8 16v-5M13 16V8M18 16v-8" /></>,
     upload: <><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" /></>,
     map: <><polygon points="3,6 9,3 15,6 21,3 21,18 15,21 9,18 3,21" /><line x1="9" y1="3" x2="9" y2="18" /><line x1="15" y1="6" x2="15" y2="21" /></>,
+    building: <><rect x="4" y="3" width="16" height="18" rx="1" /><path d="M9 8h.01M9 12h.01M9 16h.01M15 8h.01M15 12h.01M15 16h.01" /></>,
   };
 
   return <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" {...common}>{paths[name] || paths.layout}</svg>;
@@ -598,6 +600,7 @@ function TextArea(props) {
 
 function canAccessScreen(screen, profileOrRole) {
   const profile = typeof profileOrRole === "string" ? { role: profileOrRole, menuKeys: null } : profileOrRole || {};
+  if (screen.key === "organizaciones") return Boolean(profile.isSuperAdmin);
   const roleAllowed = screen.roles.includes(profile.role || "ventas");
   if (!roleAllowed) return false;
   if (Array.isArray(profile.menuKeys) && profile.menuKeys.length) return profile.menuKeys.includes(screen.key);
@@ -778,7 +781,7 @@ function Header({ activeLabel, databaseStatus, profile }) {
   );
 }
 
-function Sidebar({ active, setActive, availableScreens, databaseStatus, collapsed, onToggleCollapsed, onNew, onExportBackup, onResetLocal, onSignOut }) {
+function Sidebar({ active, setActive, availableScreens, menuSections, databaseStatus, collapsed, onToggleCollapsed, onNew, onExportBackup, onResetLocal, onSignOut }) {
   const allowedKeys = new Set(availableScreens.map((item) => item.key));
   const hasDatabaseError = databaseStatus === "Error de base";
 
