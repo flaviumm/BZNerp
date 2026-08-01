@@ -22,9 +22,19 @@ Deno.serve(async (request) => {
     const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } } });
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // basic auth: verify user exists
     const { data: callerData, error: callerError } = await userClient.auth.getUser(token);
     if (callerError || !callerData.user) return json({ error: "Sesion invalida." }, 401);
+
+    const { data: callerProfile, error: profileError } = await adminClient
+      .from("profiles")
+      .select("organization_id")
+      .eq("id", callerData.user.id)
+      .single();
+
+    if (profileError || !callerProfile?.organization_id) {
+      return json({ error: "Usuario sin organizacion asignada." }, 403);
+    }
+    const organizationId = callerProfile.organization_id;
 
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/$/, "");
@@ -37,6 +47,7 @@ Deno.serve(async (request) => {
       const body = await request.json();
       // expected: { source, image_url, raw_text, extracted_data }
       const insert = {
+        organization_id: organizationId,
         source: body.source || 'web',
         image_url: body.image_url || null,
         raw_text: body.raw_text || null,
@@ -71,7 +82,11 @@ Deno.serve(async (request) => {
     if (request.method === "GET" && parts.slice(-1)[0] === "captured-leads") {
       // support CSV export via ?format=csv
       const format = url.searchParams.get('format');
-      const { data, error } = await adminClient.from('captured_leads').select('*').order('created_at', { ascending: false });
+      const { data, error } = await adminClient
+        .from('captured_leads')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false });
       if (error) return json({ error: error.message }, 400);
       if (format === 'csv') {
         const rows = data || [];
@@ -87,20 +102,20 @@ Deno.serve(async (request) => {
     if (idIndex >= 0 && parts.length > idIndex + 1) {
       const id = parts[idIndex + 1];
       if (request.method === 'GET') {
-        const { data, error } = await adminClient.from('captured_leads').select('*').eq('id', id).single();
+        const { data, error } = await adminClient.from('captured_leads').select('*').eq('id', id).eq('organization_id', organizationId).single();
         if (error) return json({ error: error.message }, 404);
         return json({ lead: data });
       }
 
       if (request.method === 'PATCH') {
         const body = await request.json();
-        const { data, error } = await adminClient.from('captured_leads').update(body).eq('id', id).select('*').single();
+        const { data, error } = await adminClient.from('captured_leads').update(body).eq('id', id).eq('organization_id', organizationId).select('*').single();
         if (error) return json({ error: error.message }, 400);
         return json({ lead: data });
       }
 
       if (request.method === 'DELETE') {
-        const { error } = await adminClient.from('captured_leads').delete().eq('id', id);
+        const { error } = await adminClient.from('captured_leads').delete().eq('id', id).eq('organization_id', organizationId);
         if (error) return json({ error: error.message }, 400);
         return json({ success: true });
       }
@@ -116,7 +131,7 @@ Deno.serve(async (request) => {
           try {
             if (!raw) {
               // prefer image_url from lead record
-              const { data: leadRec } = await adminClient.from('captured_leads').select('image_url').eq('id', id).single();
+              const { data: leadRec } = await adminClient.from('captured_leads').select('image_url').eq('id', id).eq('organization_id', organizationId).single();
               const imageUrl = leadRec?.image_url || body.image_url || null;
               if (imageUrl && ocrApiKey) {
                 raw = await performOcrWithOcrSpace(imageUrl, ocrApiKey);
@@ -133,6 +148,7 @@ Deno.serve(async (request) => {
             .from('captured_leads')
             .update({ raw_text: raw, extracted_data: extracted, company_name: extracted?.company_name || null, contact_name: extracted?.contact_name || null, phone: extracted?.phone || null, email: extracted?.email || null, website: extracted?.website || null, status: 'analizado' })
             .eq('id', id)
+            .eq('organization_id', organizationId)
             .select('*')
             .single();
           if (error) return json({ error: error.message }, 400);
@@ -142,21 +158,21 @@ Deno.serve(async (request) => {
         if (action === 'research') {
           // stub: mark pending investigation and attach research results
           const research = body.research || { notes: 'Pendiente: implementar agente OpenClaw/LLM' };
-          const { data, error } = await adminClient.from('captured_leads').update({ extracted_data: research, status: 'investigado' }).eq('id', id).select('*').single();
+          const { data, error } = await adminClient.from('captured_leads').update({ extracted_data: research, status: 'investigado' }).eq('id', id).eq('organization_id', organizationId).select('*').single();
           if (error) return json({ error: error.message }, 400);
           return json({ lead: data });
         }
 
         if (action === 'generate-email') {
           // simple template generator
-          const { lead } = await adminClient.from('captured_leads').select('*').eq('id', id).single();
+          const { data: lead } = await adminClient.from('captured_leads').select('*').eq('id', id).eq('organization_id', organizationId).single();
           const subject = `Contacto desde cartel - ${lead.company_name || lead.project_name || 'Nuevo Lead'}`;
           const bodyText = `Hola ${lead.contact_name || ''},\n\nMe contacto desde Bizon respecto a ${lead.project_name || lead.company_name || 'su proyecto'}. Nos dedicamos a: ${Array.isArray(lead.services_match) ? lead.services_match.join(', ') : 'servicios industriales'}.\n\nQuedo a disposición para coordinar una visita o llamada.\n\nSaludos.`;
           return json({ subject, body: bodyText });
         }
 
         if (action === 'generate-whatsapp') {
-          const { lead } = await adminClient.from('captured_leads').select('*').eq('id', id).single();
+          const { data: lead } = await adminClient.from('captured_leads').select('*').eq('id', id).eq('organization_id', organizationId).single();
           const message = `Hola ${lead.contact_name || ''}, soy de Bizon. Vi su cartel en ${lead.project_name || lead.company_name || 'obra'} y quería coordinar una breve llamada. ¿Le viene bien mañana?`;
           return json({ message });
         }
@@ -166,7 +182,7 @@ Deno.serve(async (request) => {
           const fakeClientId = body.client_id || null;
           const updates: any = { status: 'ganado' };
           if (fakeClientId) updates.crm_client_id = fakeClientId;
-          const { data, error } = await adminClient.from('captured_leads').update(updates).eq('id', id).select('*').single();
+          const { data, error } = await adminClient.from('captured_leads').update(updates).eq('id', id).eq('organization_id', organizationId).select('*').single();
           if (error) return json({ error: error.message }, 400);
           return json({ lead: data });
         }
@@ -175,7 +191,7 @@ Deno.serve(async (request) => {
           const fakeOppId = body.opportunity_id || null;
           const updates: any = { status: 'presupuesto_enviado' };
           if (fakeOppId) updates.crm_opportunity_id = fakeOppId;
-          const { data, error } = await adminClient.from('captured_leads').update(updates).eq('id', id).select('*').single();
+          const { data, error } = await adminClient.from('captured_leads').update(updates).eq('id', id).eq('organization_id', organizationId).select('*').single();
           if (error) return json({ error: error.message }, 400);
           return json({ lead: data });
         }
@@ -183,6 +199,7 @@ Deno.serve(async (request) => {
         if (action === 'create-followup') {
           // create a lead_tasks entry
           const task = {
+            organization_id: organizationId,
             lead_id: id,
             title: body.title || 'Seguimiento',
             description: body.description || null,
@@ -197,6 +214,7 @@ Deno.serve(async (request) => {
 
         if (action === 'log-interaction') {
           const interaction = {
+            organization_id: organizationId,
             lead_id: id,
             channel: body.channel || null,
             action_type: body.action_type || null,
@@ -213,7 +231,7 @@ Deno.serve(async (request) => {
         }
 
         if (action === 'find-duplicates') {
-          const { data: lead, error: leadError } = await adminClient.from('captured_leads').select('*').eq('id', id).single();
+          const { data: lead, error: leadError } = await adminClient.from('captured_leads').select('*').eq('id', id).eq('organization_id', organizationId).single();
           if (leadError || !lead) return json({ error: leadError?.message || 'Lead no encontrado' }, 404);
 
           const companyName = normalizeText(body.company_name || lead.company_name || lead.project_name || '');
@@ -228,7 +246,7 @@ Deno.serve(async (request) => {
           if (companyName) leadFilters.push(`company_name.ilike.*${companyName}*`);
 
           const duplicateLeads = leadFilters.length
-            ? await fetchDuplicateCapturedLeads(adminClient, id, leadFilters)
+            ? await fetchDuplicateCapturedLeads(adminClient, id, organizationId, leadFilters)
             : [];
 
           const companyFilters = [];
@@ -238,7 +256,7 @@ Deno.serve(async (request) => {
           if (phone) companyFilters.push(`contacts.ilike.*${phone}*`);
 
           const duplicateCompanies = companyFilters.length
-            ? await fetchDuplicateCompanies(adminClient, companyFilters)
+            ? await fetchDuplicateCompanies(adminClient, organizationId, companyFilters)
             : [];
 
           return json({ duplicates: { leads: duplicateLeads, companies: duplicateCompanies } });
@@ -247,7 +265,7 @@ Deno.serve(async (request) => {
         if (action === 'link-existing-client') {
           const clientId = body.client_id;
           if (!clientId) return json({ error: 'client_id es requerido.' }, 400);
-          const { data, error } = await adminClient.from('captured_leads').update({ crm_client_id: clientId, status: 'contacto_preparado', notes: `Vinculado con cliente existente ${clientId}` }).eq('id', id).select('*').single();
+          const { data, error } = await adminClient.from('captured_leads').update({ crm_client_id: clientId, status: 'contacto_preparado', notes: `Vinculado con cliente existente ${clientId}` }).eq('id', id).eq('organization_id', organizationId).select('*').single();
           if (error) return json({ error: error.message }, 400);
           return json({ lead: data });
         }
@@ -255,7 +273,7 @@ Deno.serve(async (request) => {
         if (action === 'link-existing-lead') {
           const duplicateLeadId = body.duplicate_lead_id;
           if (!duplicateLeadId) return json({ error: 'duplicate_lead_id es requerido.' }, 400);
-          const { data, error } = await adminClient.from('captured_leads').update({ status: 'descartado', notes: `Duplicado de lead ${duplicateLeadId}` }).eq('id', id).select('*').single();
+          const { data, error } = await adminClient.from('captured_leads').update({ status: 'descartado', notes: `Duplicado de lead ${duplicateLeadId}` }).eq('id', id).eq('organization_id', organizationId).select('*').single();
           if (error) return json({ error: error.message }, 400);
           return json({ lead: data });
         }
@@ -296,23 +314,23 @@ async function performOcrWithOcrSpace(imageUrl, apiKey) {
 }
 
 function normalizeText(value) {
-  return String(value || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return String(value || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
 function normalizePhone(value) {
   return String(value || '').replace(/[^\d+]/g, '');
 }
 
-async function fetchDuplicateCapturedLeads(adminClient, currentId, filters) {
-  const query = adminClient.from('captured_leads').select('*').neq('id', currentId);
+async function fetchDuplicateCapturedLeads(adminClient, currentId, organizationId, filters) {
+  const query = adminClient.from('captured_leads').select('*').eq('organization_id', organizationId).neq('id', currentId);
   filters.forEach((filter) => query.or(filter));
   const { data, error } = await query.limit(10);
   if (error) return [];
   return data;
 }
 
-async function fetchDuplicateCompanies(adminClient, filters) {
-  const query = adminClient.from('companies').select('*');
+async function fetchDuplicateCompanies(adminClient, organizationId, filters) {
+  const query = adminClient.from('companies').select('*').eq('organization_id', organizationId);
   filters.forEach((filter) => query.or(filter));
   const { data, error } = await query.limit(10);
   if (error) return [];
@@ -332,17 +350,5 @@ function parseExtractedData(text) {
   const webMatch = text.match(/(https?:\/\/)?([\w.-]+\.[A-Za-z]{2,})(\/\S*)?/);
   if (webMatch) extracted.website = webMatch[0];
   // company: heuristics: first non-generic line with words
-  for (const line of lines.slice(0, 6)) {
-    if (line.length > 3 && !/\b(obra|tel|www|http|http:|email|correo)\b/i.test(line)) {
-      extracted.company_name = extracted.company_name || line;
-    }
-  }
-  // contact name: look for 'Contacto:' or 'Sr.' etc
-  const contactLine = lines.find((l) => /contacto|sr\.|sra\.|srta\.|nombre[:\-]/i.test(l));
-  if (contactLine) {
-    const parts = contactLine.split(/[:\-]/).slice(-1)[0].trim();
-    extracted.contact_name = parts;
-  }
-
   return extracted;
 }
