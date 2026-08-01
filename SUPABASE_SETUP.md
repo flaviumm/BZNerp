@@ -121,3 +121,37 @@ vercel --prod
 - No subir `.env.local`.
 - No usar `SUPABASE_SERVICE_ROLE_KEY` en Vercel frontend.
 - El modo demo esta bloqueado por defecto en produccion si faltan las variables de Supabase.
+
+## 8. Multiempresa: crear el primer super-admin
+
+El sistema es multiempresa: cada organizacion tiene sus datos aislados. Un
+super-admin (vos) crea cada organizacion nueva y su primer usuario admin
+invocando la funcion `create-organization`.
+
+1. Crear un usuario normal desde `Crear usuario` en el ERP (o via
+   `admin-create-user` si ya existe una organizacion).
+2. Promoverlo a super-admin en Supabase:
+
+```sql
+update profiles
+set is_super_admin = true
+where full_name = 'NOMBRE DEL SUPER-ADMIN'
+   or id = 'UUID_DEL_USUARIO';
+```
+
+3. Ese usuario ya puede llamar a `create-organization` con su token de sesion
+   para dar de alta empresas nuevas (nombre de la empresa + datos del primer
+   admin de esa empresa):
+
+```bash
+curl -X POST "https://<project-ref>.supabase.co/functions/v1/create-organization" \
+  -H "Authorization: Bearer <token-del-super-admin>" \
+  -H "Content-Type: application/json" \
+  -d '{"organizationName":"Nombre Empresa Cliente","email":"admin@empresa.com","password":"password-temporal","fullName":"Nombre Admin"}'
+```
+
+Verificar organizaciones existentes:
+
+```sql
+select id, name, created_at from organizations order by created_at desc;
+```
