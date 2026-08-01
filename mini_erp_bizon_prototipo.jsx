@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
+import CaptadorLeads from "./src/components/CaptadorLeads";
 import { deleteErpRecord, isDatabaseConfigured, loadErpData, logAuditEvent, nextDocumentNumber, saveErpRecord, shouldBlockUnconfiguredDatabase, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
 import { createUserAccount, getCurrentProfile, getInitialSession, listenAuthChanges, listUserProfiles, signInWithEmail, signOutUser, signUpWithEmail, updateUserProfile } from "./src/lib/authRepository";
 import { laborRates, materialPriceCatalog, quoteParameters } from "./src/lib/pricingData";
@@ -84,6 +85,7 @@ const screens = [
   { key: "clientes", label: "Clientes", icon: "briefcase", roles: ["admin", "direccion", "ventas"] },
   { key: "crm", label: "CRM", icon: "pipeline", roles: ["admin", "direccion", "ventas"] },
   { key: "importar", label: "Importar leads", icon: "upload", roles: ["admin", "direccion", "ventas"] },
+  { key: "captador_leads", label: "Captador de Leads", icon: "camera", roles: ["admin", "direccion", "ventas"] },
   { key: "presupuestos", label: "Presupuestos", icon: "file", roles: ["admin", "direccion", "ventas", "finanzas", "cliente"] },
   { key: "cotizador", label: "Cotizador", icon: "chart", roles: ["admin", "direccion", "ventas", "finanzas"] },
   { key: "ventas", label: "Proceso ventas", icon: "map", roles: ["admin", "direccion", "ventas"] },
@@ -101,7 +103,7 @@ const screens = [
 ];
 
 const menuSections = [
-  { title: "Gestion comercial", keys: ["dashboard", "clientes", "crm", "importar", "presupuestos", "cotizador", "ventas"] },
+  { title: "Gestion comercial", keys: ["dashboard", "clientes", "crm", "importar", "captador_leads", "presupuestos", "cotizador", "ventas"] },
   { title: "Operacion", keys: ["ot", "inventario", "compras", "finanzas", "rrhh"] },
   { title: "Control", keys: ["tareas", "calendario", "documentos", "auditoria", "usuarios", "reportes"] },
 ];
@@ -3925,7 +3927,7 @@ export default function MiniErpBizonPrototype() {
         if (cancelled) return;
         setSession(initialSession);
         if (initialSession) {
-          const currentProfile = await withTimeout(getCurrentProfile(), 8000, "La carga del perfil");
+          const currentProfile = await withTimeout(getCurrentProfile(initialSession.user?.id), 8000, "La carga del perfil");
           if (!cancelled) setProfile(currentProfile);
         }
       } catch (error) {
@@ -3937,18 +3939,25 @@ export default function MiniErpBizonPrototype() {
     }
 
     bootAuth();
-    const stopListening = listenAuthChanges(async (nextSession) => {
+    const stopListening = listenAuthChanges((nextSession) => {
       setSession(nextSession);
       if (!nextSession) {
         setProfile(null);
         return;
       }
-      try {
-        setProfile(await withTimeout(getCurrentProfile(), 8000, "La carga del perfil"));
-      } catch (error) {
-        console.error("No se pudo cargar el perfil:", error);
-        setDatabaseStatus("Error de base");
-      }
+      // Diferir fuera del callback: Supabase mantiene un lock de auth mientras
+      // dispara onAuthStateChange y llamar getCurrentProfile() (que usa la auth)
+      // de forma sincronica produce un deadlock que termina cerrando la sesion.
+      setTimeout(async () => {
+        if (cancelled) return;
+        try {
+          const currentProfile = await withTimeout(getCurrentProfile(nextSession.user?.id), 8000, "La carga del perfil");
+          if (!cancelled) setProfile(currentProfile);
+        } catch (error) {
+          console.error("No se pudo cargar el perfil:", error);
+          if (!cancelled) setDatabaseStatus("Error de base");
+        }
+      }, 0);
     });
 
     return () => {
@@ -4305,7 +4314,7 @@ export default function MiniErpBizonPrototype() {
     };
 
     if (isDatabaseConfigured) {
-      const saved = await uploadDocumentFile(file, baseRecord);
+      const saved = await uploadDocumentFile(file, baseRecord, profile?.organizationId);
       const record = saved || baseRecord;
       setDocuments((items) => [...items, record]);
       audit("upload", "documents", record, `Documento cargado: ${record.name}`);
@@ -4489,6 +4498,7 @@ export default function MiniErpBizonPrototype() {
     clientes: <ClientesCards {...screenProps} />,
     crm: <CRMCanvas {...screenProps} />,
     importar: <ImportarLeads {...screenProps} />,
+    captador_leads: <CaptadorLeads {...screenProps} />, 
     presupuestos: <Presupuestos {...screenProps} />,
     cotizador: <Cotizador {...screenProps} />,
     ventas: <ProcesoVentas />,
