@@ -55,6 +55,8 @@ function mapProfile(profile) {
     status: profile.status || "pending",
     companyName: profile.company_name || "",
     menuKeys: Array.isArray(profile.menu_keys) ? profile.menu_keys : null,
+    organizationId: profile.organization_id || null,
+    isSuperAdmin: Boolean(profile.is_super_admin),
     createdAt: profile.created_at,
   };
 }
@@ -72,7 +74,7 @@ export async function getCurrentProfile(userId) {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, status, company_name, menu_keys")
+    .select("id, full_name, role, status, company_name, menu_keys, organization_id, is_super_admin")
     .eq("id", id)
     .maybeSingle();
 
@@ -86,7 +88,7 @@ export async function listUserProfiles() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, status, company_name, menu_keys, created_at")
+    .select("id, full_name, role, status, company_name, menu_keys, organization_id, is_super_admin, created_at")
     .order("created_at", { ascending: false });
 
   if (error) throw error;

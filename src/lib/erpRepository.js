@@ -304,11 +304,12 @@ export async function nextDocumentNumber(counterCode) {
   return data;
 }
 
-export async function uploadDocumentFile(file, metadata) {
+export async function uploadDocumentFile(file, metadata, organizationId) {
   if (!isDatabaseConfigured) return null;
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const folder = `${metadata.relatedType || "General"}/${metadata.relatedNumber || "sin-numero"}`;
+  const orgFolder = organizationId || "sin-organizacion";
+  const folder = `${orgFolder}/${metadata.relatedType || "General"}/${metadata.relatedNumber || "sin-numero"}`;
   const storagePath = `${folder}/${Date.now()}-${safeName}`;
 
   const { error: uploadError } = await supabase.storage.from("erp-documents").upload(storagePath, file, {

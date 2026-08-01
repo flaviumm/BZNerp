@@ -4314,7 +4314,7 @@ export default function MiniErpBizonPrototype() {
     };
 
     if (isDatabaseConfigured) {
-      const saved = await uploadDocumentFile(file, baseRecord);
+      const saved = await uploadDocumentFile(file, baseRecord, profile?.organizationId);
       const record = saved || baseRecord;
       setDocuments((items) => [...items, record]);
       audit("upload", "documents", record, `Documento cargado: ${record.name}`);
