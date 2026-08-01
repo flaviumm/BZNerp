@@ -103,6 +103,41 @@ with check (
   )
 );
 
+-- profiles_update_admin is row-scoped only (RLS has no column granularity),
+-- and is_super_admin/organization_id are now privilege-bearing columns on
+-- this same table. Without this guard, any org admin could PATCH their own
+-- profile to set is_super_admin=true (the WITH CHECK above would even pass,
+-- since is_super_admin() short-circuits to true for the row being written)
+-- and escalate to reading/writing every other organization's data.
+create or replace function public.guard_profile_privileges()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- auth.uid() is null for service-role/direct-SQL connections (the
+  -- create-organization/admin-create-user edge functions, and the one-time
+  -- super-admin bootstrap in SUPABASE_SETUP.md) — always allow those. Only
+  -- an authenticated end-user session (auth.uid() present) that is not
+  -- already a super-admin is blocked from touching these two columns.
+  if auth.uid() is not null
+     and not public.is_super_admin()
+     and (
+       new.is_super_admin is distinct from old.is_super_admin
+       or new.organization_id is distinct from old.organization_id
+     ) then
+    raise exception 'No autorizado a modificar privilegios de plataforma';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists guard_profile_privileges on public.profiles;
+create trigger guard_profile_privileges
+before update on public.profiles
+for each row execute function public.guard_profile_privileges();
+
 -- 4. companies
 alter table companies add column if not exists organization_id uuid references organizations(id);
 drop trigger if exists set_org_companies on companies;
@@ -449,6 +484,32 @@ delete from document_counters;
 alter table document_counters add constraint document_counters_pkey primary key (organization_id, code);
 alter table document_counters alter column organization_id set not null;
 
+-- 19. Clean up unscoped seed/demo rows.
+-- The initial seed migration (20260507133100_seed_initial_erp_data.sql) inserts
+-- demo rows into these tables before organization_id existed. Left alone, those
+-- rows would get organization_id = NULL: invisible to every tenant (fails safe,
+-- per the trigger in step 2/18), but still visible to every super-admin via the
+-- is_super_admin() bypass — polluting the platform operator's view with fake
+-- "Bizon" demo data attributed to no tenant. No data migration is needed for
+-- these per spec (start clean), so they are deleted outright rather than
+-- assigned to a placeholder organization.
+delete from companies where organization_id is null;
+delete from opportunities where organization_id is null;
+delete from quotes where organization_id is null;
+delete from work_orders where organization_id is null;
+delete from inventory_items where organization_id is null;
+delete from purchase_orders where organization_id is null;
+delete from invoices where organization_id is null;
+delete from employees where organization_id is null;
+delete from tasks where organization_id is null;
+delete from document_files where organization_id is null;
+delete from audit_log where organization_id is null;
+delete from labor_rate_catalog where organization_id is null;
+delete from quote_calculation_profiles where organization_id is null;
+delete from captured_leads where organization_id is null;
+delete from lead_interactions where organization_id is null;
+delete from lead_tasks where organization_id is null;
+
 drop policy if exists "document_counters_read_admin" on document_counters;
 create policy "document_counters_read_admin" on document_counters for select
 using (
@@ -503,6 +564,10 @@ begin
   from document_counters
   where organization_id = org_id and code = counter_code
   for update;
+
+  if current_counter.code is null then
+    raise exception 'Could not acquire counter for %', counter_code;
+  end if;
 
   generated_number := current_counter.prefix || '-' || lpad(current_counter.next_value::text, current_counter.padding, '0');
 

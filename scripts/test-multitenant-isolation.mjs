@@ -83,6 +83,13 @@ async function main() {
     assertTrue(!companyAError, `org A admin can create a company (error: ${companyAError?.message})`);
     assertTrue(companyA?.organization_id === orgA.organization.id, "created company is auto-stamped with org A's organization_id");
 
+    const { data: companyB, error: companyBError } = await orgB.userClient
+      .from("companies")
+      .insert({ name: `Cliente Org B ${Date.now()}` })
+      .select("id, organization_id")
+      .single();
+    assertTrue(!companyBError, `org B admin can create a company (error: ${companyBError?.message})`);
+
     const { data: crossReadAttempt, error: crossReadError } = await orgB.userClient
       .from("companies")
       .select("id")
@@ -96,18 +103,77 @@ async function main() {
       .eq("id", companyA?.id ?? null);
     assertTrue(!ownReadError && (ownReadAttempt || []).length === 1, "org A can read its own company");
 
+    // Cross-org WRITE denial: org B must not be able to update or delete
+    // org A's company. A denied RLS write returns zero affected rows (not
+    // necessarily an error), so assert the row count and that org A's data
+    // is unchanged, not just the absence of an error.
+    const { data: crossUpdateAttempt, error: crossUpdateError } = await orgB.userClient
+      .from("companies")
+      .update({ name: "Hijacked by org B" })
+      .eq("id", companyA?.id ?? null)
+      .select("id");
+    assertTrue(!crossUpdateError, `org B updating org A's company does not error (error: ${crossUpdateError?.message})`);
+    assertTrue((crossUpdateAttempt || []).length === 0, "org B cannot update org A's company (0 rows affected)");
+
+    const { data: verifyUnchanged } = await orgA.userClient
+      .from("companies")
+      .select("name")
+      .eq("id", companyA?.id ?? null)
+      .single();
+    assertTrue(!verifyUnchanged?.name?.includes("Hijacked"), "org A's company name was not modified by org B's blocked update");
+
+    const { data: crossDeleteAttempt, error: crossDeleteError } = await orgB.userClient
+      .from("companies")
+      .delete()
+      .eq("id", companyA?.id ?? null)
+      .select("id");
+    assertTrue(!crossDeleteError, `org B deleting org A's company does not error (error: ${crossDeleteError?.message})`);
+    assertTrue((crossDeleteAttempt || []).length === 0, "org B cannot delete org A's company (0 rows affected)");
+
+    const { data: verifyStillExists } = await orgA.userClient
+      .from("companies")
+      .select("id")
+      .eq("id", companyA?.id ?? null);
+    assertTrue((verifyStillExists || []).length === 1, "org A's company still exists after org B's blocked delete");
+
+    // Privilege escalation: org A's own (non-super-admin) session must not be
+    // able to promote itself by writing is_super_admin via its own client —
+    // this exercises the guard_profile_privileges trigger directly.
+    const { data: selfEscalateAttempt, error: selfEscalateError } = await orgA.userClient
+      .from("profiles")
+      .update({ is_super_admin: true })
+      .eq("id", orgA.userId)
+      .select("id");
+    assertTrue(
+      !!selfEscalateError || (selfEscalateAttempt || []).length === 0,
+      `org A admin cannot self-promote to super_admin via its own session (error: ${selfEscalateError?.message ?? "none, but 0 rows affected"})`
+    );
+    const { data: verifyNotEscalated } = await adminClient
+      .from("profiles")
+      .select("is_super_admin")
+      .eq("id", orgA.userId)
+      .single();
+    assertTrue(verifyNotEscalated?.is_super_admin !== true, "org A admin's is_super_admin is still false after the blocked self-escalation attempt");
+
+    // Legitimate promotion (service role, bypasses the trigger's auth.uid()
+    // check) followed by a REAL cross-org read using org B's company — the
+    // previous version of this check re-read org A's own company, which
+    // would have passed even if the super-admin bypass were broken.
     const { error: superAdminPromoteError } = await adminClient
       .from("profiles")
       .update({ is_super_admin: true })
       .eq("id", orgA.userId);
-    assertTrue(!superAdminPromoteError, `promoting org A's user to super_admin for the next check (error: ${superAdminPromoteError?.message})`);
+    assertTrue(!superAdminPromoteError, `promoting org A's user to super_admin via service role (error: ${superAdminPromoteError?.message})`);
 
     await orgA.userClient.auth.refreshSession();
-    const { data: superAdminRead, error: superAdminReadError } = await orgA.userClient
+    const { data: superAdminCrossOrgRead, error: superAdminCrossOrgError } = await orgA.userClient
       .from("companies")
       .select("id")
-      .eq("id", companyA?.id ?? null);
-    assertTrue(!superAdminReadError && (superAdminRead || []).length === 1, "super-admin can still read org A's company after promotion");
+      .eq("id", companyB?.id ?? null);
+    assertTrue(
+      !superAdminCrossOrgError && (superAdminCrossOrgRead || []).length === 1,
+      "promoted super-admin can read org B's company (real cross-org access, not just its own org)"
+    );
   } finally {
     if (organizationIds.length || userIds.length) {
       await cleanup({ organizationIds, userIds });

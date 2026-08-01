@@ -167,6 +167,7 @@ Deno.serve(async (request) => {
         if (action === 'generate-email') {
           // simple template generator
           const { data: lead } = await adminClient.from('captured_leads').select('*').eq('id', id).eq('organization_id', organizationId).single();
+          if (!lead) return json({ error: 'Lead no encontrado' }, 404);
           const subject = `Contacto desde cartel - ${lead.company_name || lead.project_name || 'Nuevo Lead'}`;
           const bodyText = `Hola ${lead.contact_name || ''},\n\nMe contacto desde Bizon respecto a ${lead.project_name || lead.company_name || 'su proyecto'}. Nos dedicamos a: ${Array.isArray(lead.services_match) ? lead.services_match.join(', ') : 'servicios industriales'}.\n\nQuedo a disposición para coordinar una visita o llamada.\n\nSaludos.`;
           return json({ subject, body: bodyText });
@@ -174,6 +175,7 @@ Deno.serve(async (request) => {
 
         if (action === 'generate-whatsapp') {
           const { data: lead } = await adminClient.from('captured_leads').select('*').eq('id', id).eq('organization_id', organizationId).single();
+          if (!lead) return json({ error: 'Lead no encontrado' }, 404);
           const message = `Hola ${lead.contact_name || ''}, soy de Bizon. Vi su cartel en ${lead.project_name || lead.company_name || 'obra'} y quería coordinar una breve llamada. ¿Le viene bien mañana?`;
           return json({ message });
         }
