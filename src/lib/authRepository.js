@@ -1,5 +1,14 @@
 import { isDatabaseConfigured, supabase } from "./supabaseClient";
 
+// supabase-js sets `error` (a FunctionsHttpError with a generic message) and
+// leaves `data` null on any non-2xx response — the actual "email ya existe" /
+// "password muy corta" / etc. message lives in the error response body, not
+// in error.message. Unwrap it so callers see the real reason.
+async function unwrapFunctionError(error) {
+  const detail = await error.context?.json?.().catch(() => null);
+  return new Error(detail?.error || error.message);
+}
+
 export async function getInitialSession() {
   if (!isDatabaseConfigured) return null;
 
@@ -123,7 +132,7 @@ export async function createUserAccount({ fullName, email, password, role, statu
     body: { fullName, email, password, role, status, companyName, menuKeys },
   });
 
-  if (error) throw error;
+  if (error) throw await unwrapFunctionError(error);
   if (data?.error) throw new Error(data.error);
   return data.user;
 }
@@ -147,7 +156,7 @@ export async function createOrganization({ organizationName, email, password, fu
     body: { organizationName, email, password, fullName },
   });
 
-  if (error) throw error;
+  if (error) throw await unwrapFunctionError(error);
   if (data?.error) throw new Error(data.error);
   return { organization: data.organization, user: data.user };
 }

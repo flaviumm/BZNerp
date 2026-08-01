@@ -3274,7 +3274,7 @@ function Usuarios({ userProfiles, companies, currentProfile, onCreateUserProfile
   );
 }
 
-function Organizaciones({ organizations, onCreateOrganization, onRefreshOrganizations }) {
+function Organizaciones({ organizations, organizationsError, onCreateOrganization, onRefreshOrganizations }) {
   const [query, setQuery] = useState("");
   const [message, setMessage] = useState("");
   const [creating, setCreating] = useState(false);
@@ -3318,6 +3318,7 @@ function Organizaciones({ organizations, onCreateOrganization, onRefreshOrganiza
           <Button type="submit">{creating ? "Creando..." : "Crear"}</Button>
         </form>
       </Panel>
+      {organizationsError && <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">No se pudo cargar la lista de organizaciones: {organizationsError}</p>}
       {message && <p className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800">{message}</p>}
       <SearchBar value={query} onChange={setQuery} placeholder="Buscar organizacion" />
       <DataTable
@@ -3969,6 +3970,7 @@ export default function MiniErpBizonPrototype() {
   const [auditLog, setAuditLog] = useState(initialAuditLog);
   const [userProfiles, setUserProfiles] = useState([]);
   const [organizations, setOrganizations] = useState([]);
+  const [organizationsError, setOrganizationsError] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -4109,10 +4111,11 @@ export default function MiniErpBizonPrototype() {
     try {
       const orgs = await listOrganizations();
       setOrganizations(orgs);
+      setOrganizationsError("");
       setDatabaseStatus("Conectado a Supabase");
     } catch (error) {
       console.error("No se pudieron cargar organizaciones:", error);
-      setDatabaseStatus("Error de base");
+      setOrganizationsError(error.message || "No se pudieron cargar las organizaciones.");
     }
   }
 
@@ -4580,7 +4583,7 @@ export default function MiniErpBizonPrototype() {
     persistRecord("tasks", record);
   }
 
-  const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, removeRecord, uploadDocument, createCalendarEvent, userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true), organizations, onCreateOrganization: createOrganizationAccount, onRefreshOrganizations: refreshOrganizations };
+  const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, removeRecord, uploadDocument, createCalendarEvent, userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true), organizations, organizationsError, onCreateOrganization: createOrganizationAccount, onRefreshOrganizations: refreshOrganizations };
   const Screen = {
     dashboard: <Dashboard {...screenProps} />,
     clientes: <ClientesCards {...screenProps} />,
