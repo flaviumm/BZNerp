@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import CaptadorLeads from "./src/components/CaptadorLeads";
 import { deleteErpRecord, isDatabaseConfigured, loadErpData, logAuditEvent, nextDocumentNumber, saveErpRecord, shouldBlockUnconfiguredDatabase, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
-import { createUserAccount, getCurrentProfile, getInitialSession, listenAuthChanges, listUserProfiles, signInWithEmail, signOutUser, signUpWithEmail, updateUserProfile } from "./src/lib/authRepository";
+import { createOrganization, createUserAccount, getCurrentProfile, getInitialSession, listenAuthChanges, listOrganizations, listUserProfiles, signInWithEmail, signOutUser, signUpWithEmail, updateUserProfile } from "./src/lib/authRepository";
 import { laborRates, materialPriceCatalog, quoteParameters } from "./src/lib/pricingData";
 import { initialCompanies, initialOpportunities, initialQuotes, initialWorkOrders, inventory, purchases, invoices, employees, tasks, initialDocuments, initialAuditLog, localDatabaseKey } from "./src/lib/demoData";
 import { screens, menuSections, userRoles, accountStatuses, canAccessScreen, screensForRole } from "./src/lib/navigation";
@@ -20,6 +20,7 @@ import { Calendario } from "./src/components/screens/Calendario";
 import { Documentos } from "./src/components/screens/Documentos";
 import { Auditoria } from "./src/components/screens/Auditoria";
 import { Usuarios } from "./src/components/screens/Usuarios";
+import { Organizaciones } from "./src/components/screens/Organizaciones";
 import { Reportes } from "./src/components/screens/Reportes";
 import { NewRecordModal, EditRecordModal } from "./src/components/screens/modals";
 import { LoginScreen, AccountStatusScreen, DatabaseSetupScreen } from "./src/components/screens/auth";
@@ -63,6 +64,8 @@ export default function MiniErpBizonPrototype() {
   const [documents, setDocuments] = useState(initialDocuments);
   const [auditLog, setAuditLog] = useState(initialAuditLog);
   const [userProfiles, setUserProfiles] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
+  const [organizationsError, setOrganizationsError] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -197,6 +200,24 @@ export default function MiniErpBizonPrototype() {
     refreshUserProfiles();
   }, [session, profile?.role, profile?.status]);
 
+  async function refreshOrganizations() {
+    if (!isDatabaseConfigured || !profile?.isSuperAdmin || profile?.status !== "active") return;
+
+    try {
+      const orgs = await listOrganizations();
+      setOrganizations(orgs);
+      setOrganizationsError("");
+      setDatabaseStatus("Conectado a Supabase");
+    } catch (error) {
+      console.error("No se pudieron cargar organizaciones:", error);
+      setOrganizationsError(error.message || "No se pudieron cargar las organizaciones.");
+    }
+  }
+
+  useEffect(() => {
+    refreshOrganizations();
+  }, [session, profile?.isSuperAdmin, profile?.status]);
+
   const data = useMemo(() => ({
     companies,
     opportunities,
@@ -219,6 +240,9 @@ export default function MiniErpBizonPrototype() {
 
   const activeLabel = screens.find((item) => item.key === active)?.label || "Dashboard";
   const availableScreens = screens.filter((item) => canAccessScreen(item, profile || { role: "ventas", menuKeys: null }));
+  const sidebarMenuSections = profile?.isSuperAdmin
+    ? [...menuSections, { title: "Plataforma", keys: ["organizaciones"] }]
+    : menuSections;
 
   useEffect(() => {
     if (availableScreens.length && !availableScreens.some((item) => item.key === active)) {
@@ -341,6 +365,15 @@ export default function MiniErpBizonPrototype() {
     const created = await createUserAccount(payload);
     setUserProfiles((items) => [created, ...items]);
     audit("create", "usuarios", { id: created.id }, `Alta de usuario ${created.fullName}`);
+  }
+
+  async function createOrganizationAccount(payload) {
+    if (!isDatabaseConfigured) return;
+
+    const result = await createOrganization(payload);
+    const org = { id: result.organization.id, name: result.organization.name, createdAt: result.organization.created_at };
+    setOrganizations((items) => [org, ...items]);
+    audit("create", "organizaciones", { id: org.id }, `Alta de organizacion ${org.name}`);
   }
 
   async function persistDelete(module, key) {
@@ -645,7 +678,7 @@ export default function MiniErpBizonPrototype() {
     persistRecord("tasks", record);
   }
 
-  const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, removeRecord, uploadDocument, createCalendarEvent, userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true) };
+  const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, removeRecord, uploadDocument, createCalendarEvent, userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true), organizations, organizationsError, onCreateOrganization: createOrganizationAccount, onRefreshOrganizations: refreshOrganizations };
   const Screen = {
     dashboard: <Dashboard {...screenProps} />,
     clientes: <ClientesCards {...screenProps} />,
@@ -665,6 +698,7 @@ export default function MiniErpBizonPrototype() {
     documentos: <Documentos {...screenProps} />,
     auditoria: <Auditoria {...screenProps} />,
     usuarios: <Usuarios {...screenProps} />,
+    organizaciones: <Organizaciones {...screenProps} />,
     reportes: <Reportes {...screenProps} />,
   }[active] || <Dashboard {...screenProps} />;
 
@@ -699,13 +733,14 @@ export default function MiniErpBizonPrototype() {
           active={active}
           setActive={setActive}
           availableScreens={availableScreens}
+          menuSections={sidebarMenuSections}
           databaseStatus={databaseStatus}
           collapsed={sidebarCollapsed}
           onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
           onExportBackup={exportBackup}
           onResetLocal={useLocalDemo ? resetLocalDatabase : null}
           onSignOut={isDatabaseConfigured ? handleSignOut : null}
-          onNew={active === "usuarios" ? null : () => setModalOpen(true)}
+          onNew={["usuarios", "organizaciones"].includes(active) ? null : () => setModalOpen(true)}
         />
         <main className="min-h-screen flex-1">
           <Header
