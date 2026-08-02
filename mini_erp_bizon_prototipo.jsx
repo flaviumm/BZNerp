@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import CaptadorLeads from "./src/components/CaptadorLeads";
 import { deleteErpRecord, isDatabaseConfigured, loadErpData, logAuditEvent, nextDocumentNumber, saveErpRecord, shouldBlockUnconfiguredDatabase, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
-import { createUserAccount, getCurrentProfile, getInitialSession, listenAuthChanges, listUserProfiles, signInWithEmail, signOutUser, signUpWithEmail, updateUserProfile } from "./src/lib/authRepository";
+import { createOrganization, createUserAccount, getCurrentProfile, getInitialSession, listenAuthChanges, listOrganizations, listUserProfiles, signInWithEmail, signOutUser, signUpWithEmail, updateUserProfile } from "./src/lib/authRepository";
 import { laborRates, materialPriceCatalog, quoteParameters } from "./src/lib/pricingData";
 
 const initialCompanies = [
@@ -100,6 +100,7 @@ const screens = [
   { key: "auditoria", label: "Auditoria", icon: "activity", roles: ["admin", "direccion"] },
   { key: "usuarios", label: "Usuarios", icon: "userCog", roles: ["admin"] },
   { key: "reportes", label: "Reportes", icon: "chart", roles: ["admin", "direccion"] },
+  { key: "organizaciones", label: "Organizaciones", icon: "building", roles: [] },
 ];
 
 const menuSections = [
@@ -526,6 +527,7 @@ function MenuGlyph({ name }) {
     chart: <><path d="M4 19V5M4 19h17" /><path d="M8 16v-5M13 16V8M18 16v-8" /></>,
     upload: <><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" /></>,
     map: <><polygon points="3,6 9,3 15,6 21,3 21,18 15,21 9,18 3,21" /><line x1="9" y1="3" x2="9" y2="18" /><line x1="15" y1="6" x2="15" y2="21" /></>,
+    building: <><rect x="4" y="3" width="16" height="18" rx="1" /><path d="M9 8h.01M9 12h.01M9 16h.01M15 8h.01M15 12h.01M15 16h.01" /></>,
   };
 
   return <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" {...common}>{paths[name] || paths.layout}</svg>;
@@ -598,6 +600,7 @@ function TextArea(props) {
 
 function canAccessScreen(screen, profileOrRole) {
   const profile = typeof profileOrRole === "string" ? { role: profileOrRole, menuKeys: null } : profileOrRole || {};
+  if (screen.key === "organizaciones") return Boolean(profile.isSuperAdmin);
   const roleAllowed = screen.roles.includes(profile.role || "ventas");
   if (!roleAllowed) return false;
   if (Array.isArray(profile.menuKeys) && profile.menuKeys.length) return profile.menuKeys.includes(screen.key);
@@ -778,7 +781,7 @@ function Header({ activeLabel, databaseStatus, profile }) {
   );
 }
 
-function Sidebar({ active, setActive, availableScreens, databaseStatus, collapsed, onToggleCollapsed, onNew, onExportBackup, onResetLocal, onSignOut }) {
+function Sidebar({ active, setActive, availableScreens, menuSections, databaseStatus, collapsed, onToggleCollapsed, onNew, onExportBackup, onResetLocal, onSignOut }) {
   const allowedKeys = new Set(availableScreens.map((item) => item.key));
   const hasDatabaseError = databaseStatus === "Error de base";
 
@@ -3271,6 +3274,62 @@ function Usuarios({ userProfiles, companies, currentProfile, onCreateUserProfile
   );
 }
 
+function Organizaciones({ organizations, organizationsError, onCreateOrganization, onRefreshOrganizations }) {
+  const [query, setQuery] = useState("");
+  const [message, setMessage] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [newOrg, setNewOrg] = useState({ organizationName: "", fullName: "", email: "", password: "" });
+  const filtered = organizations.filter((org) => org.name.toLowerCase().includes(query.toLowerCase()));
+
+  async function createOrganizationHandler(event) {
+    event.preventDefault();
+    setCreating(true);
+    setMessage("");
+
+    try {
+      await onCreateOrganization(newOrg);
+      setNewOrg({ organizationName: "", fullName: "", email: "", password: "" });
+      setMessage("Organizacion creada.");
+    } catch (error) {
+      setMessage(error.message || "No se pudo crear la organizacion.");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  return (
+    <div className="space-y-5 p-4 md:p-6">
+      <SectionTitle title="Organizaciones" subtitle="Alta de empresas cliente y su primer administrador" action="Actualizar" onAction={onRefreshOrganizations} />
+      <Panel className="p-4">
+        <SectionTitle title="Crear organizacion" subtitle="Da de alta una empresa nueva con su admin inicial" />
+        <form onSubmit={createOrganizationHandler} className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_1.2fr_1.3fr_1fr_auto] lg:items-end">
+          <Field label="Nombre de la organizacion">
+            <TextInput required value={newOrg.organizationName} onChange={(event) => setNewOrg({ ...newOrg, organizationName: event.target.value })} placeholder="Empresa Cliente SA" />
+          </Field>
+          <Field label="Nombre del admin">
+            <TextInput required value={newOrg.fullName} onChange={(event) => setNewOrg({ ...newOrg, fullName: event.target.value })} placeholder="Nombre y apellido" />
+          </Field>
+          <Field label="Email del admin">
+            <TextInput type="email" required value={newOrg.email} onChange={(event) => setNewOrg({ ...newOrg, email: event.target.value })} placeholder="admin@empresa.com" />
+          </Field>
+          <Field label="Password">
+            <TextInput type="password" required minLength={6} value={newOrg.password} onChange={(event) => setNewOrg({ ...newOrg, password: event.target.value })} placeholder="Min. 6" />
+          </Field>
+          <Button type="submit">{creating ? "Creando..." : "Crear"}</Button>
+        </form>
+      </Panel>
+      {organizationsError && <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">No se pudo cargar la lista de organizaciones: {organizationsError}</p>}
+      {message && <p className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800">{message}</p>}
+      <SearchBar value={query} onChange={setQuery} placeholder="Buscar organizacion" />
+      <DataTable
+        headers={["Organizacion", "Creada"]}
+        rows={filtered.map((org) => [org.name, formatDate(org.createdAt)])}
+        empty="No hay organizaciones para mostrar"
+      />
+    </div>
+  );
+}
+
 function Reportes({ data }) {
   const pipeline = sum(data.opportunities, "amount");
   const won = sum(data.opportunities.filter((item) => item.stage === "Ganado"), "amount");
@@ -3910,6 +3969,8 @@ export default function MiniErpBizonPrototype() {
   const [documents, setDocuments] = useState(initialDocuments);
   const [auditLog, setAuditLog] = useState(initialAuditLog);
   const [userProfiles, setUserProfiles] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
+  const [organizationsError, setOrganizationsError] = useState("");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -4044,6 +4105,24 @@ export default function MiniErpBizonPrototype() {
     refreshUserProfiles();
   }, [session, profile?.role, profile?.status]);
 
+  async function refreshOrganizations() {
+    if (!isDatabaseConfigured || !profile?.isSuperAdmin || profile?.status !== "active") return;
+
+    try {
+      const orgs = await listOrganizations();
+      setOrganizations(orgs);
+      setOrganizationsError("");
+      setDatabaseStatus("Conectado a Supabase");
+    } catch (error) {
+      console.error("No se pudieron cargar organizaciones:", error);
+      setOrganizationsError(error.message || "No se pudieron cargar las organizaciones.");
+    }
+  }
+
+  useEffect(() => {
+    refreshOrganizations();
+  }, [session, profile?.isSuperAdmin, profile?.status]);
+
   const data = useMemo(() => ({
     companies,
     opportunities,
@@ -4066,6 +4145,9 @@ export default function MiniErpBizonPrototype() {
 
   const activeLabel = screens.find((item) => item.key === active)?.label || "Dashboard";
   const availableScreens = screens.filter((item) => canAccessScreen(item, profile || { role: "ventas", menuKeys: null }));
+  const sidebarMenuSections = profile?.isSuperAdmin
+    ? [...menuSections, { title: "Plataforma", keys: ["organizaciones"] }]
+    : menuSections;
 
   useEffect(() => {
     if (availableScreens.length && !availableScreens.some((item) => item.key === active)) {
@@ -4188,6 +4270,15 @@ export default function MiniErpBizonPrototype() {
     const created = await createUserAccount(payload);
     setUserProfiles((items) => [created, ...items]);
     audit("create", "usuarios", { id: created.id }, `Alta de usuario ${created.fullName}`);
+  }
+
+  async function createOrganizationAccount(payload) {
+    if (!isDatabaseConfigured) return;
+
+    const result = await createOrganization(payload);
+    const org = { id: result.organization.id, name: result.organization.name, createdAt: result.organization.created_at };
+    setOrganizations((items) => [org, ...items]);
+    audit("create", "organizaciones", { id: org.id }, `Alta de organizacion ${org.name}`);
   }
 
   async function persistDelete(module, key) {
@@ -4492,7 +4583,7 @@ export default function MiniErpBizonPrototype() {
     persistRecord("tasks", record);
   }
 
-  const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, removeRecord, uploadDocument, createCalendarEvent, userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true) };
+  const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, removeRecord, uploadDocument, createCalendarEvent, userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true), organizations, organizationsError, onCreateOrganization: createOrganizationAccount, onRefreshOrganizations: refreshOrganizations };
   const Screen = {
     dashboard: <Dashboard {...screenProps} />,
     clientes: <ClientesCards {...screenProps} />,
@@ -4512,6 +4603,7 @@ export default function MiniErpBizonPrototype() {
     documentos: <Documentos {...screenProps} />,
     auditoria: <Auditoria {...screenProps} />,
     usuarios: <Usuarios {...screenProps} />,
+    organizaciones: <Organizaciones {...screenProps} />,
     reportes: <Reportes {...screenProps} />,
   }[active] || <Dashboard {...screenProps} />;
 
@@ -4546,13 +4638,14 @@ export default function MiniErpBizonPrototype() {
           active={active}
           setActive={setActive}
           availableScreens={availableScreens}
+          menuSections={sidebarMenuSections}
           databaseStatus={databaseStatus}
           collapsed={sidebarCollapsed}
           onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
           onExportBackup={exportBackup}
           onResetLocal={useLocalDemo ? resetLocalDatabase : null}
           onSignOut={isDatabaseConfigured ? handleSignOut : null}
-          onNew={active === "usuarios" ? null : () => setModalOpen(true)}
+          onNew={["usuarios", "organizaciones"].includes(active) ? null : () => setModalOpen(true)}
         />
         <main className="min-h-screen flex-1">
           <Header
