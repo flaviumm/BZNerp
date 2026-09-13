@@ -211,7 +211,7 @@ export function Sidebar({ active, setActive, availableScreens, menuSections, dat
 
 export function MobileNav({ active, setActive, availableScreens }) {
   return (
-    <div className="border-b border-[#ecece6] bg-[#fbfbf8] p-3 lg:hidden">
+    <div className="border-b border-[var(--border)] bg-[var(--surface)] p-3 lg:hidden">
       <div className="flex gap-2 overflow-x-auto">
         {availableScreens.map((item) => (
           <button

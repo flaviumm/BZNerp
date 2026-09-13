@@ -31,9 +31,9 @@ y el shell que los usa.
 Incluye:
 - Tokens neutros/semánticos como CSS custom properties (`src/lib/theme.js`,
   ampliando el mismo módulo del spec de branding).
-- Reestructuración del `Sidebar` en 4 secciones colapsables, reusando
-  `menuSections` de `src/lib/navigation.js` (se agrega una 4ª sección
-  "Administración").
+- Reestructuración del `Sidebar` en secciones colapsables, incluyendo la
+  sección dinámica ya existente sólo para super-admin (renombrada de
+  "Plataforma" a "Administración").
 - Rediseño del `Header`.
 - Cambio de estilo del componente `Panel` (superficie con sombra suave en
   vez de borde plano) — se propaga a toda la app porque ya lo reusan todas
@@ -71,21 +71,37 @@ export function applyBaseTheme() {
 }
 ```
 
-Valores tomados de los que ya usa la app (paleta "Bone" elegida en el
-companion visual), no son colores nuevos — se centralizan los que ya
-existían dispersos.
+La mayoría de estos valores son tomados de los que ya usa la app (paleta
+"Bone" elegida en el companion visual) — se centralizan los que ya existían
+dispersos. La excepción es `--warning` (`#b45309`): es un color genuinamente
+nuevo, sin precedente exacto en el código existente. Se eligió para ser
+visualmente consistente con los tonos ámbar/warning ya en uso en distintas
+pantallas (`#f59e0b`, `#a16207`, `#9a6500`, dispersos y ligeramente
+distintos entre sí), sin ser una réplica exacta de ninguno de ellos.
 
 ### 2. Sidebar
 
-`src/lib/navigation.js`: se agrega una 4ª entrada a `menuSections`:
+`src/lib/navigation.js` no se toca. La 4ª sección no es una entrada estática
+de `menuSections`: ya existía un mecanismo en `mini_erp_bizon_prototipo.jsx`
+que calcula dinámicamente una sección extra, agregándola solo cuando el
+usuario logueado es super-admin:
 
 ```js
-{ title: "Administracion", keys: ["organizaciones", "configuracion"] }
+const sidebarMenuSections = profile?.isSuperAdmin
+  ? [...menuSections, { title: "Administracion", keys: ["organizaciones"] }]
+  : menuSections;
 ```
 
-(`configuracion` es la screen key nueva del spec de branding, todavía no
-agregada a `screens`/`menuSections` — se agrega en este trabajo junto con
-`organizaciones`.)
+Ese mecanismo existente se reutiliza tal cual, solo renombrando el título de
+`"Plataforma"` a `"Administracion"`. Por ahora sigue conteniendo únicamente
+`"organizaciones"` — `"configuracion"` todavía no existe como screen key (es
+parte del spec de branding, aparte) y se agregará a este mismo array cuando
+esa pantalla exista.
+
+Este enfoque dinámico es preferible al originalmente planeado (una 4ª
+entrada estática en `menuSections`): evita que los usuarios que no son
+super-admin vean una entrada "Organizaciones" bloqueada/deshabilitada en el
+menú — directamente no aparece para ellos.
 
 `Sidebar` en `src/components/ui/index.jsx` gana estado local
 `collapsedSections` (un Set de títulos colapsados). Por defecto todas las
@@ -96,17 +112,20 @@ agregarla es alcance extra sin pedido.
 
 ### 3. Header
 
-`Header` en el mismo archivo pasa a un layout de dos bloques: izquierda
-(nombre de organización en `--brand` + título de la pantalla activa),
-derecha (buscador visual — sin command palette funcional todavía, eso es
-una feature aparte — ícono de notificaciones sin backend de notificaciones
-real, y el perfil ya existente). Fondo `--surface`, borde `--border`.
+`Header` en el mismo archivo no cambia de contenido ni de layout — se
+mantiene tal cual está (mismos bloques, mismo texto, mismo chip de perfil).
+El único cambio es de color, re-tokenizando lo que ya hardcodeaba hex:
+fondo `bg-white/95` + `backdrop-blur` pasa a `bg-[var(--surface)]` (con un
+fondo sólido de superficie no hace falta transparencia ni blur), borde
+`border-[#ececf0]` pasa a `border-[var(--border)]`, y el color del título
+pasa a `text-[var(--text)]`. No se agrega buscador, ícono de notificaciones
+ni ningún elemento nuevo — eso queda fuera de alcance de esta fase.
 
 ### 4. Panel (superficie de cards)
 
 `Panel` cambia su clase base de
-`rounded-2xl border border-[#ececf0] bg-white ...` a
-`rounded-2xl bg-white shadow-[0_8px_20px_rgba(15,23,42,0.06)] ...` (sin
+`rounded-[22px] border border-[#ececf0] bg-white ...` a
+`rounded-[22px] bg-white shadow-[0_8px_20px_rgba(15,23,42,0.06)] ...` (sin
 borde). Es un cambio de una sola definición en `src/components/ui/index.jsx`
 que se propaga automáticamente a todas las pantallas.
 
