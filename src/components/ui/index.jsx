@@ -89,19 +89,19 @@ export function TextArea(props) {
 
 export function Header({ activeLabel, databaseStatus, profile }) {
   return (
-    <header className="border-b border-[#ececf0] bg-white/95 px-4 py-4 backdrop-blur md:px-8">
+    <header className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-4 md:px-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
           <img src="/brand/isotipo_bizon.png" alt="Bizon" className="h-10 w-10 rounded-xl bg-black object-contain p-1 lg:hidden" />
           <div>
             <p className="text-[11px] font-bold uppercase tracking-wide text-[#ff7900]">Bizon ERP Industrial</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#111111]">{activeLabel}</h1>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--text)]">{activeLabel}</h1>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={databaseStatus === "Conectado a Supabase" || databaseStatus === "Base local" ? "green" : databaseStatus === "Error de base" ? "red" : "amber"}>{databaseStatus}</Badge>
           {profile && (
-            <div className="flex items-center gap-3 rounded-2xl border border-[#ececf0] bg-white px-3 py-2">
+            <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-white px-3 py-2">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff1e5] text-sm font-semibold text-[#d85f00]">
                 {profile.fullName?.slice(0, 1).toUpperCase() || "U"}
               </div>
