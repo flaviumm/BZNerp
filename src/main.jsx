@@ -1,6 +1,9 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import MiniErpBizonPrototype from "../mini_erp_bizon_prototipo.jsx";
+import { applyBaseTheme } from "./lib/theme";
+
+applyBaseTheme();
 
 function AppFallback({ title = "No se pudo cargar el ERP", detail }) {
   return (
