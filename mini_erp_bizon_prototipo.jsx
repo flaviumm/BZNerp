@@ -241,7 +241,7 @@ export default function MiniErpBizonPrototype() {
   const activeLabel = screens.find((item) => item.key === active)?.label || "Dashboard";
   const availableScreens = screens.filter((item) => canAccessScreen(item, profile || { role: "ventas", menuKeys: null }));
   const sidebarMenuSections = profile?.isSuperAdmin
-    ? [...menuSections, { title: "Plataforma", keys: ["organizaciones"] }]
+    ? [...menuSections, { title: "Administracion", keys: ["organizaciones"] }]
     : menuSections;
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { isDatabaseConfigured } from "../../lib/erpRepository";
 import { clamp } from "../../lib/utils";
 import { screens, menuSections } from "../../lib/navigation";
@@ -121,12 +121,28 @@ export function Sidebar({ active, setActive, availableScreens, menuSections, dat
   const allowedKeys = new Set(availableScreens.map((item) => item.key));
   const hasDatabaseError = databaseStatus === "Error de base";
 
+  const [collapsedGroups, setCollapsedGroups] = useState(() => {
+    const initiallyCollapsed = new Set(menuSections.map((section) => section.title));
+    const activeSection = menuSections.find((section) => section.keys.includes(active));
+    if (activeSection) initiallyCollapsed.delete(activeSection.title);
+    return initiallyCollapsed;
+  });
+
+  function toggleGroup(title) {
+    setCollapsedGroups((previous) => {
+      const next = new Set(previous);
+      if (next.has(title)) next.delete(title);
+      else next.add(title);
+      return next;
+    });
+  }
+
   return (
-    <aside className={`hidden h-screen shrink-0 border-r border-[#ececf0] bg-white p-3 transition-all duration-200 lg:block ${collapsed ? "w-16" : "w-44"}`}>
+    <aside className={`hidden h-screen shrink-0 border-r border-[var(--border)] bg-[var(--surface)] p-3 transition-all duration-200 lg:block ${collapsed ? "w-16" : "w-44"}`}>
       <div className="flex h-full flex-col">
-        <div className={`relative flex min-h-16 items-center border-b border-[#ececf0] pb-5 ${collapsed ? "justify-center" : "justify-start pr-12"}`}>
+        <div className={`relative flex min-h-16 items-center border-b border-[var(--border)] pb-5 ${collapsed ? "justify-center" : "justify-start pr-12"}`}>
           <img src={collapsed ? "/brand/isotipo_bizon.png" : "/brand/logo_principal_horizontal.png"} alt="Bizon Soluciones Industriales" className={collapsed ? "h-8 w-8 rounded-xl bg-black object-contain p-1" : "h-auto max-h-14 w-full object-contain"} />
-          <button type="button" onClick={onToggleCollapsed} className="absolute right-0 top-1 hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#ececf0] bg-white text-zinc-500 transition hover:border-[#ff7900] hover:text-[#ff7900] lg:inline-flex" title={collapsed ? "Expandir menu" : "Contraer menu"}>
+          <button type="button" onClick={onToggleCollapsed} className="absolute right-0 top-1 hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-white text-zinc-500 transition hover:border-[#ff7900] hover:text-[#ff7900] lg:inline-flex" title={collapsed ? "Expandir menu" : "Contraer menu"}>
             <span className={`transition ${collapsed ? "rotate-180" : ""}`}><MenuGlyph name="layout" /></span>
           </button>
         </div>
@@ -136,39 +152,53 @@ export function Sidebar({ active, setActive, availableScreens, menuSections, dat
           </div>
         )}
         <nav className="scrollbar-none mt-6 min-h-0 flex-1 space-y-6 overflow-y-auto pr-0">
-          {menuSections.map((section) => (
-            <div key={section.title}>
-              {!collapsed && <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wide text-zinc-400">{section.title}</p>}
-              <div className="space-y-1.5">
-                {section.keys.map((key) => screens.find((item) => item.key === key)).filter(Boolean).map((item) => {
-                  const allowed = allowedKeys.has(item.key);
-                  const isActive = active === item.key;
+          {menuSections.map((section) => {
+            const sectionCollapsed = !collapsed && collapsedGroups.has(section.title);
+            return (
+              <div key={section.title}>
+                {!collapsed && (
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(section.title)}
+                    className="mb-3 flex w-full items-center justify-between px-3 text-[11px] font-semibold uppercase tracking-wide text-zinc-400"
+                  >
+                    <span>{section.title}</span>
+                    <span>{sectionCollapsed ? "›" : "⌄"}</span>
+                  </button>
+                )}
+                {!sectionCollapsed && (
+                  <div className="space-y-1.5">
+                    {section.keys.map((key) => screens.find((item) => item.key === key)).filter(Boolean).map((item) => {
+                      const allowed = allowedKeys.has(item.key);
+                      const isActive = active === item.key;
 
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      disabled={!allowed}
-                      onClick={() => allowed && setActive(item.key)}
-                      title={allowed ? item.label : "Bloqueado para este rol"}
-                      className={`group flex min-h-11 w-full items-center gap-2 rounded-2xl px-3 text-left text-[13px] font-medium transition ${collapsed ? "justify-center px-0" : ""} ${
-                        isActive
-                          ? "bg-[#ff7900] text-black shadow-[0_12px_25px_rgba(255,121,0,0.22)]"
-                          : allowed
-                            ? "text-zinc-500 hover:bg-[#f7f7f5] hover:text-zinc-950"
-                            : "cursor-not-allowed text-zinc-300"
-                      }`}
-                    >
-                      <IconMark active={isActive} icon={item.icon} />
-                      {!collapsed && <span className="min-w-0 flex-1 truncate">{item.label}</span>}
-                    </button>
-                  );
-                })}
+                      return (
+                        <button
+                          key={item.key}
+                          type="button"
+                          disabled={!allowed}
+                          onClick={() => allowed && setActive(item.key)}
+                          title={allowed ? item.label : "Bloqueado para este rol"}
+                          className={`group flex min-h-11 w-full items-center gap-2 rounded-2xl px-3 text-left text-[13px] font-medium transition ${collapsed ? "justify-center px-0" : ""} ${
+                            isActive
+                              ? "bg-[#ff7900] text-black shadow-[0_12px_25px_rgba(255,121,0,0.22)]"
+                              : allowed
+                                ? "text-zinc-500 hover:bg-[var(--surface-alt)] hover:text-zinc-950"
+                                : "cursor-not-allowed text-zinc-300"
+                          }`}
+                        >
+                          <IconMark active={isActive} icon={item.icon} />
+                          {!collapsed && <span className="min-w-0 flex-1 truncate">{item.label}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </nav>
-        <div className={`mt-5 border-t border-[#ececf0] pt-4 ${collapsed ? "grid justify-center gap-2" : "grid gap-2"}`}>
+        <div className={`mt-5 border-t border-[var(--border)] pt-4 ${collapsed ? "grid justify-center gap-2" : "grid gap-2"}`}>
           {onNew && <Button onClick={onNew}>{collapsed ? <MenuGlyph name="file" /> : "Nuevo registro"}</Button>}
           <Button variant="ghost" onClick={onExportBackup}>{collapsed ? <MenuGlyph name="folder" /> : "Exportar"}</Button>
           {onResetLocal && <Button variant="ghost" onClick={onResetLocal}>{collapsed ? <MenuGlyph name="activity" /> : "Reiniciar local"}</Button>}
