@@ -39,8 +39,8 @@ export function IconMark({ icon, active = false }) {
 export function Button({ children, onClick, variant = "primary", type = "button", disabled = false }) {
   const styles = {
     primary: "border-[#ff7900] bg-[#ff7900] text-black shadow-sm hover:bg-[#ff8f1f]",
-    ghost: "border-[#cfe7dd] bg-[#f0fdf7] text-[#0f766e] hover:border-[#0f766e]",
-    danger: "border-[#f3d2d2] bg-[#fff5f5] text-[#b42318] hover:border-[#b42318]",
+    ghost: "border-[#cfe7dd] bg-[#f0fdf7] text-[var(--success)] hover:border-[var(--success)]",
+    danger: "border-[#f3d2d2] bg-[#fff5f5] text-[var(--danger)] hover:border-[var(--danger)]",
   };
   return (
     <button type={type} onClick={onClick} disabled={disabled} className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-lg border px-2.5 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${styles[variant]}`}>
@@ -53,8 +53,8 @@ export function Badge({ children, tone = "zinc" }) {
   const tones = {
     zinc: "border-[#e7e7e2] bg-[#f7f7f4] text-zinc-600",
     green: "border-[#ffd2ad] bg-[#fff3e8] text-[#d85f00]",
-    amber: "border-[#f4dfb6] bg-[#fff8e8] text-[#9a6500]",
-    red: "border-[#f2c9c9] bg-[#fff3f1] text-[#b42318]",
+    amber: "border-[#f4dfb6] bg-[#fff8e8] text-[var(--warning)]",
+    red: "border-[#f2c9c9] bg-[#fff3f1] text-[var(--danger)]",
     blue: "border-[#d8ddff] bg-[#f3f4ff] text-[#4a55c8]",
   };
   return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${tones[tone] || tones.zinc}`}>{children}</span>;
@@ -231,9 +231,9 @@ export function MobileNav({ active, setActive, availableScreens }) {
 export function MiniSparkBars({ values = [], tone = "green" }) {
   const max = Math.max(...values.map((value) => Number(value || 0)), 1);
   const color = {
-    green: "bg-[#0f766e]",
+    green: "bg-[var(--success)]",
     amber: "bg-[#d85f00]",
-    red: "bg-[#b42318]",
+    red: "bg-[var(--danger)]",
     blue: "bg-[#334155]",
     zinc: "bg-zinc-500",
   }[tone] || "bg-[#d85f00]";
@@ -250,9 +250,9 @@ export function MiniSparkBars({ values = [], tone = "green" }) {
 export function StatCard({ title, value, subtitle, tone = "zinc", chart = [], detail, detailTone, onAction, actionLabel }) {
   const colors = {
     zinc: "text-zinc-500 bg-zinc-100",
-    green: "text-[#0f766e] bg-[#ecfdf5]",
-    amber: "text-[#a16207] bg-[#fff8e1]",
-    red: "text-[#b42318] bg-[#fff1f1]",
+    green: "text-[var(--success)] bg-[#ecfdf5]",
+    amber: "text-[var(--warning)] bg-[#fff8e1]",
+    red: "text-[var(--danger)] bg-[#fff1f1]",
     blue: "text-[#334155] bg-[#eef2f7]",
   };
   return (
@@ -337,7 +337,7 @@ export function DonutChart({ items }) {
         {items.map((item) => (
           <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
             <span className="flex items-center gap-2 text-zinc-600"><span className="h-2.5 w-2.5 rounded-full" style={{ background: item.color }} />{item.label}</span>
-            <strong className="text-[#050505]">{item.value}%</strong>
+            <strong className="text-[var(--text)]">{item.value}%</strong>
           </div>
         ))}
       </div>
@@ -414,7 +414,7 @@ export function DashboardLineChart({ values = [], labels = [] }) {
   const area = `${path} L ${width} ${height} L 0 ${height} Z`;
 
   return (
-    <div className="rounded-2xl border border-[#ececf0] bg-[#fffaf5] p-4">
+    <div className="rounded-2xl border border-[var(--border)] bg-[#fffaf5] p-4">
       <svg viewBox={`0 0 ${width} ${height}`} className="h-32 w-full overflow-visible" role="img" aria-label="Grafico de tendencia">
         <path d={area} fill="#ff7900" opacity="0.08" />
         <path d={path} fill="none" stroke="#ff7900" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
@@ -435,8 +435,8 @@ export function DashboardLineChart({ values = [], labels = [] }) {
 export function DashboardRadialChart({ value, label, details = [] }) {
   const normalized = clamp(value, 0, 100);
   return (
-    <div className="grid gap-4 rounded-2xl border border-[#ececf0] bg-[#fffaf5] p-4 sm:grid-cols-[132px_1fr] sm:items-center">
-      <div className="relative h-32 w-32 rounded-full" style={{ background: `conic-gradient(#ff7900 ${normalized}%, #ececf0 ${normalized}% 100%)` }}>
+    <div className="grid gap-4 rounded-2xl border border-[var(--border)] bg-[#fffaf5] p-4 sm:grid-cols-[132px_1fr] sm:items-center">
+      <div className="relative h-32 w-32 rounded-full" style={{ background: `conic-gradient(#ff7900 ${normalized}%, var(--border) ${normalized}% 100%)` }}>
         <div className="absolute inset-4 grid place-items-center rounded-full bg-white">
           <strong className="text-2xl font-semibold tracking-tight text-zinc-950">{Math.round(normalized)}%</strong>
           <span className="-mt-1 text-[11px] font-semibold text-zinc-400">{label}</span>
@@ -460,8 +460,8 @@ export function DashboardRadialChart({ value, label, details = [] }) {
 export function DashboardStackChart({ items = [] }) {
   const total = items.reduce((sumValue, item) => sumValue + Number(item.value || 0), 0) || 1;
   return (
-    <div className="rounded-2xl border border-[#ececf0] bg-[#fffaf5] p-4">
-      <div className="flex h-5 overflow-hidden rounded-full bg-[#ececf0]">
+    <div className="rounded-2xl border border-[var(--border)] bg-[#fffaf5] p-4">
+      <div className="flex h-5 overflow-hidden rounded-full bg-[var(--border)]">
         {items.map((item, index) => (
           <span
             key={item.label}
