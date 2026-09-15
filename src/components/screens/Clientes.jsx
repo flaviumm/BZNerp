@@ -313,7 +313,7 @@ export function ClientesCards({ companies, setCompanies, persistUpdate, openEdit
           const details = companyDetails(company);
           const editingContacts = contactEditor === company.id;
           return (
-            <Panel key={company.id} className="flex min-h-[360px] flex-col overflow-hidden shadow-none">
+            <Panel key={company.id} className="flex min-h-[360px] flex-col overflow-hidden">
               <div className="border-l-4 border-[#ff7900] bg-[#fff8f1] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

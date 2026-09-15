@@ -256,7 +256,7 @@ export function StatCard({ title, value, subtitle, tone = "zinc", chart = [] }) 
     blue: "text-[#334155] bg-[#eef2f7]",
   };
   return (
-    <Panel className="p-5 shadow-none">
+    <Panel className="p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-semibold text-zinc-500">{title}</p>
@@ -339,7 +339,7 @@ export function DonutChart({ items }) {
 
 export function DataTable({ headers, rows, empty = "Sin datos" }) {
   return (
-    <Panel className="overflow-hidden shadow-none">
+    <Panel className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-[12px]" style={{ minWidth: `${Math.max(820, headers.length * 118)}px` }}>
           <thead className="bg-[#fafaf8] text-zinc-500">

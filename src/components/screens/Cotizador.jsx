@@ -223,7 +223,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
     <div className="space-y-5 p-4 md:p-6">
       <SectionTitle title="Cotizador Bizon" subtitle="Armado de presupuesto con empresa, detalle de productos, cantidades, precios y PDF" />
 
-      <Panel className="p-5 shadow-none">
+      <Panel className="p-5">
         <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Cliente">
@@ -264,7 +264,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
         </div>
       </Panel>
 
-      <Panel className="p-5 shadow-none">
+      <Panel className="p-5">
         <div className="grid gap-4">
           <Field label="Nombre del trabajo (aparece en el PDF)">
             <TextInput
@@ -287,7 +287,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
         </div>
       </Panel>
 
-      <Panel className="p-5 shadow-none">
+      <Panel className="p-5">
         <div className="grid gap-5 xl:grid-cols-2">
           <div className="grid gap-3">
             <SectionTitle title="Base de materiales" subtitle={`${materialPriceCatalog.length} materiales disponibles para agregar al detalle`} />
@@ -402,7 +402,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
         </div>
       </Panel>
 
-      <Panel className="overflow-hidden shadow-none">
+      <Panel className="overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-[#ececf0] p-5 md:flex-row md:items-center md:justify-between">
           <SectionTitle title="Detalle de productos" subtitle="Columnas de producto, cantidad, precio unitario y precio total" />
           <Button onClick={addLine}>Agregar renglon</Button>
@@ -481,7 +481,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
         </div>
       </Panel>
 
-      <Panel className="p-5 shadow-none">
+      <Panel className="p-5">
         <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
           <p className="text-sm text-zinc-500">Revisar el detalle, generar la numeracion automatica y abrir el PDF del presupuesto.</p>
           <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">

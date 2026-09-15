@@ -42,7 +42,7 @@ export function CRM({ opportunities, setOpportunities, persistUpdate, openEditor
           const cards = opportunities.filter((opportunity) => opportunity.stage === stage);
           const stageTotal = sum(cards, "amount");
           return (
-            <Panel key={stage} className="min-h-[460px] min-w-0 p-3 shadow-none">
+            <Panel key={stage} className="min-h-[460px] min-w-0 p-3">
               <div className="mb-3">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="truncate text-sm font-semibold text-zinc-950">{stage}</h3>
@@ -172,7 +172,7 @@ export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, open
           return (
             <Panel
               key={stage}
-              className={`min-h-[520px] min-w-0 p-3 shadow-none transition ${draggingId ? "ring-1 ring-[#ff7900]/20" : ""}`}
+              className={`min-h-[520px] min-w-0 p-3 transition ${draggingId ? "ring-1 ring-[#ff7900]/20" : ""}`}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => dropOnStage(event, stage)}
             >

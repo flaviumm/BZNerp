@@ -27,7 +27,7 @@ export function Dashboard({ data, setActive }) {
 
   return (
     <div className="space-y-6 p-4 md:p-8">
-      <Panel className="p-7 shadow-none">
+      <Panel className="p-7">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-[#ff7900]">Vista general</p>
@@ -111,7 +111,7 @@ export function Dashboard({ data, setActive }) {
         </Panel>
       </div>
 
-      <Panel className="p-5 shadow-none">
+      <Panel className="p-5">
         <SectionTitle title="Alertas de stock" subtitle="Material bajo minimo" action="Ver inventario" onAction={() => setActive("inventario")} />
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {stockAlerts.map((item) => (
