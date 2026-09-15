@@ -726,7 +726,7 @@ export default function MiniErpBizonPrototype() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f6f6f4] text-zinc-900">
+    <div className="min-h-screen bg-[var(--surface-alt)] text-zinc-900">
       <GlobalStyles />
       <div className="flex">
         <Sidebar

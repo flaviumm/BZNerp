@@ -3,7 +3,7 @@ import { Badge, Panel } from "../ui";
 
 export function ScriptBox({ boxId, text, copied, onCopy }) {
   return (
-    <div className="relative mt-3 rounded-xl border border-[var(--border)] bg-[#f9f8f6] p-4">
+    <div className="relative mt-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
       <button
         type="button"
         onClick={() => onCopy(text, boxId)}
@@ -189,7 +189,7 @@ export function ProcesoVentas() {
               </thead>
               <tbody>
                 {matrixRows.map((row, i) => (
-                  <tr key={i} className={`border-b border-[var(--border)] last:border-0 ${i % 2 === 1 ? "bg-[#fafaf9]" : ""}`}>
+                  <tr key={i} className={`border-b border-[var(--border)] last:border-0 ${i % 2 === 1 ? "bg-[var(--surface)]" : ""}`}>
                     <td className="w-44 border-r border-[var(--border)] px-4 py-3 align-top text-[12px] font-semibold text-zinc-800">{row.resp}</td>
                     <td className="border-r border-[var(--border)] px-4 py-3 align-top text-[12px] text-zinc-600">{row.og}</td>
                     <td className="px-4 py-3 align-top text-[12px] text-zinc-600">{row.cons}</td>

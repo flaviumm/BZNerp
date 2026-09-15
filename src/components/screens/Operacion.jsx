@@ -19,7 +19,7 @@ export function OrdenesTrabajo({ workOrders, setWorkOrders, persistUpdate, openE
       <SectionTitle title="Ordenes de trabajo" subtitle={readOnlyClient ? `Ordenes visibles para ${currentProfile?.companyName || "tu empresa"}` : "Planificacion, equipo asignado, avance y margen"} />
       <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
         {visibleWorkOrders.map((order) => {
-          const marginTone = order.margin < 30 ? "text-[#b42318]" : "text-[#d85f00]";
+          const marginTone = order.margin < 30 ? "text-[var(--danger)]" : "text-[#d85f00]";
           return (
             <Panel key={order.number} className="flex min-h-[420px] flex-col p-4">
               <div className="flex items-start justify-between gap-3">
@@ -36,19 +36,19 @@ export function OrdenesTrabajo({ workOrders, setWorkOrders, persistUpdate, openE
               </div>
 
               <div className="mt-5 grid grid-cols-2 gap-2 text-[12px]">
-                <div className="rounded-xl border border-[#ececf0] bg-[#fafaf8] p-3">
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
                   <p className="font-semibold uppercase tracking-wide text-zinc-400">Equipo</p>
                   <p className="mt-1 line-clamp-1 font-semibold text-zinc-950">{order.team}</p>
                 </div>
-                <div className="rounded-xl border border-[#ececf0] bg-[#fafaf8] p-3">
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
                   <p className="font-semibold uppercase tracking-wide text-zinc-400">Margen</p>
                   <p className={`mt-1 text-lg font-semibold ${marginTone}`}>{order.margin}%</p>
                 </div>
-                <div className="rounded-xl border border-[#ececf0] bg-white p-3">
+                <div className="rounded-xl border border-[var(--border)] bg-white p-3">
                   <p className="font-semibold uppercase tracking-wide text-zinc-400">Inicio</p>
                   <p className="mt-1 font-semibold text-zinc-950">{order.start}</p>
                 </div>
-                <div className="rounded-xl border border-[#ececf0] bg-white p-3">
+                <div className="rounded-xl border border-[var(--border)] bg-white p-3">
                   <p className="font-semibold uppercase tracking-wide text-zinc-400">Entrega</p>
                   <p className="mt-1 font-semibold text-zinc-950">{order.end}</p>
                 </div>

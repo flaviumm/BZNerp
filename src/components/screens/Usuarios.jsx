@@ -178,7 +178,7 @@ export function Usuarios({ userProfiles, companies, currentProfile, onCreateUser
           </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {selectedRoleScreens.map((screen) => (
-              <label key={screen.key} className="flex min-h-11 items-center gap-3 rounded-lg border border-[#e6e6e2] bg-white px-3 py-2 text-sm font-semibold text-zinc-800">
+              <label key={screen.key} className="flex min-h-11 items-center gap-3 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-semibold text-zinc-800">
                 <input
                   type="checkbox"
                   checked={menuDraft.includes(screen.key)}
