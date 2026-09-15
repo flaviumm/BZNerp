@@ -149,6 +149,48 @@ export async function listOrganizations() {
   return data.map((org) => ({ id: org.id, name: org.name, createdAt: org.created_at }));
 }
 
+function mapOrganization(org) {
+  return {
+    id: org.id,
+    name: org.name,
+    primaryColor: org.primary_color || "#ff7900",
+    logoDataUrl: org.logo_data_url || null,
+    createdAt: org.created_at,
+  };
+}
+
+export async function getOrganization(id) {
+  if (!isDatabaseConfigured || !id) return null;
+
+  const { data, error } = await supabase
+    .from("organizations")
+    .select("id, name, primary_color, logo_data_url, created_at")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? mapOrganization(data) : null;
+}
+
+export async function updateOrganization(id, patch) {
+  if (!isDatabaseConfigured) return null;
+
+  const payload = {};
+  if (patch.name !== undefined) payload.name = patch.name;
+  if (patch.primaryColor !== undefined) payload.primary_color = patch.primaryColor;
+  if (patch.logoDataUrl !== undefined) payload.logo_data_url = patch.logoDataUrl || null;
+
+  const { data, error } = await supabase
+    .from("organizations")
+    .update(payload)
+    .eq("id", id)
+    .select("id, name, primary_color, logo_data_url, created_at")
+    .single();
+
+  if (error) throw error;
+  return mapOrganization(data);
+}
+
 export async function createOrganization({ organizationName, email, password, fullName }) {
   if (!isDatabaseConfigured) return null;
 
