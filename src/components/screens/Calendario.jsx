@@ -59,7 +59,7 @@ export function Calendario({ data, createCalendarEvent, openEditor, removeRecord
         <Panel className="p-5">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
-              <h2 className="text-xl font-semibold text-[#050505]">{cursor.toLocaleDateString("es-AR", { month: "long", year: "numeric" })}</h2>
+              <h2 className="text-xl font-semibold text-[var(--text)]">{cursor.toLocaleDateString("es-AR", { month: "long", year: "numeric" })}</h2>
               <p className="text-sm text-zinc-500">Vencimientos, hitos y tareas</p>
             </div>
             <div className="flex gap-2">
@@ -77,12 +77,12 @@ export function Calendario({ data, createCalendarEvent, openEditor, removeRecord
                 type="button"
                 disabled={!cell.date}
                 onClick={() => setSelectedDate(cell.date)}
-                className={`min-h-28 rounded-xl border p-2 text-left transition ${cell.date === selectedDate ? "border-[#ff7900] bg-[#fff1e5]" : "border-[#ecece6] bg-white hover:bg-[#fbfbf8]"} ${!cell.date ? "opacity-0" : ""}`}
+                className={`min-h-28 rounded-xl border p-2 text-left transition ${cell.date === selectedDate ? "border-[#ff7900] bg-[#fff1e5]" : "border-[var(--border)] bg-white hover:bg-[var(--surface)]"} ${!cell.date ? "opacity-0" : ""}`}
               >
-                <span className="text-sm font-semibold text-[#050505]">{cell.day}</span>
+                <span className="text-sm font-semibold text-[var(--text)]">{cell.day}</span>
                 <div className="mt-2 space-y-1">
                   {(cell.events || []).slice(0, 3).map((event) => (
-                    <div key={event.id} className="truncate rounded-md bg-[#050505] px-2 py-1 text-[11px] font-semibold text-white">{event.type}</div>
+                    <div key={event.id} className="truncate rounded-md bg-[var(--text)] px-2 py-1 text-[11px] font-semibold text-white">{event.type}</div>
                   ))}
                   {(cell.events || []).length > 3 && <div className="text-[11px] font-semibold text-[#ff7900]">+{cell.events.length - 3}</div>}
                 </div>
@@ -96,11 +96,11 @@ export function Calendario({ data, createCalendarEvent, openEditor, removeRecord
             <SectionTitle title="Dia seleccionado" subtitle={selectedDate} />
             <div className="mt-4 grid gap-3">
               {selectedEvents.map((event) => (
-                <div key={event.id} className="rounded-xl border border-[#ecece6] bg-[#fbfbf8] p-4">
+                <div key={event.id} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <Badge tone={event.tone}>{event.type}</Badge>
-                      <p className="mt-2 font-semibold text-[#050505]">{event.title}</p>
+                      <p className="mt-2 font-semibold text-[var(--text)]">{event.title}</p>
                       <p className="text-sm text-zinc-500">{event.detail}</p>
                     </div>
                     {event.task && (
@@ -112,7 +112,7 @@ export function Calendario({ data, createCalendarEvent, openEditor, removeRecord
                   </div>
                 </div>
               ))}
-              {!selectedEvents.length && <p className="rounded-xl border border-dashed border-[#ecece6] p-4 text-sm text-zinc-500">Sin eventos para este dia.</p>}
+              {!selectedEvents.length && <p className="rounded-xl border border-dashed border-[var(--border)] p-4 text-sm text-zinc-500">Sin eventos para este dia.</p>}
             </div>
           </Panel>
 

@@ -33,7 +33,7 @@ export function LoginScreen({ onSessionReady }) {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-[#f5f5f3] p-4">
+    <div className="grid min-h-screen place-items-center bg-[var(--surface-alt)] p-4">
       <Panel className="w-full max-w-md p-5">
         <div className="mb-5">
           <img src="/brand/isotipo_bizon.png" alt="Bizon" className="mb-4 h-14 w-14 rounded-lg bg-black object-contain p-1" />
@@ -76,7 +76,7 @@ export function AccountStatusScreen({ profile, onSignOut }) {
     : "Un administrador debe activar tu cuenta y asignarte un rol antes de usar el ERP.";
 
   return (
-    <div className="grid min-h-screen place-items-center bg-[#f5f5f3] p-4">
+    <div className="grid min-h-screen place-items-center bg-[var(--surface-alt)] p-4">
       <Panel className="w-full max-w-md p-5">
         <div className="mb-5">
           <img src="/brand/isotipo_bizon.png" alt="Bizon" className="mb-4 h-14 w-14 rounded-lg bg-black object-contain p-1" />
@@ -84,7 +84,7 @@ export function AccountStatusScreen({ profile, onSignOut }) {
           <h1 className="mt-1 text-2xl font-semibold text-zinc-950">{title}</h1>
           <p className="mt-2 text-sm text-zinc-500">{detail}</p>
         </div>
-        <div className="rounded-lg border border-[#e4e4de] bg-[#fbfbf8] p-3 text-sm text-zinc-700">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm text-zinc-700">
           <p><strong>Usuario:</strong> {profile?.fullName || "Sin perfil"}</p>
           <p><strong>Estado:</strong> {status}</p>
         </div>
@@ -98,7 +98,7 @@ export function AccountStatusScreen({ profile, onSignOut }) {
 
 export function DatabaseSetupScreen() {
   return (
-    <div className="grid min-h-screen place-items-center bg-[#f5f5f3] p-4">
+    <div className="grid min-h-screen place-items-center bg-[var(--surface-alt)] p-4">
       <Panel className="w-full max-w-xl p-5">
         <div className="mb-5">
           <img src="/brand/isotipo_bizon.png" alt="Bizon" className="mb-4 h-14 w-14 rounded-lg bg-black object-contain p-1" />
@@ -108,7 +108,7 @@ export function DatabaseSetupScreen() {
         </div>
         <div className="grid gap-3 text-sm text-zinc-700">
           <p>Crear el proyecto en Supabase, ejecutar los SQL de la carpeta <strong>database</strong> y cargar estas variables en Vercel:</p>
-          <div className="rounded-lg border border-[#e4e4de] bg-[#fbfbf8] p-3 font-mono text-xs text-zinc-900">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 font-mono text-xs text-zinc-900">
             <p>VITE_SUPABASE_URL</p>
             <p>VITE_SUPABASE_ANON_KEY</p>
           </div>
