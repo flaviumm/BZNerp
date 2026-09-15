@@ -385,3 +385,26 @@ export function toneForStatus(status) {
   if (["Vencida", "Bloqueado", "PERDIDO"].includes(status)) return "red";
   return "zinc";
 }
+
+function isoDay(value) {
+  return String(value).slice(0, 10);
+}
+
+export function dueWithinDays(list, limitIso, field = "due") {
+  return list.filter((item) => isValidDateValue(item[field]) && isoDay(item[field]) <= limitIso);
+}
+
+export function overdueWorkOrders(list, todayIso) {
+  return list.filter((order) => isValidDateValue(order.end) && isoDay(order.end) < todayIso && Number(order.progress || 0) < 100);
+}
+
+export function overdueReceivables(list, todayIso) {
+  return list.filter((invoice) => invoice.status !== "Cobrada" && isValidDateValue(invoice.due) && isoDay(invoice.due) < todayIso);
+}
+
+export function quotesByStatus(list) {
+  return list.reduce((counts, quote) => {
+    counts[quote.status] = (counts[quote.status] || 0) + 1;
+    return counts;
+  }, {});
+}
