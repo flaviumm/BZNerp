@@ -17,8 +17,8 @@ for (const hex of ["#ff7900", "#1d4ed8", "#0f766e", "#000000", "#ffffff"]) {
 
 const t = brandTokens("#ff7900");
 assert.equal(t.brand, "#ff7900");
-assert.ok(close(t.tint, "#fff1e5"), `tint ${t.tint}`);       // L 95
-assert.ok(close(t.soft, "#ffbf80", 3), `soft ${t.soft}`);    // L 75
+assert.ok(close(t.tint, "#fff2e5"), `tint ${t.tint}`);       // L 95
+assert.ok(close(t.soft, "#ffbc80", 3), `soft ${t.soft}`);    // L 75
 assert.ok(hexToHsl(t.hover)[2] < hexToHsl("#ff7900")[2], "hover es mas oscuro");
 assert.equal(t.shadow, "rgba(255,121,0,0.22)");
 

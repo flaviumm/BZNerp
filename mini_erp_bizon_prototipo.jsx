@@ -250,9 +250,13 @@ export default function MiniErpBizonPrototype() {
   }, [profile?.organizationId]);
 
   async function saveOrganizationSettings(patch) {
-    const saved = isDatabaseConfigured && organization?.id
-      ? await updateOrganization(organization.id, patch)
-      : { ...(organization || { id: null, name: "Bizon", primaryColor: "#ff7900", logoDataUrl: null }), ...patch };
+    let saved;
+    if (isDatabaseConfigured) {
+      if (!organization?.id) throw new Error("No se pudo cargar tu organizacion; recarga la pagina e intenta de nuevo.");
+      saved = await updateOrganization(organization.id, patch);
+    } else {
+      saved = { ...(organization || { id: null, name: "Bizon", primaryColor: "#ff7900", logoDataUrl: null }), ...patch };
+    }
     setOrganization(saved);
     applyBrandTheme(saved.primaryColor);
     return saved;

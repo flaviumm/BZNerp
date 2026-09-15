@@ -74,7 +74,7 @@ export function Configuracion({ organization, onUpdateOrganization }) {
             <Field label="Color principal">
               <div className="flex items-center gap-3">
                 <input type="color" value={color} onChange={(event) => setColor(event.target.value)} className="h-9 w-14 cursor-pointer rounded-lg border border-[var(--border)] bg-white p-1" aria-label="Elegir color" />
-                <TextInput value={color} onChange={(event) => setColor(event.target.value)} pattern="^#[0-9a-fA-F]{6}$" placeholder="#ff7900" />
+                <TextInput required value={color} onChange={(event) => setColor(event.target.value)} pattern="^#[0-9a-fA-F]{6}$" placeholder="#ff7900" />
                 <span className="inline-flex h-9 items-center rounded-lg px-3 text-[11px] font-semibold text-black" style={{ background: color }}>Muestra</span>
               </div>
             </Field>
