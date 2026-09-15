@@ -236,7 +236,12 @@ export default function MiniErpBizonPrototype() {
         setOrganization(org);
         applyBrandTheme(org?.primaryColor);
       })
-      .catch((error) => console.error("No se pudo cargar la organizacion:", error));
+      .catch((error) => {
+        console.error("No se pudo cargar la organizacion:", error);
+        if (cancelled) return;
+        setOrganization(null);
+        applyBrandTheme(null);
+      });
 
     return () => {
       cancelled = true;
