@@ -22,6 +22,7 @@ import { Documentos } from "./src/components/screens/Documentos";
 import { Auditoria } from "./src/components/screens/Auditoria";
 import { Usuarios } from "./src/components/screens/Usuarios";
 import { Organizaciones } from "./src/components/screens/Organizaciones";
+import { Configuracion } from "./src/components/screens/Configuracion";
 import { Reportes } from "./src/components/screens/Reportes";
 import { NewRecordModal, EditRecordModal } from "./src/components/screens/modals";
 import { LoginScreen, AccountStatusScreen, DatabaseSetupScreen } from "./src/components/screens/auth";
@@ -279,8 +280,9 @@ export default function MiniErpBizonPrototype() {
 
   const activeLabel = screens.find((item) => item.key === active)?.label || "Dashboard";
   const availableScreens = screens.filter((item) => canAccessScreen(item, profile || { role: "ventas", menuKeys: null }));
-  const sidebarMenuSections = profile?.isSuperAdmin
-    ? [...menuSections, { title: "Administracion", keys: ["organizaciones"] }]
+  const adminKeys = [profile?.isSuperAdmin ? "organizaciones" : null, profile?.role === "admin" ? "configuracion" : null].filter(Boolean);
+  const sidebarMenuSections = adminKeys.length
+    ? [...menuSections, { title: "Administracion", keys: adminKeys }]
     : menuSections;
 
   useEffect(() => {
@@ -738,6 +740,7 @@ export default function MiniErpBizonPrototype() {
     auditoria: <Auditoria {...screenProps} />,
     usuarios: <Usuarios {...screenProps} />,
     organizaciones: <Organizaciones {...screenProps} />,
+    configuracion: <Configuracion {...screenProps} />,
     reportes: <Reportes {...screenProps} />,
   }[active] || <Dashboard {...screenProps} />;
 
@@ -780,7 +783,7 @@ export default function MiniErpBizonPrototype() {
           onExportBackup={exportBackup}
           onResetLocal={useLocalDemo ? resetLocalDatabase : null}
           onSignOut={isDatabaseConfigured ? handleSignOut : null}
-          onNew={["usuarios", "organizaciones"].includes(active) ? null : () => setModalOpen(true)}
+          onNew={["usuarios", "organizaciones", "configuracion"].includes(active) ? null : () => setModalOpen(true)}
         />
         <main className="min-h-screen flex-1">
           <Header

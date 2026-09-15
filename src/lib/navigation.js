@@ -19,6 +19,7 @@ export const screens = [
   { key: "usuarios", label: "Usuarios", icon: "userCog", roles: ["admin"] },
   { key: "reportes", label: "Reportes", icon: "chart", roles: ["admin", "direccion"] },
   { key: "organizaciones", label: "Organizaciones", icon: "building", roles: [] },
+  { key: "configuracion", label: "Configuracion", icon: "userCog", roles: ["admin"] },
 ];
 
 export const menuSections = [
@@ -33,6 +34,7 @@ export const accountStatuses = ["pending", "active", "suspended"];
 export function canAccessScreen(screen, profileOrRole) {
   const profile = typeof profileOrRole === "string" ? { role: profileOrRole, menuKeys: null } : profileOrRole || {};
   if (screen.key === "organizaciones") return Boolean(profile.isSuperAdmin);
+  if (screen.key === "configuracion") return profile.role === "admin";
   const roleAllowed = screen.roles.includes(profile.role || "ventas");
   if (!roleAllowed) return false;
   if (Array.isArray(profile.menuKeys) && profile.menuKeys.length) return profile.menuKeys.includes(screen.key);
