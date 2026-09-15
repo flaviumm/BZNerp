@@ -250,13 +250,13 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
             <Field label="Direccion / ciudad"><TextInput value={clientDetails.address} onChange={(event) => setClientDetails({ ...clientDetails, address: event.target.value })} /></Field>
             <Field label="Valido hasta"><TextInput type="date" value={validUntil} onChange={(event) => setValidUntil(event.target.value)} /></Field>
           </div>
-          <div className="rounded-2xl border border-[#ececf0] bg-[#fafaf8] p-4">
+          <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
             <p className="text-sm font-semibold text-zinc-950">Resumen</p>
             <div className="mt-3 grid gap-2 text-sm">
               <div className="flex justify-between"><span>Numero</span><strong>{generatedQuote?.number || "Automatico"}</strong></div>
               <div className="flex justify-between"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
               <div className="flex justify-between"><span>IVA</span><strong>{money(tax)}</strong></div>
-              <div className="border-t border-[#e6e6e2] pt-2" />
+              <div className="border-t border-[var(--border)] pt-2" />
               <div className="flex justify-between text-base text-zinc-950"><span>Total</span><strong>{money(total)}</strong></div>
             </div>
             {generatedQuote && <Badge tone="green">Generado {generatedQuote.number}</Badge>}
@@ -309,7 +309,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
               <Button onClick={addMaterialLine} disabled={!selectedMaterial}>Agregar material</Button>
             </div>
             {filteredMaterials.length > 0 && (
-              <div className="max-h-72 overflow-y-auto rounded-lg border border-[#ececf0] divide-y divide-[#ececf0]">
+              <div className="max-h-72 overflow-y-auto rounded-lg border border-[var(--border)] divide-y divide-[var(--border)]">
                 {filteredMaterials.map((item) => {
                   const isSelected = selectedMaterial?.id === item.id;
                   return (
@@ -389,7 +389,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
               />
             </Field>
             {selectedLabor && (
-              <div className="rounded-lg border border-[#ececf0] bg-[#fafaf8] p-3 text-sm text-zinc-600">
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm text-zinc-600">
                 <p className="font-semibold text-zinc-950">{selectedLabor.trade}</p>
                 <p>{selectedLabor.category}</p>
                 <p className="mt-1">Convenio: {selectedLabor.agreement} · Tarifa: <strong>{money(selectedLabor.quoteHour)}/h</strong></p>
@@ -403,13 +403,13 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
       </Panel>
 
       <Panel className="overflow-hidden">
-        <div className="flex flex-col gap-3 border-b border-[#ececf0] p-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 border-b border-[var(--border)] p-5 md:flex-row md:items-center md:justify-between">
           <SectionTitle title="Detalle de productos" subtitle="Columnas de producto, cantidad, precio unitario y precio total" />
           <Button onClick={addLine}>Agregar renglon</Button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] border-collapse text-left">
-            <thead className="bg-[#fafaf8] text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+            <thead className="bg-[var(--surface)] text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
               <tr>
                 <th className="px-4 py-3">Detalle del producto</th>
                 <th className="w-[150px] px-4 py-3">Cantidad</th>
@@ -418,7 +418,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
                 <th className="w-[100px] px-4 py-3 text-right">Accion</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#eeeeec]">
+            <tbody className="divide-y divide-[var(--border)]">
               {lineItems.map((line, index) => {
                 if (line.type === "title") {
                   return (

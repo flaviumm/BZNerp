@@ -3,11 +3,11 @@ import { Badge, Panel } from "../ui";
 
 export function ScriptBox({ boxId, text, copied, onCopy }) {
   return (
-    <div className="relative mt-3 rounded-xl border border-[#ececf0] bg-[#f9f8f6] p-4">
+    <div className="relative mt-3 rounded-xl border border-[var(--border)] bg-[#f9f8f6] p-4">
       <button
         type="button"
         onClick={() => onCopy(text, boxId)}
-        className="absolute right-3 top-3 rounded-lg border border-[#e4e4e7] bg-white px-2 py-1 text-[11px] font-semibold text-zinc-600 transition hover:border-[#ff7900] hover:text-[#ff7900]"
+        className="absolute right-3 top-3 rounded-lg border border-[var(--border)] bg-white px-2 py-1 text-[11px] font-semibold text-zinc-600 transition hover:border-[#ff7900] hover:text-[#ff7900]"
       >
         {copied === boxId ? "Copiado ✓" : "Copiar"}
       </button>
@@ -97,7 +97,7 @@ export function ProcesoVentas() {
           <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Dos caminos comerciales</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-[22px] border border-[#ececf0] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #4a55c8" }}>
+          <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #4a55c8" }}>
             <h3 className="font-semibold text-zinc-950">Empresas Oil & Gas / Industria</h3>
             <p className="mt-2 text-[13px] text-zinc-500"><span className="font-semibold text-zinc-700">Dolores:</span> urgencias operativas, paradas, seguridad, documentación, mantenimiento correctivo, proveedores disponibles.</p>
             <ul className="mt-3 space-y-1.5 text-[13px] text-zinc-600">
@@ -106,7 +106,7 @@ export function ProcesoVentas() {
               <li>• <span className="font-medium">Cierre:</span> registro proveedor, visita/relevamiento o cotización técnica.</li>
             </ul>
           </div>
-          <div className="rounded-[22px] border border-[#ececf0] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #ff7900" }}>
+          <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #ff7900" }}>
             <h3 className="font-semibold text-zinc-950">Constructoras / Arquitectos / Estudios</h3>
             <p className="mt-2 text-[13px] text-zinc-500"><span className="font-semibold text-zinc-700">Dolores:</span> cumplimiento de obra, coordinación, proveedores que no responden, trabajos metálicos y eléctricos puntuales.</p>
             <ul className="mt-3 space-y-1.5 text-[13px] text-zinc-600">
@@ -123,7 +123,7 @@ export function ProcesoVentas() {
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">3</span>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Speech WhatsApp para Oil & Gas</h2>
         </div>
-        <div className="rounded-[22px] border border-[#ececf0] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #4a55c8" }}>
+        <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #4a55c8" }}>
           <div className="space-y-5">
             <div>
               <p className="text-[13px] font-semibold text-zinc-800">Primer contacto</p>
@@ -150,7 +150,7 @@ export function ProcesoVentas() {
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">4</span>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Speech WhatsApp para constructoras y arquitectos</h2>
         </div>
-        <div className="rounded-[22px] border border-[#ececf0] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #ff7900" }}>
+        <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #ff7900" }}>
           <div className="space-y-5">
             <div>
               <p className="text-[13px] font-semibold text-zinc-800">Primer contacto para constructora</p>
@@ -181,7 +181,7 @@ export function ProcesoVentas() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px]">
               <thead>
-                <tr className="border-b border-[#ececf0] bg-[#fff4ea]">
+                <tr className="border-b border-[var(--border)] bg-[#fff4ea]">
                   <th className="w-44 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#ff7900]">Respuesta</th>
                   <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#4a55c8]">Oil & Gas / Industria</th>
                   <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#d85f00]">Constructoras / Arquitectos</th>
@@ -189,9 +189,9 @@ export function ProcesoVentas() {
               </thead>
               <tbody>
                 {matrixRows.map((row, i) => (
-                  <tr key={i} className={`border-b border-[#ececf0] last:border-0 ${i % 2 === 1 ? "bg-[#fafaf9]" : ""}`}>
-                    <td className="w-44 border-r border-[#ececf0] px-4 py-3 align-top text-[12px] font-semibold text-zinc-800">{row.resp}</td>
-                    <td className="border-r border-[#ececf0] px-4 py-3 align-top text-[12px] text-zinc-600">{row.og}</td>
+                  <tr key={i} className={`border-b border-[var(--border)] last:border-0 ${i % 2 === 1 ? "bg-[#fafaf9]" : ""}`}>
+                    <td className="w-44 border-r border-[var(--border)] px-4 py-3 align-top text-[12px] font-semibold text-zinc-800">{row.resp}</td>
+                    <td className="border-r border-[var(--border)] px-4 py-3 align-top text-[12px] text-zinc-600">{row.og}</td>
                     <td className="px-4 py-3 align-top text-[12px] text-zinc-600">{row.cons}</td>
                   </tr>
                 ))}
