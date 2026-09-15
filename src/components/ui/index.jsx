@@ -30,7 +30,7 @@ export function MenuGlyph({ name }) {
 
 export function IconMark({ icon, active = false }) {
   return (
-    <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${active ? "bg-white/20 text-current" : "bg-transparent text-zinc-400 group-hover:bg-[#fff4ea] group-hover:text-[#ff7900]"}`}>
+    <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${active ? "bg-white/20 text-current" : "bg-transparent text-zinc-400 group-hover:bg-[var(--brand-tint)] group-hover:text-[var(--brand)]"}`}>
       <MenuGlyph name={icon} />
     </span>
   );
@@ -38,7 +38,7 @@ export function IconMark({ icon, active = false }) {
 
 export function Button({ children, onClick, variant = "primary", type = "button", disabled = false }) {
   const styles = {
-    primary: "border-[#ff7900] bg-[#ff7900] text-black shadow-sm hover:bg-[#ff8f1f]",
+    primary: "border-[var(--brand)] bg-[var(--brand)] text-black shadow-sm hover:bg-[var(--brand-hover)]",
     ghost: "border-[#cfe7dd] bg-[#f0fdf7] text-[var(--success)] hover:border-[var(--success)]",
     danger: "border-[#f3d2d2] bg-[#fff5f5] text-[var(--danger)] hover:border-[var(--danger)]",
   };
@@ -52,7 +52,7 @@ export function Button({ children, onClick, variant = "primary", type = "button"
 export function Badge({ children, tone = "zinc" }) {
   const tones = {
     zinc: "border-[var(--border)] bg-[var(--surface)] text-zinc-600",
-    green: "border-[#ffd2ad] bg-[#fff3e8] text-[#d85f00]",
+    green: "border-[var(--brand-soft)] bg-[var(--brand-tint)] text-[var(--brand-hover)]",
     amber: "border-[#f4dfb6] bg-[#fff8e8] text-[var(--warning)]",
     red: "border-[#f2c9c9] bg-[#fff3f1] text-[var(--danger)]",
     blue: "border-[#d8ddff] bg-[#f3f4ff] text-[#4a55c8]",
@@ -74,15 +74,15 @@ export function Field({ label, children }) {
 }
 
 export function TextInput(props) {
-  return <input {...props} className="min-h-9 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[13px] font-medium text-zinc-900 outline-none ring-[#ff7900] transition placeholder:text-zinc-400 focus:border-[#ff7900] focus:ring-2" />;
+  return <input {...props} className="min-h-9 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[13px] font-medium text-zinc-900 outline-none ring-[var(--brand)] transition placeholder:text-zinc-400 focus:border-[var(--brand)] focus:ring-2" />;
 }
 
 export function Select(props) {
-  return <select {...props} className="min-h-9 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[13px] font-medium text-zinc-900 outline-none ring-[#ff7900] transition focus:border-[#ff7900] focus:ring-2" />;
+  return <select {...props} className="min-h-9 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[13px] font-medium text-zinc-900 outline-none ring-[var(--brand)] transition focus:border-[var(--brand)] focus:ring-2" />;
 }
 
 export function TextArea(props) {
-  return <textarea {...props} className="min-h-24 w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-[13px] font-medium text-zinc-900 outline-none ring-[#ff7900] transition placeholder:text-zinc-400 focus:border-[#ff7900] focus:ring-2" />;
+  return <textarea {...props} className="min-h-24 w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-[13px] font-medium text-zinc-900 outline-none ring-[var(--brand)] transition placeholder:text-zinc-400 focus:border-[var(--brand)] focus:ring-2" />;
 }
 
 
@@ -94,7 +94,7 @@ export function Header({ activeLabel, databaseStatus, profile }) {
         <div className="flex items-center gap-4">
           <img src="/brand/isotipo_bizon.png" alt="Bizon" className="h-10 w-10 rounded-xl bg-black object-contain p-1 lg:hidden" />
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-wide text-[#ff7900]">Bizon ERP Industrial</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--brand)]">Bizon ERP Industrial</p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--text)]">{activeLabel}</h1>
           </div>
         </div>
@@ -102,7 +102,7 @@ export function Header({ activeLabel, databaseStatus, profile }) {
           <Badge tone={databaseStatus === "Conectado a Supabase" || databaseStatus === "Base local" ? "green" : databaseStatus === "Error de base" ? "red" : "amber"}>{databaseStatus}</Badge>
           {profile && (
             <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-white px-3 py-2">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff1e5] text-sm font-semibold text-[#d85f00]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-tint)] text-sm font-semibold text-[var(--brand-hover)]">
                 {profile.fullName?.slice(0, 1).toUpperCase() || "U"}
               </div>
               <div className="hidden text-right sm:block">
@@ -142,7 +142,7 @@ export function Sidebar({ active, setActive, availableScreens, menuSections, dat
       <div className="flex h-full flex-col">
         <div className={`relative flex min-h-16 items-center border-b border-[var(--border)] pb-5 ${collapsed ? "justify-center" : "justify-start pr-12"}`}>
           <img src={collapsed ? "/brand/isotipo_bizon.png" : "/brand/logo_principal_horizontal.png"} alt="Bizon Soluciones Industriales" className={collapsed ? "h-8 w-8 rounded-xl bg-black object-contain p-1" : "h-auto max-h-14 w-full object-contain"} />
-          <button type="button" onClick={onToggleCollapsed} className="absolute right-0 top-1 hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-white text-zinc-500 transition hover:border-[#ff7900] hover:text-[#ff7900] lg:inline-flex" title={collapsed ? "Expandir menu" : "Contraer menu"}>
+          <button type="button" onClick={onToggleCollapsed} className="absolute right-0 top-1 hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-white text-zinc-500 transition hover:border-[var(--brand)] hover:text-[var(--brand)] lg:inline-flex" title={collapsed ? "Expandir menu" : "Contraer menu"}>
             <span className={`transition ${collapsed ? "rotate-180" : ""}`}><MenuGlyph name="layout" /></span>
           </button>
         </div>
@@ -181,7 +181,7 @@ export function Sidebar({ active, setActive, availableScreens, menuSections, dat
                           title={allowed ? item.label : "Bloqueado para este rol"}
                           className={`group flex min-h-11 w-full items-center gap-2 rounded-2xl px-3 text-left text-[13px] font-medium transition ${collapsed ? "justify-center px-0" : ""} ${
                             isActive
-                              ? "bg-[#ff7900] text-black shadow-[0_12px_25px_rgba(255,121,0,0.22)]"
+                              ? "bg-[var(--brand)] text-black shadow-[0_12px_25px_var(--brand-shadow)]"
                               : allowed
                                 ? "text-zinc-500 hover:bg-[var(--surface-alt)] hover:text-zinc-950"
                                 : "cursor-not-allowed text-zinc-300"
@@ -218,7 +218,7 @@ export function MobileNav({ active, setActive, availableScreens }) {
             key={item.key}
             type="button"
             onClick={() => setActive(item.key)}
-            className={`min-h-10 shrink-0 rounded-lg border px-3 text-sm font-semibold ${active === item.key ? "border-[#ff7900] bg-[#ff7900] text-black" : "border-[var(--border)] bg-white text-zinc-700"}`}
+            className={`min-h-10 shrink-0 rounded-lg border px-3 text-sm font-semibold ${active === item.key ? "border-[var(--brand)] bg-[var(--brand)] text-black" : "border-[var(--border)] bg-white text-zinc-700"}`}
           >
             {item.label}
           </button>
@@ -232,11 +232,11 @@ export function MiniSparkBars({ values = [], tone = "green" }) {
   const max = Math.max(...values.map((value) => Number(value || 0)), 1);
   const color = {
     green: "bg-[var(--success)]",
-    amber: "bg-[#d85f00]",
+    amber: "bg-[var(--brand-hover)]",
     red: "bg-[var(--danger)]",
     blue: "bg-[#334155]",
     zinc: "bg-zinc-500",
-  }[tone] || "bg-[#d85f00]";
+  }[tone] || "bg-[var(--brand-hover)]";
 
   return (
     <div className="mt-4 flex h-10 items-end gap-1.5">
@@ -291,7 +291,7 @@ export function SectionTitle({ title, subtitle, action, onAction }) {
 }
 
 export function Progress({ value, tone = "green" }) {
-  const color = { green: "bg-[#ff7900]", amber: "bg-[#f3a51b]", red: "bg-[#e4574f]", blue: "bg-[#050505]" }[tone];
+  const color = { green: "bg-[var(--brand)]", amber: "bg-[#f3a51b]", red: "bg-[#e4574f]", blue: "bg-[#050505]" }[tone];
   return (
     <div className="h-2 overflow-hidden rounded-full bg-[var(--border)]">
       <div className={`h-full rounded-full ${color}`} style={{ width: `${clamp(value, 0, 100)}%` }} />
@@ -392,7 +392,7 @@ export function CleanBarList({ items, valueFormatter = (value) => value }) {
             <strong className="text-zinc-950">{valueFormatter(item.value)}</strong>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-[var(--border)]">
-            <div className="h-full rounded-full bg-[#ff7900]" style={{ width: `${Math.max((Number(item.value || 0) / max) * 100, 4)}%` }} />
+            <div className="h-full rounded-full bg-[var(--brand)]" style={{ width: `${Math.max((Number(item.value || 0) / max) * 100, 4)}%` }} />
           </div>
           {item.caption && <p className="text-xs font-semibold text-zinc-500">{item.caption}</p>}
         </div>
@@ -414,14 +414,14 @@ export function DashboardLineChart({ values = [], labels = [] }) {
   const area = `${path} L ${width} ${height} L 0 ${height} Z`;
 
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[#fffaf5] p-4">
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--brand-tint)] p-4">
       <svg viewBox={`0 0 ${width} ${height}`} className="h-32 w-full overflow-visible" role="img" aria-label="Grafico de tendencia">
-        <path d={area} fill="#ff7900" opacity="0.08" />
-        <path d={path} fill="none" stroke="#ff7900" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={area} fill="var(--brand)" opacity="0.08" />
+        <path d={path} fill="none" stroke="var(--brand)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
         {points.map((point, index) => (
           <g key={`${point.x}-${index}`}>
-            <circle cx={point.x} cy={point.y} r="4.5" fill="#ff7900" />
-            <circle cx={point.x} cy={point.y} r="9" fill="#ff7900" opacity="0.1" />
+            <circle cx={point.x} cy={point.y} r="4.5" fill="var(--brand)" />
+            <circle cx={point.x} cy={point.y} r="9" fill="var(--brand)" opacity="0.1" />
           </g>
         ))}
       </svg>
@@ -435,8 +435,8 @@ export function DashboardLineChart({ values = [], labels = [] }) {
 export function DashboardRadialChart({ value, label, details = [] }) {
   const normalized = clamp(value, 0, 100);
   return (
-    <div className="grid gap-4 rounded-2xl border border-[var(--border)] bg-[#fffaf5] p-4 sm:grid-cols-[132px_1fr] sm:items-center">
-      <div className="relative h-32 w-32 rounded-full" style={{ background: `conic-gradient(#ff7900 ${normalized}%, var(--border) ${normalized}% 100%)` }}>
+    <div className="grid gap-4 rounded-2xl border border-[var(--border)] bg-[var(--brand-tint)] p-4 sm:grid-cols-[132px_1fr] sm:items-center">
+      <div className="relative h-32 w-32 rounded-full" style={{ background: `conic-gradient(var(--brand) ${normalized}%, var(--border) ${normalized}% 100%)` }}>
         <div className="absolute inset-4 grid place-items-center rounded-full bg-white">
           <strong className="text-2xl font-semibold tracking-tight text-zinc-950">{Math.round(normalized)}%</strong>
           <span className="-mt-1 text-[11px] font-semibold text-zinc-400">{label}</span>
@@ -460,12 +460,12 @@ export function DashboardRadialChart({ value, label, details = [] }) {
 export function DashboardStackChart({ items = [] }) {
   const total = items.reduce((sumValue, item) => sumValue + Number(item.value || 0), 0) || 1;
   return (
-    <div className="rounded-2xl border border-[var(--border)] bg-[#fffaf5] p-4">
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--brand-tint)] p-4">
       <div className="flex h-5 overflow-hidden rounded-full bg-[var(--border)]">
         {items.map((item, index) => (
           <span
             key={item.label}
-            className={index === 0 ? "bg-[#ff7900]" : index === 1 ? "bg-[#111111]" : "bg-[#f2c48d]"}
+            className={index === 0 ? "bg-[var(--brand)]" : index === 1 ? "bg-[#111111]" : "bg-[var(--brand-soft)]"}
             style={{ width: `${Math.max((Number(item.value || 0) / total) * 100, 4)}%` }}
           />
         ))}
@@ -474,7 +474,7 @@ export function DashboardStackChart({ items = [] }) {
         {items.map((item, index) => (
           <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
             <span className="flex min-w-0 items-center gap-2 font-semibold text-zinc-600">
-              <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${index === 0 ? "bg-[#ff7900]" : index === 1 ? "bg-[#111111]" : "bg-[#f2c48d]"}`} />
+              <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${index === 0 ? "bg-[var(--brand)]" : index === 1 ? "bg-[#111111]" : "bg-[var(--brand-soft)]"}`} />
               <span className="truncate">{item.label}</span>
             </span>
             <strong className="text-zinc-950">{item.value}</strong>
@@ -487,7 +487,7 @@ export function DashboardStackChart({ items = [] }) {
 
 export function ProgressRing({ value, label = "Avance" }) {
   const safeValue = clamp(Number(value || 0), 0, 100);
-  const ringColor = safeValue >= 85 ? "#ff7900" : safeValue >= 50 ? "#f59e0b" : "#94a3b8";
+  const ringColor = safeValue >= 85 ? "var(--brand)" : safeValue >= 50 ? "#f59e0b" : "#94a3b8";
 
   return (
     <div className="relative mx-auto grid h-32 w-32 place-items-center rounded-full" style={{ background: `conic-gradient(${ringColor} ${safeValue * 3.6}deg, var(--border) 0deg)` }}>

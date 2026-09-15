@@ -19,7 +19,7 @@ export function OrdenesTrabajo({ workOrders, setWorkOrders, persistUpdate, openE
       <SectionTitle title="Ordenes de trabajo" subtitle={readOnlyClient ? `Ordenes visibles para ${currentProfile?.companyName || "tu empresa"}` : "Planificacion, equipo asignado, avance y margen"} />
       <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
         {visibleWorkOrders.map((order) => {
-          const marginTone = order.margin < 30 ? "text-[var(--danger)]" : "text-[#d85f00]";
+          const marginTone = order.margin < 30 ? "text-[var(--danger)]" : "text-[var(--brand-hover)]";
           return (
             <Panel key={order.number} className="flex min-h-[420px] flex-col p-4">
               <div className="flex items-start justify-between gap-3">
@@ -59,7 +59,7 @@ export function OrdenesTrabajo({ workOrders, setWorkOrders, persistUpdate, openE
                   <span>Actualizar avance</span>
                   <span>{order.progress}%</span>
                 </div>
-                <input className="w-full accent-[#ff7900] disabled:opacity-50" type="range" min="0" max="100" value={order.progress} disabled={readOnlyClient} onChange={(event) => setProgress(order.number, event.target.value)} />
+                <input className="w-full accent-[var(--brand)] disabled:opacity-50" type="range" min="0" max="100" value={order.progress} disabled={readOnlyClient} onChange={(event) => setProgress(order.number, event.target.value)} />
               </div>
 
               {readOnlyClient ? (

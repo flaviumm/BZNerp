@@ -58,7 +58,7 @@ export function ImportarLeads({ companies, opportunities, onImportLeads }) {
       <Panel className="p-5">
         <div className="grid gap-4 xl:grid-cols-[1fr_220px_180px_auto] xl:items-end">
           <Field label="Archivo Excel">
-            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="block w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm font-medium text-zinc-700 file:mr-3 file:rounded-lg file:border-0 file:bg-[#ff7900] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white" />
+            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="block w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm font-medium text-zinc-700 file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--brand)] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white" />
           </Field>
           <Field label="Hoja">
             <Select value={sheetName} onChange={(event) => workbook && parseSheet(workbook, event.target.value)}>
@@ -72,7 +72,7 @@ export function ImportarLeads({ companies, opportunities, onImportLeads }) {
           </Field>
           <Button onClick={importRows} disabled={!rows.length}>Importar leads</Button>
         </div>
-        {message && <p className="mt-3 text-sm font-semibold text-[#d85f00]">{message}</p>}
+        {message && <p className="mt-3 text-sm font-semibold text-[var(--brand-hover)]">{message}</p>}
       </Panel>
 
       <div className="grid gap-4 md:grid-cols-4">

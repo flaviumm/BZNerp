@@ -36,7 +36,7 @@ export function Dashboard({ data, setActive }) {
       <Panel className="p-7">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-[#ff7900]">Vista general</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-[var(--brand)]">Vista general</p>
             <h2 className="mt-2 text-[30px] font-semibold tracking-tight text-zinc-950">Operacion diaria Bizon</h2>
             <p className="mt-2 max-w-2xl text-[15px] font-semibold text-zinc-500">Resumen ejecutivo para ubicar ventas, produccion y control sin ruido visual.</p>
           </div>

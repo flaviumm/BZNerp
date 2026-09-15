@@ -7,7 +7,7 @@ export function ScriptBox({ boxId, text, copied, onCopy }) {
       <button
         type="button"
         onClick={() => onCopy(text, boxId)}
-        className="absolute right-3 top-3 rounded-lg border border-[var(--border)] bg-white px-2 py-1 text-[11px] font-semibold text-zinc-600 transition hover:border-[#ff7900] hover:text-[#ff7900]"
+        className="absolute right-3 top-3 rounded-lg border border-[var(--border)] bg-white px-2 py-1 text-[11px] font-semibold text-zinc-600 transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
       >
         {copied === boxId ? "Copiado ✓" : "Copiar"}
       </button>
@@ -76,13 +76,13 @@ export function ProcesoVentas() {
 
       <div>
         <div className="mb-5 flex items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">1</span>
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">1</span>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Mapa general del proceso</h2>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
           {processSteps.map((step, i) => (
             <Panel key={i} className={`p-4 ${step.decision ? "bg-amber-50" : ""}`}>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#ff7900]">{step.stage}</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--brand)]">{step.stage}</p>
               <p className="mt-1.5 text-[13px] font-semibold text-zinc-900">{step.title}</p>
               <p className="mt-1 text-[12px] text-zinc-500">{step.desc}</p>
               <p className="mt-2 text-[11px] font-medium text-zinc-400">{step.meta}</p>
@@ -93,7 +93,7 @@ export function ProcesoVentas() {
 
       <div>
         <div className="mb-5 flex items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">2</span>
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">2</span>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Dos caminos comerciales</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
@@ -106,7 +106,7 @@ export function ProcesoVentas() {
               <li>• <span className="font-medium">Cierre:</span> registro proveedor, visita/relevamiento o cotización técnica.</li>
             </ul>
           </div>
-          <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #ff7900" }}>
+          <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid var(--brand)" }}>
             <h3 className="font-semibold text-zinc-950">Constructoras / Arquitectos / Estudios</h3>
             <p className="mt-2 text-[13px] text-zinc-500"><span className="font-semibold text-zinc-700">Dolores:</span> cumplimiento de obra, coordinación, proveedores que no responden, trabajos metálicos y eléctricos puntuales.</p>
             <ul className="mt-3 space-y-1.5 text-[13px] text-zinc-600">
@@ -120,7 +120,7 @@ export function ProcesoVentas() {
 
       <div>
         <div className="mb-5 flex items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">3</span>
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">3</span>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Speech WhatsApp para Oil & Gas</h2>
         </div>
         <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #4a55c8" }}>
@@ -147,10 +147,10 @@ export function ProcesoVentas() {
 
       <div>
         <div className="mb-5 flex items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">4</span>
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">4</span>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Speech WhatsApp para constructoras y arquitectos</h2>
         </div>
-        <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #ff7900" }}>
+        <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid var(--brand)" }}>
           <div className="space-y-5">
             <div>
               <p className="text-[13px] font-semibold text-zinc-800">Primer contacto para constructora</p>
@@ -174,17 +174,17 @@ export function ProcesoVentas() {
 
       <div>
         <div className="mb-5 flex items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">5</span>
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">5</span>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Mapa de respuestas según reacción</h2>
         </div>
         <Panel className="overflow-hidden p-0">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px]">
               <thead>
-                <tr className="border-b border-[var(--border)] bg-[#fff4ea]">
-                  <th className="w-44 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#ff7900]">Respuesta</th>
+                <tr className="border-b border-[var(--border)] bg-[var(--brand-tint)]">
+                  <th className="w-44 px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[var(--brand)]">Respuesta</th>
                   <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#4a55c8]">Oil & Gas / Industria</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[#d85f00]">Constructoras / Arquitectos</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[var(--brand-hover)]">Constructoras / Arquitectos</th>
                 </tr>
               </thead>
               <tbody>
@@ -203,13 +203,13 @@ export function ProcesoVentas() {
 
       <div>
         <div className="mb-5 flex items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">6</span>
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">6</span>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Secuencia de seguimiento</h2>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
           {followUpDays.map((d, i) => (
             <Panel key={i} className="p-4">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[#ff7900]">{d.day}</p>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--brand)]">{d.day}</p>
               <p className="mt-1.5 text-[13px] font-semibold text-zinc-900">{d.title}</p>
               <p className="mt-1.5 text-[12px] text-zinc-500 leading-relaxed">{d.desc}</p>
             </Panel>
@@ -219,13 +219,13 @@ export function ProcesoVentas() {
 
       <div>
         <div className="mb-5 flex items-center gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ff7900] text-[13px] font-black text-black">7</span>
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">7</span>
           <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Embudo comercial sugerido</h2>
         </div>
         <Panel className="p-6">
           <div className="mx-auto flex max-w-xl flex-col items-center gap-2">
             {funnelSteps.map((step, i) => (
-              <div key={i} className="rounded-xl border border-[#ffe0c2] bg-[#fff4ea] px-4 py-3 text-center text-[13px] font-semibold text-[#d85f00]" style={{ width: step.w }}>
+              <div key={i} className="rounded-xl border border-[var(--brand-soft)] bg-[var(--brand-tint)] px-4 py-3 text-center text-[13px] font-semibold text-[var(--brand-hover)]" style={{ width: step.w }}>
                 {step.label}
               </div>
             ))}
@@ -234,8 +234,8 @@ export function ProcesoVentas() {
         </Panel>
       </div>
 
-      <div className="rounded-[22px] border border-[#ffe0c2] bg-[#fff8f0] p-5" style={{ borderLeft: "4px solid #ff7900" }}>
-        <p className="text-[11px] font-bold uppercase tracking-wider text-[#ff7900]">Frase central</p>
+      <div className="rounded-[22px] border border-[var(--brand-soft)] bg-[var(--brand-tint)] p-5" style={{ borderLeft: "4px solid var(--brand)" }}>
+        <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--brand)]">Frase central</p>
         <p className="mt-2 text-[14px] font-semibold leading-relaxed text-zinc-900">Bizon no se presenta como un proveedor más de soldadura o electricidad; se presenta como una solución técnica confiable para empresas que necesitan resolver trabajos industriales, obras, reparaciones y urgencias con rapidez, cumplimiento y responsabilidad.</p>
       </div>
     </div>

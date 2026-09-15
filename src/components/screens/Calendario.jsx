@@ -77,14 +77,14 @@ export function Calendario({ data, createCalendarEvent, openEditor, removeRecord
                 type="button"
                 disabled={!cell.date}
                 onClick={() => setSelectedDate(cell.date)}
-                className={`min-h-28 rounded-xl border p-2 text-left transition ${cell.date === selectedDate ? "border-[#ff7900] bg-[#fff1e5]" : "border-[var(--border)] bg-white hover:bg-[var(--surface)]"} ${!cell.date ? "opacity-0" : ""}`}
+                className={`min-h-28 rounded-xl border p-2 text-left transition ${cell.date === selectedDate ? "border-[var(--brand)] bg-[var(--brand-tint)]" : "border-[var(--border)] bg-white hover:bg-[var(--surface)]"} ${!cell.date ? "opacity-0" : ""}`}
               >
                 <span className="text-sm font-semibold text-[var(--text)]">{cell.day}</span>
                 <div className="mt-2 space-y-1">
                   {(cell.events || []).slice(0, 3).map((event) => (
                     <div key={event.id} className="truncate rounded-md bg-[var(--text)] px-2 py-1 text-[11px] font-semibold text-white">{event.type}</div>
                   ))}
-                  {(cell.events || []).length > 3 && <div className="text-[11px] font-semibold text-[#ff7900]">+{cell.events.length - 3}</div>}
+                  {(cell.events || []).length > 3 && <div className="text-[11px] font-semibold text-[var(--brand)]">+{cell.events.length - 3}</div>}
                 </div>
               </button>
             ))}

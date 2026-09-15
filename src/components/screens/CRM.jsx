@@ -70,7 +70,7 @@ export function CRM({ opportunities, setOpportunities, persistUpdate, openEditor
                     <div className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
                       <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5">
                         <p className="font-semibold uppercase tracking-wide text-zinc-400">Monto</p>
-                        <p className="mt-1 truncate font-semibold text-[#d85f00]">{money(opportunity.amount)}</p>
+                        <p className="mt-1 truncate font-semibold text-[var(--brand-hover)]">{money(opportunity.amount)}</p>
                       </div>
                       <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5">
                         <p className="font-semibold uppercase tracking-wide text-zinc-400">Cierre</p>
@@ -172,7 +172,7 @@ export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, open
           return (
             <Panel
               key={stage}
-              className={`min-h-[520px] min-w-0 p-3 transition ${draggingId ? "ring-1 ring-[#ff7900]/20" : ""}`}
+              className={`min-h-[520px] min-w-0 p-3 transition ${draggingId ? "ring-1 ring-[var(--brand)]/20" : ""}`}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => dropOnStage(event, stage)}
             >
@@ -183,7 +183,7 @@ export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, open
                 </div>
                 <div className="mt-2 flex items-center justify-between gap-2 text-xs font-semibold text-zinc-500">
                   <span>Valor etapa</span>
-                  <span className="truncate text-[#d85f00]">{money(stageTotal)}</span>
+                  <span className="truncate text-[var(--brand-hover)]">{money(stageTotal)}</span>
                 </div>
               </div>
               <div className="space-y-2">
@@ -195,16 +195,16 @@ export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, open
                       draggable
                       onDragStart={(event) => startDrag(event, opportunity)}
                       onDragEnd={() => setDraggingId(null)}
-                      className={`overflow-hidden rounded-2xl border bg-white shadow-[0_8px_20px_rgba(15,23,42,0.035)] transition ${draggingId === opportunity.id ? "border-[#ff7900] opacity-60" : "border-[var(--border)]"}`}
+                      className={`overflow-hidden rounded-2xl border bg-white shadow-[0_8px_20px_rgba(15,23,42,0.035)] transition ${draggingId === opportunity.id ? "border-[var(--brand)] opacity-60" : "border-[var(--border)]"}`}
                     >
-                      <button type="button" onClick={() => toggleExpanded(opportunity.id)} className="flex w-full items-stretch justify-between gap-3 border-l-4 border-[#ff7900] bg-[#fff8f1] px-3 py-3 text-left transition hover:bg-[#fff1e5]">
+                      <button type="button" onClick={() => toggleExpanded(opportunity.id)} className="flex w-full items-stretch justify-between gap-3 border-l-4 border-[var(--brand)] bg-[var(--brand-tint)] px-3 py-3 text-left transition hover:bg-[var(--brand-tint)]">
                         <div className="min-w-0">
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#d85f00]">Cliente</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--brand-hover)]">Cliente</p>
                           <p className="mt-0.5 truncate text-[15px] font-semibold leading-tight text-zinc-950">{opportunity.company}</p>
                           <p className="mt-1 truncate text-[11px] font-medium text-zinc-500">{opportunity.service}</p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2 self-center">
-                          <span className="rounded-full bg-[#fff1e5] px-2 py-1 text-[11px] font-semibold text-[#d85f00]">{opportunity.probability}%</span>
+                          <span className="rounded-full bg-[var(--brand-tint)] px-2 py-1 text-[11px] font-semibold text-[var(--brand-hover)]">{opportunity.probability}%</span>
                           <span className="text-xs font-semibold text-zinc-400">{expanded ? "Cerrar" : "Abrir"}</span>
                         </div>
                       </button>
@@ -215,7 +215,7 @@ export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, open
                           <div className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
                             <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5">
                               <p className="font-semibold uppercase tracking-wide text-zinc-400">Monto</p>
-                              <p className="mt-1 truncate font-semibold text-[#d85f00]">{money(opportunity.amount)}</p>
+                              <p className="mt-1 truncate font-semibold text-[var(--brand-hover)]">{money(opportunity.amount)}</p>
                             </div>
                             <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5">
                               <p className="font-semibold uppercase tracking-wide text-zinc-400">Cierre</p>
@@ -231,8 +231,8 @@ export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, open
                               {stages.map((option) => <option key={option}>{option}</option>)}
                             </Select>
                             <div className="grid grid-cols-2 gap-2">
-                              <button type="button" title="Estado anterior" onClick={() => moveByOffset(opportunity, -1)} className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--border)] bg-white text-base font-semibold text-zinc-600 transition hover:border-[#ff7900] hover:text-[#d85f00]">{"<"}</button>
-                              <button type="button" title="Estado siguiente" onClick={() => moveByOffset(opportunity, 1)} className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--border)] bg-white text-base font-semibold text-zinc-600 transition hover:border-[#ff7900] hover:text-[#d85f00]">{">"}</button>
+                              <button type="button" title="Estado anterior" onClick={() => moveByOffset(opportunity, -1)} className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--border)] bg-white text-base font-semibold text-zinc-600 transition hover:border-[var(--brand)] hover:text-[var(--brand-hover)]">{"<"}</button>
+                              <button type="button" title="Estado siguiente" onClick={() => moveByOffset(opportunity, 1)} className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--border)] bg-white text-base font-semibold text-zinc-600 transition hover:border-[var(--brand)] hover:text-[var(--brand-hover)]">{">"}</button>
                             </div>
                             <div className="flex gap-2">
                               <button type="button" onClick={() => openEditor("crm", opportunity)} className="inline-flex h-8 flex-1 items-center justify-center rounded-lg border border-[#cfe7dd] bg-[#f0fdf7] px-2 text-[11px] font-semibold text-[var(--success)] transition hover:border-[var(--success)]">Editar</button>

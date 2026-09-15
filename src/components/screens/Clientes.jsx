@@ -314,10 +314,10 @@ export function ClientesCards({ companies, setCompanies, persistUpdate, openEdit
           const editingContacts = contactEditor === company.id;
           return (
             <Panel key={company.id} className="flex min-h-[360px] flex-col overflow-hidden">
-              <div className="border-l-4 border-[#ff7900] bg-[#fff8f1] p-4">
+              <div className="border-l-4 border-[var(--brand)] bg-[var(--brand-tint)] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#d85f00]">Cliente</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--brand-hover)]">Cliente</p>
                     <h3 className="mt-1 line-clamp-2 text-lg font-semibold leading-tight text-zinc-950">{company.name}</h3>
                   </div>
                   <Badge tone={toneForStatus(company.status)}>{company.status}</Badge>
@@ -336,7 +336,7 @@ export function ClientesCards({ companies, setCompanies, persistUpdate, openEdit
                   </div>
                   <div className="rounded-xl border border-[var(--border)] bg-white p-3">
                     <p className="font-semibold uppercase tracking-wide text-zinc-400">Valor potencial</p>
-                    <p className="mt-1 truncate font-semibold text-[#d85f00]">{money(company.value)}</p>
+                    <p className="mt-1 truncate font-semibold text-[var(--brand-hover)]">{money(company.value)}</p>
                   </div>
                   <div className="rounded-xl border border-[var(--border)] bg-white p-3">
                     <p className="font-semibold uppercase tracking-wide text-zinc-400">Estado</p>

@@ -184,7 +184,7 @@ export function Usuarios({ userProfiles, companies, currentProfile, onCreateUser
                   checked={menuDraft.includes(screen.key)}
                   onChange={() => toggleMenuKey(screen.key)}
                   disabled={selectedUser.id === currentProfile?.id && screen.key === "usuarios"}
-                  className="h-4 w-4 accent-[#ff7900]"
+                  className="h-4 w-4 accent-[var(--brand)]"
                 />
                 <span>{screen.label}</span>
               </label>
