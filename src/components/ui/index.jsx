@@ -51,7 +51,7 @@ export function Button({ children, onClick, variant = "primary", type = "button"
 
 export function Badge({ children, tone = "zinc" }) {
   const tones = {
-    zinc: "border-[#e7e7e2] bg-[#f7f7f4] text-zinc-600",
+    zinc: "border-[var(--border)] bg-[var(--surface)] text-zinc-600",
     green: "border-[#ffd2ad] bg-[#fff3e8] text-[#d85f00]",
     amber: "border-[#f4dfb6] bg-[#fff8e8] text-[var(--warning)]",
     red: "border-[#f2c9c9] bg-[#fff3f1] text-[var(--danger)]",
@@ -74,15 +74,15 @@ export function Field({ label, children }) {
 }
 
 export function TextInput(props) {
-  return <input {...props} className="min-h-9 w-full rounded-lg border border-[#e6e6e2] bg-white px-3 text-[13px] font-medium text-zinc-900 outline-none ring-[#ff7900] transition placeholder:text-zinc-400 focus:border-[#ff7900] focus:ring-2" />;
+  return <input {...props} className="min-h-9 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[13px] font-medium text-zinc-900 outline-none ring-[#ff7900] transition placeholder:text-zinc-400 focus:border-[#ff7900] focus:ring-2" />;
 }
 
 export function Select(props) {
-  return <select {...props} className="min-h-9 w-full rounded-lg border border-[#e6e6e2] bg-white px-3 text-[13px] font-medium text-zinc-900 outline-none ring-[#ff7900] transition focus:border-[#ff7900] focus:ring-2" />;
+  return <select {...props} className="min-h-9 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[13px] font-medium text-zinc-900 outline-none ring-[#ff7900] transition focus:border-[#ff7900] focus:ring-2" />;
 }
 
 export function TextArea(props) {
-  return <textarea {...props} className="min-h-24 w-full rounded-lg border border-[#e6e6e2] bg-white px-3 py-2 text-[13px] font-medium text-zinc-900 outline-none ring-[#ff7900] transition placeholder:text-zinc-400 focus:border-[#ff7900] focus:ring-2" />;
+  return <textarea {...props} className="min-h-24 w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-[13px] font-medium text-zinc-900 outline-none ring-[#ff7900] transition placeholder:text-zinc-400 focus:border-[#ff7900] focus:ring-2" />;
 }
 
 
@@ -218,7 +218,7 @@ export function MobileNav({ active, setActive, availableScreens }) {
             key={item.key}
             type="button"
             onClick={() => setActive(item.key)}
-            className={`min-h-10 shrink-0 rounded-lg border px-3 text-sm font-semibold ${active === item.key ? "border-[#ff7900] bg-[#ff7900] text-black" : "border-[#e4e4de] bg-white text-zinc-700"}`}
+            className={`min-h-10 shrink-0 rounded-lg border px-3 text-sm font-semibold ${active === item.key ? "border-[#ff7900] bg-[#ff7900] text-black" : "border-[var(--border)] bg-white text-zinc-700"}`}
           >
             {item.label}
           </button>
@@ -293,7 +293,7 @@ export function SectionTitle({ title, subtitle, action, onAction }) {
 export function Progress({ value, tone = "green" }) {
   const color = { green: "bg-[#ff7900]", amber: "bg-[#f3a51b]", red: "bg-[#e4574f]", blue: "bg-[#050505]" }[tone];
   return (
-    <div className="h-2 overflow-hidden rounded-full bg-[#edede8]">
+    <div className="h-2 overflow-hidden rounded-full bg-[var(--border)]">
       <div className={`h-full rounded-full ${color}`} style={{ width: `${clamp(value, 0, 100)}%` }} />
     </div>
   );
@@ -350,12 +350,12 @@ export function DataTable({ headers, rows, empty = "Sin datos" }) {
     <Panel className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-[12px]" style={{ minWidth: `${Math.max(820, headers.length * 118)}px` }}>
-          <thead className="bg-[#fafaf8] text-zinc-500">
+          <thead className="bg-[var(--surface)] text-zinc-500">
             <tr>{headers.map((header) => <th key={header} className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide">{header}</th>)}</tr>
           </thead>
-          <tbody className="divide-y divide-[#eeeeec]">
+          <tbody className="divide-y divide-[var(--border)]">
             {rows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="font-medium text-zinc-600 transition hover:bg-[#fbfbfa]">
+              <tr key={rowIndex} className="font-medium text-zinc-600 transition hover:bg-[var(--surface)]">
                 {row.map((cell, cellIndex) => <td key={`${rowIndex}-${cellIndex}`} className="px-3 py-2.5 align-middle">{cell}</td>)}
               </tr>
             ))}
@@ -391,7 +391,7 @@ export function CleanBarList({ items, valueFormatter = (value) => value }) {
             <span className="font-semibold text-zinc-800">{item.label}</span>
             <strong className="text-zinc-950">{valueFormatter(item.value)}</strong>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-[#ededeb]">
+          <div className="h-2 overflow-hidden rounded-full bg-[var(--border)]">
             <div className="h-full rounded-full bg-[#ff7900]" style={{ width: `${Math.max((Number(item.value || 0) / max) * 100, 4)}%` }} />
           </div>
           {item.caption && <p className="text-xs font-semibold text-zinc-500">{item.caption}</p>}
@@ -490,7 +490,7 @@ export function ProgressRing({ value, label = "Avance" }) {
   const ringColor = safeValue >= 85 ? "#ff7900" : safeValue >= 50 ? "#f59e0b" : "#94a3b8";
 
   return (
-    <div className="relative mx-auto grid h-32 w-32 place-items-center rounded-full" style={{ background: `conic-gradient(${ringColor} ${safeValue * 3.6}deg, #eeeeec 0deg)` }}>
+    <div className="relative mx-auto grid h-32 w-32 place-items-center rounded-full" style={{ background: `conic-gradient(${ringColor} ${safeValue * 3.6}deg, var(--border) 0deg)` }}>
       <div className="absolute inset-3 rounded-full bg-white" />
       <div className="relative text-center">
         <p className="text-3xl font-semibold tracking-tight text-zinc-950">{safeValue}%</p>

@@ -708,7 +708,7 @@ export default function MiniErpBizonPrototype() {
 
   if (authLoading) {
     return (
-      <div className="grid min-h-screen place-items-center bg-[#f5f5f3] p-4">
+      <div className="grid min-h-screen place-items-center bg-[var(--surface-alt)] p-4">
         <Panel className="p-5 text-center">
           <p className="font-semibold text-zinc-950">Cargando acceso...</p>
           <p className="mt-1 text-sm text-zinc-500">Validando sesion y permisos.</p>
