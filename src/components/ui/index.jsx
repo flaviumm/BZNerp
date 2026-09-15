@@ -87,14 +87,16 @@ export function TextArea(props) {
 
 
 
-export function Header({ activeLabel, databaseStatus, profile }) {
+export function Header({ activeLabel, databaseStatus, profile, organization }) {
+  const brandName = organization?.name || "Bizon ERP Industrial";
+  const brandLogo = organization?.logoDataUrl || "/brand/isotipo_bizon.png";
   return (
     <header className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-4 md:px-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-4">
-          <img src="/brand/isotipo_bizon.png" alt="Bizon" className="h-10 w-10 rounded-xl bg-black object-contain p-1 lg:hidden" />
+          <img src={brandLogo} alt={brandName} className="h-10 w-10 rounded-xl bg-black object-contain p-1 lg:hidden" />
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--brand)]">Bizon ERP Industrial</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--brand)]">{brandName}</p>
             <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--text)]">{activeLabel}</h1>
           </div>
         </div>
@@ -117,7 +119,7 @@ export function Header({ activeLabel, databaseStatus, profile }) {
   );
 }
 
-export function Sidebar({ active, setActive, availableScreens, menuSections, databaseStatus, collapsed, onToggleCollapsed, onNew, onExportBackup, onResetLocal, onSignOut }) {
+export function Sidebar({ active, setActive, availableScreens, menuSections, databaseStatus, collapsed, onToggleCollapsed, onNew, onExportBackup, onResetLocal, onSignOut, organization }) {
   const allowedKeys = new Set(availableScreens.map((item) => item.key));
   const hasDatabaseError = databaseStatus === "Error de base";
 
@@ -141,7 +143,11 @@ export function Sidebar({ active, setActive, availableScreens, menuSections, dat
     <aside className={`hidden h-screen shrink-0 border-r border-[var(--border)] bg-[var(--surface)] p-3 transition-all duration-200 lg:block ${collapsed ? "w-16" : "w-44"}`}>
       <div className="flex h-full flex-col">
         <div className={`relative flex min-h-16 items-center border-b border-[var(--border)] pb-5 ${collapsed ? "justify-center" : "justify-start pr-12"}`}>
-          <img src={collapsed ? "/brand/isotipo_bizon.png" : "/brand/logo_principal_horizontal.png"} alt="Bizon Soluciones Industriales" className={collapsed ? "h-8 w-8 rounded-xl bg-black object-contain p-1" : "h-auto max-h-14 w-full object-contain"} />
+          {organization?.logoDataUrl ? (
+            <img src={organization.logoDataUrl} alt={organization.name} className={collapsed ? "h-8 w-8 rounded-xl object-contain" : "h-auto max-h-14 w-full object-contain"} />
+          ) : (
+            <img src={collapsed ? "/brand/isotipo_bizon.png" : "/brand/logo_principal_horizontal.png"} alt="Bizon Soluciones Industriales" className={collapsed ? "h-8 w-8 rounded-xl bg-black object-contain p-1" : "h-auto max-h-14 w-full object-contain"} />
+          )}
           <button type="button" onClick={onToggleCollapsed} className="absolute right-0 top-1 hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-white text-zinc-500 transition hover:border-[var(--brand)] hover:text-[var(--brand)] lg:inline-flex" title={collapsed ? "Expandir menu" : "Contraer menu"}>
             <span className={`transition ${collapsed ? "rotate-180" : ""}`}><MenuGlyph name="layout" /></span>
           </button>

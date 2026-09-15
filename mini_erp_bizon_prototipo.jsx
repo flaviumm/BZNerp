@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import CaptadorLeads from "./src/components/CaptadorLeads";
 import { deleteErpRecord, isDatabaseConfigured, loadErpData, logAuditEvent, nextDocumentNumber, saveErpRecord, shouldBlockUnconfiguredDatabase, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
-import { createOrganization, createUserAccount, getCurrentProfile, getInitialSession, listenAuthChanges, listOrganizations, listUserProfiles, signInWithEmail, signOutUser, signUpWithEmail, updateUserProfile } from "./src/lib/authRepository";
+import { createOrganization, createUserAccount, getCurrentProfile, getInitialSession, getOrganization, listenAuthChanges, listOrganizations, listUserProfiles, signInWithEmail, signOutUser, signUpWithEmail, updateOrganization, updateUserProfile } from "./src/lib/authRepository";
+import { applyBrandTheme } from "./src/lib/theme";
 import { laborRates, materialPriceCatalog, quoteParameters } from "./src/lib/pricingData";
 import { initialCompanies, initialOpportunities, initialQuotes, initialWorkOrders, inventory, purchases, invoices, employees, tasks, initialDocuments, initialAuditLog, localDatabaseKey } from "./src/lib/demoData";
 import { screens, menuSections, userRoles, accountStatuses, canAccessScreen, screensForRole } from "./src/lib/navigation";
@@ -66,6 +67,7 @@ export default function MiniErpBizonPrototype() {
   const [userProfiles, setUserProfiles] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [organizationsError, setOrganizationsError] = useState("");
+  const [organization, setOrganization] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -217,6 +219,38 @@ export default function MiniErpBizonPrototype() {
   useEffect(() => {
     refreshOrganizations();
   }, [session, profile?.isSuperAdmin, profile?.status]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const organizationId = profile?.organizationId;
+
+    if (!organizationId) {
+      setOrganization(null);
+      applyBrandTheme(null);
+      return undefined;
+    }
+
+    getOrganization(organizationId)
+      .then((org) => {
+        if (cancelled) return;
+        setOrganization(org);
+        applyBrandTheme(org?.primaryColor);
+      })
+      .catch((error) => console.error("No se pudo cargar la organizacion:", error));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.organizationId]);
+
+  async function saveOrganizationSettings(patch) {
+    const saved = isDatabaseConfigured && organization?.id
+      ? await updateOrganization(organization.id, patch)
+      : { ...(organization || { id: null, name: "Bizon", primaryColor: "#ff7900", logoDataUrl: null }), ...patch };
+    setOrganization(saved);
+    applyBrandTheme(saved.primaryColor);
+    return saved;
+  }
 
   const data = useMemo(() => ({
     companies,
@@ -678,7 +712,7 @@ export default function MiniErpBizonPrototype() {
     persistRecord("tasks", record);
   }
 
-  const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, removeRecord, uploadDocument, createCalendarEvent, userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true), organizations, organizationsError, onCreateOrganization: createOrganizationAccount, onRefreshOrganizations: refreshOrganizations };
+  const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, removeRecord, uploadDocument, createCalendarEvent, userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true), organizations, organizationsError, onCreateOrganization: createOrganizationAccount, onRefreshOrganizations: refreshOrganizations, organization, onUpdateOrganization: saveOrganizationSettings };
   const Screen = {
     dashboard: <Dashboard {...screenProps} />,
     clientes: <ClientesCards {...screenProps} />,
@@ -734,6 +768,7 @@ export default function MiniErpBizonPrototype() {
           setActive={setActive}
           availableScreens={availableScreens}
           menuSections={sidebarMenuSections}
+          organization={organization}
           databaseStatus={databaseStatus}
           collapsed={sidebarCollapsed}
           onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
@@ -747,6 +782,7 @@ export default function MiniErpBizonPrototype() {
             activeLabel={activeLabel}
             databaseStatus={databaseStatus}
             profile={profile}
+            organization={organization}
           />
           <MobileNav active={active} setActive={setActive} availableScreens={availableScreens} />
           {Screen}
