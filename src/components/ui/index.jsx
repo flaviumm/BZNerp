@@ -247,7 +247,7 @@ export function MiniSparkBars({ values = [], tone = "green" }) {
   );
 }
 
-export function StatCard({ title, value, subtitle, tone = "zinc", chart = [] }) {
+export function StatCard({ title, value, subtitle, tone = "zinc", chart = [], detail, detailTone, onAction, actionLabel }) {
   const colors = {
     zinc: "text-zinc-500 bg-zinc-100",
     green: "text-[#0f766e] bg-[#ecfdf5]",
@@ -260,12 +260,20 @@ export function StatCard({ title, value, subtitle, tone = "zinc", chart = [] }) 
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-semibold text-zinc-500">{title}</p>
-          <p className="mt-5 text-[28px] font-semibold leading-none tracking-tight text-[#050505]">{value}</p>
+          <p className="mt-5 text-[28px] font-semibold leading-none tracking-tight text-[var(--text)]">{value}</p>
           <p className="mt-3 text-[13px] font-semibold text-zinc-400">{subtitle}</p>
+          {detail && (
+            <p className={`mt-2 text-[12px] font-semibold ${detailTone === "danger" ? "text-[var(--danger)]" : "text-[var(--text-muted)]"}`}>{detail}</p>
+          )}
         </div>
         <span className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ${colors[tone] || colors.zinc}`}><MenuGlyph name="chart" /></span>
       </div>
       {!!chart.length && <MiniSparkBars values={chart} tone={tone} />}
+      {onAction && actionLabel && (
+        <button type="button" onClick={onAction} className="mt-4 text-[12px] font-semibold text-zinc-600 transition hover:text-[var(--text)]">
+          {actionLabel} {"→"}
+        </button>
+      )}
     </Panel>
   );
 }
