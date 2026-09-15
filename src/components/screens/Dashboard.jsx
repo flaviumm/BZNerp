@@ -1,11 +1,16 @@
 import { Button, Badge, Panel, StatCard, SectionTitle, Progress, CleanBarList, DashboardLineChart, DashboardRadialChart, DashboardStackChart } from "../ui";
-import { money, sum, weightedPipeline } from "../../lib/utils";
+import { money, sum, weightedPipeline, addDaysIso, dueWithinDays, overdueWorkOrders, overdueReceivables, quotesByStatus } from "../../lib/utils";
 
 export function Dashboard({ data, setActive }) {
   const pipelineTotal = sum(data.opportunities, "amount");
   const winForecast = weightedPipeline(data.opportunities);
   const receivables = data.invoices.filter((item) => item.status !== "Cobrada");
   const stockAlerts = data.inventory.filter((item) => item.stock <= item.min);
+  const today = addDaysIso(0);
+  const dueSoon = dueWithinDays(data.opportunities, addDaysIso(30));
+  const quoteCounts = quotesByStatus(data.quotes);
+  const lateOrders = overdueWorkOrders(data.workOrders, today);
+  const overdueTotal = sum(overdueReceivables(data.invoices, today), "total");
   const avgMargin = data.workOrders.reduce((total, order) => total + order.margin, 0) / data.workOrders.length;
   const commercialItems = data.opportunities.slice(0, 5).map((item) => ({
     label: item.company,
@@ -42,10 +47,48 @@ export function Dashboard({ data, setActive }) {
       </Panel>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Pipeline abierto" value={money(pipelineTotal)} subtitle={`${data.opportunities.length} oportunidades`} tone="green" chart={data.opportunities.map((item) => item.amount)} />
-        <StatCard title="Presupuestos" value={data.quotes.filter((item) => item.status !== "Aprobado").length} subtitle="Pendientes o en revision" tone="blue" chart={data.quotes.map((item) => item.total)} />
-        <StatCard title="OT en ejecucion" value={data.workOrders.filter((item) => item.status === "En ejecucion").length} subtitle={`${data.workOrders.length} ordenes totales`} tone="amber" chart={data.workOrders.map((item) => item.progress)} />
-        <StatCard title="Cuentas por cobrar" value={money(sum(receivables, "total"))} subtitle={`${receivables.length} facturas pendientes`} tone="red" chart={receivables.map((item) => item.total)} />
+        <StatCard
+          title="Pipeline abierto"
+          value={money(pipelineTotal)}
+          subtitle={`${data.opportunities.length} oportunidades`}
+          tone="green"
+          chart={data.opportunities.map((item) => item.amount)}
+          detail={`${dueSoon.length} vencen en 30 dias · forecast ${money(winForecast)}`}
+          onAction={() => setActive("crm")}
+          actionLabel="Ver CRM"
+        />
+        <StatCard
+          title="Presupuestos"
+          value={data.quotes.filter((item) => item.status !== "Aprobado").length}
+          subtitle="Pendientes o en revision"
+          tone="blue"
+          chart={data.quotes.map((item) => item.total)}
+          detail={`${quoteCounts["Enviado"] || 0} enviados · ${quoteCounts["En revision"] || 0} en revision · ${quoteCounts["Borrador"] || 0} borrador`}
+          onAction={() => setActive("presupuestos")}
+          actionLabel="Ver presupuestos"
+        />
+        <StatCard
+          title="OT en ejecucion"
+          value={data.workOrders.filter((item) => item.status === "En ejecucion").length}
+          subtitle={`${data.workOrders.length} ordenes totales`}
+          tone="amber"
+          chart={data.workOrders.map((item) => item.progress)}
+          detail={`${lateOrders.length} atrasadas`}
+          detailTone={lateOrders.length ? "danger" : undefined}
+          onAction={() => setActive("ot")}
+          actionLabel="Ver ordenes"
+        />
+        <StatCard
+          title="Cuentas por cobrar"
+          value={money(sum(receivables, "total"))}
+          subtitle={`${receivables.length} facturas pendientes`}
+          tone="red"
+          chart={receivables.map((item) => item.total)}
+          detail={`${money(overdueTotal)} vencido`}
+          detailTone={overdueTotal > 0 ? "danger" : undefined}
+          onAction={() => setActive("finanzas")}
+          actionLabel="Ver finanzas"
+        />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-3">
@@ -57,7 +100,7 @@ export function Dashboard({ data, setActive }) {
           <div className="mt-5">
             <CleanBarList items={commercialItems} valueFormatter={money} />
           </div>
-          <div className="mt-5 grid gap-3 rounded-lg border border-[#ecece6] bg-[#fbfbf8] p-4 text-sm">
+          <div className="mt-5 grid gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-sm">
             <p className="flex justify-between gap-3 text-zinc-600">Pipeline <strong className="text-zinc-950">{money(pipelineTotal)}</strong></p>
             <p className="flex justify-between gap-3 text-zinc-600">Forecast <strong className="text-zinc-950">{money(winForecast)}</strong></p>
             <p className="flex justify-between gap-3 text-zinc-600">Presupuestos <strong className="text-zinc-950">{data.quotes.length}</strong></p>
@@ -80,9 +123,9 @@ export function Dashboard({ data, setActive }) {
           <div className="mt-5">
             <CleanBarList items={operationsItems} valueFormatter={(value) => `${value}%`} />
           </div>
-          <div className="mt-5 grid gap-3 rounded-lg border border-[#ecece6] bg-[#fbfbf8] p-4 text-sm">
+          <div className="mt-5 grid gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-sm">
             <p className="flex justify-between gap-3 text-zinc-600">OT activas <strong className="text-zinc-950">{data.workOrders.length}</strong></p>
-            <p className="flex justify-between gap-3 text-zinc-600">Stock bajo minimo <strong className={stockAlerts.length ? "text-[#b42318]" : "text-zinc-950"}>{stockAlerts.length}</strong></p>
+            <p className="flex justify-between gap-3 text-zinc-600">Stock bajo minimo <strong className={stockAlerts.length ? "text-[var(--danger)]" : "text-zinc-950"}>{stockAlerts.length}</strong></p>
             <p className="flex justify-between gap-3 text-zinc-600">Compras abiertas <strong className="text-zinc-950">{data.purchases.filter((item) => item.status !== "Recibida").length}</strong></p>
           </div>
         </Panel>
@@ -97,10 +140,10 @@ export function Dashboard({ data, setActive }) {
           </div>
           <div className="mt-5 grid gap-3">
             {data.tasks.slice(0, 4).map((task) => (
-              <div key={task.id} className="rounded-lg border border-[#ecece6] bg-[#fbfbf8] p-3">
+              <div key={task.id} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-semibold text-[#050505]">{task.text}</p>
+                    <p className="font-semibold text-[var(--text)]">{task.text}</p>
                     <p className="mt-1 text-xs font-semibold text-zinc-500">{task.owner} - {task.due}</p>
                   </div>
                   <Badge tone={task.priority === "Alta" ? "red" : "amber"}>{task.priority}</Badge>
@@ -115,10 +158,10 @@ export function Dashboard({ data, setActive }) {
         <SectionTitle title="Alertas de stock" subtitle="Material bajo minimo" action="Ver inventario" onAction={() => setActive("inventario")} />
         <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {stockAlerts.map((item) => (
-            <div key={item.sku} className="rounded-xl border border-[#ecece6] bg-[#fbfbf8] p-4">
+            <div key={item.sku} className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
               <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-                <span className="font-semibold text-[#050505]">{item.name}</span>
-                <span className="font-semibold text-[#b42318]">{item.stock}/{item.min}</span>
+                <span className="font-semibold text-[var(--text)]">{item.name}</span>
+                <span className="font-semibold text-[var(--danger)]">{item.stock}/{item.min}</span>
               </div>
               <Progress value={(item.stock / item.min) * 100} tone="red" />
             </div>
