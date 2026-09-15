@@ -9,7 +9,8 @@ export function Dashboard({ data, setActive }) {
   const today = addDaysIso(0);
   const dueSoon = dueWithinDays(data.opportunities, addDaysIso(30));
   const quoteCounts = quotesByStatus(data.quotes);
-  const lateOrders = overdueWorkOrders(data.workOrders, today);
+  const executingOrders = data.workOrders.filter((item) => item.status === "En ejecucion");
+  const lateOrders = overdueWorkOrders(executingOrders, today);
   const overdueTotal = sum(overdueReceivables(data.invoices, today), "total");
   const avgMargin = data.workOrders.reduce((total, order) => total + order.margin, 0) / data.workOrders.length;
   const commercialItems = data.opportunities.slice(0, 5).map((item) => ({
@@ -69,7 +70,7 @@ export function Dashboard({ data, setActive }) {
         />
         <StatCard
           title="OT en ejecucion"
-          value={data.workOrders.filter((item) => item.status === "En ejecucion").length}
+          value={executingOrders.length}
           subtitle={`${data.workOrders.length} ordenes totales`}
           tone="amber"
           chart={data.workOrders.map((item) => item.progress)}

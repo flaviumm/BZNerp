@@ -99,9 +99,9 @@ La derivación vive en funciones puras nuevas de `src/lib/utils.js`
 
 | Card | Valor (sin cambio) | `detail` | `detailTone` | Acción |
 |---|---|---|---|---|
-| Pipeline abierto | `money(pipelineTotal)` | `{N} vencen en 30 días · forecast {money(winForecast)}` — N = oportunidades con `due` ≤ hoy+30 | — | `setActive("crm")`, "Ver CRM" |
-| Presupuestos | pendientes (≠ Aprobado) | `{a} enviados · {b} en revisión · {c} borrador` — conteo por `status` (`Enviado`, `En revision`, `Borrador`) | — | `setActive("presupuestos")`, "Ver presupuestos" |
-| OT en ejecución | count `En ejecucion` | `{N} atrasadas` — OT con `end` < hoy y `progress` < 100 | `"danger"` si N > 0 | `setActive("ot")`, "Ver órdenes" |
+| Pipeline abierto | `money(pipelineTotal)` | `{N} vencen en 30 dias · forecast {money(winForecast)}` — N = oportunidades con `due` ≤ hoy+30 | — | `setActive("crm")`, "Ver CRM" |
+| Presupuestos | pendientes (≠ Aprobado) | `{a} enviados · {b} en revision · {c} borrador` — conteo por `status` (`Enviado`, `En revision`, `Borrador`) | — | `setActive("presupuestos")`, "Ver presupuestos" |
+| OT en ejecución | count `En ejecucion` | `{N} atrasadas` — OT en ejecución (`status === "En ejecucion"`) con `end` < hoy y `progress` < 100 | `"danger"` si N > 0 | `setActive("ot")`, "Ver ordenes" |
 | Cuentas por cobrar | `money(sum(receivables,"total"))` | `{money(X)} vencido` — facturas con `status !== "Cobrada"` y `due` < hoy | `"danger"` si X > 0 | `setActive("finanzas")`, "Ver finanzas" |
 
 Nota conocida: los datos demo son de mayo 2026; con la fecha actual todo
