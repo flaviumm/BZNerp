@@ -60,8 +60,8 @@ export function Badge({ children, tone = "zinc" }) {
   return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${tones[tone] || tones.zinc}`}>{children}</span>;
 }
 
-export function Panel({ children, className = "" }) {
-  return <section className={`rounded-[22px] bg-white shadow-[0_8px_20px_rgba(15,23,42,0.06)] ${className}`}>{children}</section>;
+export function Panel({ children, className = "", ...rest }) {
+  return <section className={`rounded-[22px] bg-white shadow-[0_8px_20px_rgba(15,23,42,0.06)] ${className}`} {...rest}>{children}</section>;
 }
 
 export function Field({ label, children }) {

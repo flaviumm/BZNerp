@@ -1,6 +1,64 @@
-import { useState } from "react";
-import { Button, Badge, Panel, Select, StatCard, SectionTitle, ProgressRing } from "../ui";
+import { useMemo, useState } from "react";
+import { Button, Badge, Panel, Select, TextInput, StatCard, SectionTitle, ProgressRing } from "../ui";
 import { money, clamp, sum, weightedPipeline } from "../../lib/utils";
+
+function useOpportunityFilters(opportunities) {
+  const [owner, setOwner] = useState("");
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
+  const [hideClosed, setHideClosed] = useState(false);
+
+  const owners = useMemo(
+    () => [...new Set(opportunities.map((item) => item.owner).filter(Boolean))].sort(),
+    [opportunities]
+  );
+
+  const filtered = useMemo(() => {
+    const min = minAmount ? Number(minAmount) : null;
+    const max = maxAmount ? Number(maxAmount) : null;
+    return opportunities.filter((item) => {
+      if (owner && item.owner !== owner) return false;
+      if (min !== null && item.amount < min) return false;
+      if (max !== null && item.amount > max) return false;
+      if (hideClosed && (item.stage === "Ganado" || item.stage === "PERDIDO")) return false;
+      return true;
+    });
+  }, [opportunities, owner, minAmount, maxAmount, hideClosed]);
+
+  const active = !!(owner || minAmount || maxAmount || hideClosed);
+  function clear() {
+    setOwner("");
+    setMinAmount("");
+    setMaxAmount("");
+    setHideClosed(false);
+  }
+
+  return { owner, setOwner, minAmount, setMinAmount, maxAmount, setMaxAmount, hideClosed, setHideClosed, owners, filtered, active, clear };
+}
+
+function OpportunityFilterBar(filters) {
+  return (
+    <Panel className="flex flex-col gap-3 p-3 md:flex-row md:items-center md:flex-wrap">
+      <div className="w-full md:w-48">
+        <Select value={filters.owner} onChange={(event) => filters.setOwner(event.target.value)}>
+          <option value="">Todos los responsables</option>
+          {filters.owners.map((option) => <option key={option} value={option}>{option}</option>)}
+        </Select>
+      </div>
+      <div className="w-full md:w-32">
+        <TextInput type="number" placeholder="Monto min" value={filters.minAmount} onChange={(event) => filters.setMinAmount(event.target.value)} />
+      </div>
+      <div className="w-full md:w-32">
+        <TextInput type="number" placeholder="Monto max" value={filters.maxAmount} onChange={(event) => filters.setMaxAmount(event.target.value)} />
+      </div>
+      <label className="flex items-center gap-2 text-[13px] font-medium text-zinc-600">
+        <input type="checkbox" checked={filters.hideClosed} onChange={(event) => filters.setHideClosed(event.target.checked)} />
+        Ocultar Ganado/Perdido
+      </label>
+      {filters.active && <Button variant="ghost" onClick={filters.clear}>Limpiar filtros</Button>}
+    </Panel>
+  );
+}
 
 export function CRM({ opportunities, setOpportunities, persistUpdate, openEditor, removeRecord }) {
   const stages = ["Nuevo prospecto", "Reunion", "Presupuesto enviado", "Negociacion", "Ganado", "PERDIDO"];
@@ -115,6 +173,8 @@ export function CRM({ opportunities, setOpportunities, persistUpdate, openEditor
 export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, openEditor, removeRecord }) {
   const [expandedCards, setExpandedCards] = useState({});
   const [draggingId, setDraggingId] = useState(null);
+  const filters = useOpportunityFilters(opportunities);
+  const visibleOpportunities = filters.filtered;
   const stages = ["Nuevo prospecto", "Reunion", "Presupuesto enviado", "Negociacion", "Ganado", "PERDIDO"];
   const stageProbability = {
     "Nuevo prospecto": 20,
@@ -159,15 +219,16 @@ export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, open
   return (
     <div className="space-y-4 p-4 md:p-6">
       <SectionTitle title="CRM comercial" subtitle="Pestanas de oportunidades por estado. Arrastrar para cambiar etapa." />
+      <OpportunityFilterBar {...filters} />
       <div className="grid gap-3 md:grid-cols-4">
-        <StatCard title="Pipeline" value={money(sum(opportunities, "amount"))} subtitle={`${opportunities.length} oportunidades`} tone="green" />
-        <StatCard title="Forecast" value={money(weightedPipeline(opportunities))} subtitle="Probabilidad aplicada" tone="blue" />
-        <StatCard title="Ganadas" value={opportunities.filter((item) => item.stage === "Ganado").length} subtitle="Cierres confirmados" tone="amber" />
-        <StatCard title="Perdidas" value={opportunities.filter((item) => item.stage === "PERDIDO").length} subtitle="Oportunidades perdidas" tone="red" />
+        <StatCard title="Pipeline" value={money(sum(visibleOpportunities, "amount"))} subtitle={`${visibleOpportunities.length} oportunidades`} tone="green" />
+        <StatCard title="Forecast" value={money(weightedPipeline(visibleOpportunities))} subtitle="Probabilidad aplicada" tone="blue" />
+        <StatCard title="Ganadas" value={visibleOpportunities.filter((item) => item.stage === "Ganado").length} subtitle="Cierres confirmados" tone="amber" />
+        <StatCard title="Perdidas" value={visibleOpportunities.filter((item) => item.stage === "PERDIDO").length} subtitle="Oportunidades perdidas" tone="red" />
       </div>
       <div className="grid gap-3 xl:grid-cols-6">
         {stages.map((stage) => {
-          const cards = opportunities.filter((opportunity) => opportunity.stage === stage);
+          const cards = visibleOpportunities.filter((opportunity) => opportunity.stage === stage);
           const stageTotal = sum(cards, "amount");
           return (
             <Panel
