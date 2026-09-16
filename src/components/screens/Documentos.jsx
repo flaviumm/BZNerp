@@ -55,7 +55,7 @@ export function Documentos({ data, uploadDocument, removeRecord }) {
               <TextInput value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder="Detalle breve" />
             </Field>
             <Field label="Archivo">
-              <input type="file" onChange={(event) => setFile(event.target.files?.[0] || null)} className="rounded-lg border border-zinc-300 bg-white p-2 text-sm" />
+              <input type="file" onChange={(event) => setFile(event.target.files?.[0] || null)} className="rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] p-2 text-sm" />
             </Field>
             {message && <p className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800">{message}</p>}
             <Button type="submit">Cargar documento</Button>
@@ -72,7 +72,7 @@ export function Documentos({ data, uploadDocument, removeRecord }) {
             rows={data.documents.map((doc) => [
               <Badge tone="blue">{doc.kind}</Badge>,
               `${doc.relatedType} ${doc.relatedNumber}`,
-              <strong className="text-zinc-950">{doc.name}</strong>,
+              <strong className="text-[var(--text)]">{doc.name}</strong>,
               formatBytes(doc.size),
               doc.notes || "-",
               <div className="flex gap-2">

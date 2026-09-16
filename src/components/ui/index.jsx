@@ -23,6 +23,8 @@ export function MenuGlyph({ name }) {
     upload: <><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" /></>,
     map: <><polygon points="3,6 9,3 15,6 21,3 21,18 15,21 9,18 3,21" /><line x1="9" y1="3" x2="9" y2="18" /><line x1="15" y1="6" x2="15" y2="21" /></>,
     building: <><rect x="4" y="3" width="16" height="18" rx="1" /><path d="M9 8h.01M9 12h.01M9 16h.01M15 8h.01M15 12h.01M15 16h.01" /></>,
+    sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></>,
+    moon: <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />,
   };
 
   return <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" {...common}>{paths[name] || paths.layout}</svg>;
@@ -30,7 +32,7 @@ export function MenuGlyph({ name }) {
 
 export function IconMark({ icon, active = false }) {
   return (
-    <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${active ? "bg-white/20 text-current" : "bg-transparent text-zinc-400 group-hover:bg-[var(--brand-tint)] group-hover:text-[var(--brand)]"}`}>
+    <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition ${active ? "bg-white/20 text-current" : "bg-transparent text-[var(--text-muted)] group-hover:bg-[var(--brand-tint)] group-hover:text-[var(--brand)]"}`}>
       <MenuGlyph name={icon} />
     </span>
   );
@@ -39,8 +41,8 @@ export function IconMark({ icon, active = false }) {
 export function Button({ children, onClick, variant = "primary", type = "button", disabled = false }) {
   const styles = {
     primary: "border-[var(--brand)] bg-[var(--brand)] text-black shadow-sm hover:bg-[var(--brand-hover)]",
-    ghost: "border-[#cfe7dd] bg-[#f0fdf7] text-[var(--success)] hover:border-[var(--success)]",
-    danger: "border-[#f3d2d2] bg-[#fff5f5] text-[var(--danger)] hover:border-[var(--danger)]",
+    ghost: "border-[var(--success-tint-border)] bg-[var(--success-tint)] text-[var(--success)] hover:border-[var(--success)]",
+    danger: "border-[var(--danger-tint-border)] bg-[var(--danger-tint)] text-[var(--danger)] hover:border-[var(--danger)]",
   };
   return (
     <button type={type} onClick={onClick} disabled={disabled} className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-lg border px-2.5 text-[11px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-45 ${styles[variant]}`}>
@@ -51,22 +53,22 @@ export function Button({ children, onClick, variant = "primary", type = "button"
 
 export function Badge({ children, tone = "zinc" }) {
   const tones = {
-    zinc: "border-[var(--border)] bg-[var(--surface)] text-zinc-600",
+    zinc: "border-[var(--border)] bg-[var(--surface)] text-[var(--text-muted)]",
     green: "border-[var(--brand-soft)] bg-[var(--brand-tint)] text-[var(--brand-hover)]",
-    amber: "border-[#f4dfb6] bg-[#fff8e8] text-[var(--warning)]",
-    red: "border-[#f2c9c9] bg-[#fff3f1] text-[var(--danger)]",
+    amber: "border-[var(--warning-tint-border)] bg-[var(--warning-tint)] text-[var(--warning)]",
+    red: "border-[var(--danger-tint-border)] bg-[var(--danger-tint)] text-[var(--danger)]",
     blue: "border-[#d8ddff] bg-[#f3f4ff] text-[#4a55c8]",
   };
   return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${tones[tone] || tones.zinc}`}>{children}</span>;
 }
 
 export function Panel({ children, className = "", ...rest }) {
-  return <section className={`rounded-[22px] bg-white shadow-[0_8px_20px_rgba(15,23,42,0.06)] ${className}`} {...rest}>{children}</section>;
+  return <section className={`rounded-[22px] bg-[var(--surface-raised)] shadow-[0_8px_20px_rgba(15,23,42,0.06)] ${className}`} {...rest}>{children}</section>;
 }
 
 export function Field({ label, children }) {
   return (
-    <label className="grid gap-1.5 text-sm font-semibold text-zinc-700">
+    <label className="grid gap-1.5 text-sm font-semibold text-[var(--text)]">
       {label}
       {children}
     </label>
@@ -74,20 +76,20 @@ export function Field({ label, children }) {
 }
 
 export function TextInput(props) {
-  return <input {...props} className="min-h-9 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[13px] font-medium text-zinc-900 outline-none ring-[var(--brand)] transition placeholder:text-zinc-400 focus:border-[var(--brand)] focus:ring-2" />;
+  return <input {...props} className="min-h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-3 text-[13px] font-medium text-[var(--text)] outline-none ring-[var(--brand)] transition placeholder:text-[var(--text-muted)] focus:border-[var(--brand)] focus:ring-2" />;
 }
 
 export function Select(props) {
-  return <select {...props} className="min-h-9 w-full rounded-lg border border-[var(--border)] bg-white px-3 text-[13px] font-medium text-zinc-900 outline-none ring-[var(--brand)] transition focus:border-[var(--brand)] focus:ring-2" />;
+  return <select {...props} className="min-h-9 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-3 text-[13px] font-medium text-[var(--text)] outline-none ring-[var(--brand)] transition focus:border-[var(--brand)] focus:ring-2" />;
 }
 
 export function TextArea(props) {
-  return <textarea {...props} className="min-h-24 w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-[13px] font-medium text-zinc-900 outline-none ring-[var(--brand)] transition placeholder:text-zinc-400 focus:border-[var(--brand)] focus:ring-2" />;
+  return <textarea {...props} className="min-h-24 w-full rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2 text-[13px] font-medium text-[var(--text)] outline-none ring-[var(--brand)] transition placeholder:text-[var(--text-muted)] focus:border-[var(--brand)] focus:ring-2" />;
 }
 
 
 
-export function Header({ activeLabel, databaseStatus, profile, organization }) {
+export function Header({ activeLabel, databaseStatus, profile, organization, theme, onToggleTheme }) {
   const brandName = organization?.name || "Bizon ERP Industrial";
   const brandLogo = organization?.logoDataUrl || "/brand/isotipo_bizon.png";
   return (
@@ -102,14 +104,24 @@ export function Header({ activeLabel, databaseStatus, profile, organization }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={databaseStatus === "Conectado a Supabase" || databaseStatus === "Base local" ? "green" : databaseStatus === "Error de base" ? "red" : "amber"}>{databaseStatus}</Badge>
+          {onToggleTheme && (
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              title={theme === "dark" ? "Cambiar a tema claro" : "Cambiar a tema oscuro"}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-muted)] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
+            >
+              <MenuGlyph name={theme === "dark" ? "sun" : "moon"} />
+            </button>
+          )}
           {profile && (
-            <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-white px-3 py-2">
+            <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand-tint)] text-sm font-semibold text-[var(--brand-hover)]">
                 {profile.fullName?.slice(0, 1).toUpperCase() || "U"}
               </div>
               <div className="hidden text-right sm:block">
-                <p className="text-sm font-semibold text-zinc-950">{profile.fullName}</p>
-                <p className="text-xs font-medium text-zinc-500">{profile.role}</p>
+                <p className="text-sm font-semibold text-[var(--text)]">{profile.fullName}</p>
+                <p className="text-xs font-medium text-[var(--text-muted)]">{profile.role}</p>
               </div>
             </div>
           )}
@@ -148,7 +160,7 @@ export function Sidebar({ active, setActive, availableScreens, menuSections, dat
           ) : (
             <img src={collapsed ? "/brand/isotipo_bizon.png" : "/brand/logo_principal_horizontal.png"} alt="Bizon Soluciones Industriales" className={collapsed ? "h-8 w-8 rounded-xl bg-black object-contain p-1" : "h-auto max-h-14 w-full object-contain"} />
           )}
-          <button type="button" onClick={onToggleCollapsed} className="absolute right-0 top-1 hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-white text-zinc-500 transition hover:border-[var(--brand)] hover:text-[var(--brand)] lg:inline-flex" title={collapsed ? "Expandir menu" : "Contraer menu"}>
+          <button type="button" onClick={onToggleCollapsed} className="absolute right-0 top-1 hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text-muted)] transition hover:border-[var(--brand)] hover:text-[var(--brand)] lg:inline-flex" title={collapsed ? "Expandir menu" : "Contraer menu"}>
             <span className={`transition ${collapsed ? "rotate-180" : ""}`}><MenuGlyph name="layout" /></span>
           </button>
         </div>
@@ -166,7 +178,7 @@ export function Sidebar({ active, setActive, availableScreens, menuSections, dat
                   <button
                     type="button"
                     onClick={() => toggleGroup(section.title)}
-                    className="mb-3 flex w-full items-center justify-between px-3 text-[11px] font-semibold uppercase tracking-wide text-zinc-400"
+                    className="mb-3 flex w-full items-center justify-between px-3 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]"
                   >
                     <span>{section.title}</span>
                     <span>{sectionCollapsed ? "›" : "⌄"}</span>
@@ -189,8 +201,8 @@ export function Sidebar({ active, setActive, availableScreens, menuSections, dat
                             isActive
                               ? "bg-[var(--brand)] text-black shadow-[0_12px_25px_var(--brand-shadow)]"
                               : allowed
-                                ? "text-zinc-500 hover:bg-[var(--surface-alt)] hover:text-zinc-950"
-                                : "cursor-not-allowed text-zinc-300"
+                                ? "text-[var(--text-muted)] hover:bg-[var(--surface-alt)] hover:text-[var(--text)]"
+                                : "cursor-not-allowed text-[var(--text-muted)]"
                           }`}
                         >
                           <IconMark active={isActive} icon={item.icon} />
@@ -224,7 +236,7 @@ export function MobileNav({ active, setActive, availableScreens }) {
             key={item.key}
             type="button"
             onClick={() => setActive(item.key)}
-            className={`min-h-10 shrink-0 rounded-lg border px-3 text-sm font-semibold ${active === item.key ? "border-[var(--brand)] bg-[var(--brand)] text-black" : "border-[var(--border)] bg-white text-zinc-700"}`}
+            className={`min-h-10 shrink-0 rounded-lg border px-3 text-sm font-semibold ${active === item.key ? "border-[var(--brand)] bg-[var(--brand)] text-black" : "border-[var(--border)] bg-[var(--surface-raised)] text-[var(--text)]"}`}
           >
             {item.label}
           </button>
@@ -241,7 +253,7 @@ export function MiniSparkBars({ values = [], tone = "green" }) {
     amber: "bg-[var(--brand-hover)]",
     red: "bg-[var(--danger)]",
     blue: "bg-[#334155]",
-    zinc: "bg-zinc-500",
+    zinc: "bg-[var(--surface)]0",
   }[tone] || "bg-[var(--brand-hover)]";
 
   return (
@@ -255,19 +267,19 @@ export function MiniSparkBars({ values = [], tone = "green" }) {
 
 export function StatCard({ title, value, subtitle, tone = "zinc", chart = [], detail, detailTone, onAction, actionLabel }) {
   const colors = {
-    zinc: "text-zinc-500 bg-zinc-100",
-    green: "text-[var(--success)] bg-[#ecfdf5]",
-    amber: "text-[var(--warning)] bg-[#fff8e1]",
-    red: "text-[var(--danger)] bg-[#fff1f1]",
+    zinc: "text-[var(--text-muted)] bg-[var(--surface)]",
+    green: "text-[var(--success)] bg-[var(--success-tint)]",
+    amber: "text-[var(--warning)] bg-[var(--warning-tint)]",
+    red: "text-[var(--danger)] bg-[var(--danger-tint)]",
     blue: "text-[#334155] bg-[#eef2f7]",
   };
   return (
     <Panel className="p-5">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold text-zinc-500">{title}</p>
+          <p className="text-[13px] font-semibold text-[var(--text-muted)]">{title}</p>
           <p className="mt-5 text-[28px] font-semibold leading-none tracking-tight text-[var(--text)]">{value}</p>
-          <p className="mt-3 text-[13px] font-semibold text-zinc-400">{subtitle}</p>
+          <p className="mt-3 text-[13px] font-semibold text-[var(--text-muted)]">{subtitle}</p>
           {detail && (
             <p className={`mt-2 text-[12px] font-semibold ${detailTone === "danger" ? "text-[var(--danger)]" : "text-[var(--text-muted)]"}`}>{detail}</p>
           )}
@@ -276,7 +288,7 @@ export function StatCard({ title, value, subtitle, tone = "zinc", chart = [], de
       </div>
       {!!chart.length && <MiniSparkBars values={chart} tone={tone} />}
       {onAction && actionLabel && (
-        <button type="button" onClick={onAction} className="mt-4 text-[12px] font-semibold text-zinc-600 transition hover:text-[var(--text)]">
+        <button type="button" onClick={onAction} className="mt-4 text-[12px] font-semibold text-[var(--text-muted)] transition hover:text-[var(--text)]">
           {actionLabel} {"→"}
         </button>
       )}
@@ -288,8 +300,8 @@ export function SectionTitle({ title, subtitle, action, onAction }) {
   return (
     <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight text-zinc-950">{title}</h2>
-        {subtitle && <p className="mt-1 text-sm font-semibold text-zinc-500">{subtitle}</p>}
+        <h2 className="text-xl font-semibold tracking-tight text-[var(--text)]">{title}</h2>
+        {subtitle && <p className="mt-1 text-sm font-semibold text-[var(--text-muted)]">{subtitle}</p>}
       </div>
       {action && <Button onClick={onAction}>{action}</Button>}
     </div>
@@ -316,7 +328,7 @@ export function BarChart({ items }) {
               <div className="w-3 rounded-t-md bg-[#6c5df6]" style={{ height: `${(item.primary / max) * 100}%` }} />
               <div className="w-3 rounded-t-md bg-[#f4a338]" style={{ height: `${(item.secondary / max) * 100}%` }} />
             </div>
-            <span className="text-[11px] font-semibold text-zinc-400">{item.label}</span>
+            <span className="text-[11px] font-semibold text-[var(--text-muted)]">{item.label}</span>
           </div>
         ))}
       </div>
@@ -337,12 +349,12 @@ export function DonutChart({ items }) {
   return (
     <div className="flex flex-col gap-5 md:flex-row md:items-center">
       <div className="relative h-44 w-44 shrink-0 rounded-full" style={{ background: `conic-gradient(${gradient})` }}>
-        <div className="absolute inset-10 rounded-full bg-white" />
+        <div className="absolute inset-10 rounded-full bg-[var(--surface-raised)]" />
       </div>
       <div className="grid flex-1 gap-2">
         {items.map((item) => (
           <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
-            <span className="flex items-center gap-2 text-zinc-600"><span className="h-2.5 w-2.5 rounded-full" style={{ background: item.color }} />{item.label}</span>
+            <span className="flex items-center gap-2 text-[var(--text-muted)]"><span className="h-2.5 w-2.5 rounded-full" style={{ background: item.color }} />{item.label}</span>
             <strong className="text-[var(--text)]">{item.value}%</strong>
           </div>
         ))}
@@ -356,18 +368,18 @@ export function DataTable({ headers, rows, empty = "Sin datos" }) {
     <Panel className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-[12px]" style={{ minWidth: `${Math.max(820, headers.length * 118)}px` }}>
-          <thead className="bg-[var(--surface)] text-zinc-500">
+          <thead className="bg-[var(--surface)] text-[var(--text-muted)]">
             <tr>{headers.map((header) => <th key={header} className="px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide">{header}</th>)}</tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
             {rows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="font-medium text-zinc-600 transition hover:bg-[var(--surface)]">
+              <tr key={rowIndex} className="font-medium text-[var(--text-muted)] transition hover:bg-[var(--surface)]">
                 {row.map((cell, cellIndex) => <td key={`${rowIndex}-${cellIndex}`} className="px-3 py-2.5 align-middle">{cell}</td>)}
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={headers.length} className="px-3 py-8 text-center text-sm font-medium text-zinc-500">{empty}</td>
+                <td colSpan={headers.length} className="px-3 py-8 text-center text-sm font-medium text-[var(--text-muted)]">{empty}</td>
               </tr>
             )}
           </tbody>
@@ -394,13 +406,13 @@ export function CleanBarList({ items, valueFormatter = (value) => value }) {
       {items.map((item) => (
         <div key={item.label} className="grid gap-1.5">
           <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="font-semibold text-zinc-800">{item.label}</span>
-            <strong className="text-zinc-950">{valueFormatter(item.value)}</strong>
+            <span className="font-semibold text-[var(--text)]">{item.label}</span>
+            <strong className="text-[var(--text)]">{valueFormatter(item.value)}</strong>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-[var(--border)]">
             <div className="h-full rounded-full bg-[var(--brand)]" style={{ width: `${Math.max((Number(item.value || 0) / max) * 100, 4)}%` }} />
           </div>
-          {item.caption && <p className="text-xs font-semibold text-zinc-500">{item.caption}</p>}
+          {item.caption && <p className="text-xs font-semibold text-[var(--text-muted)]">{item.caption}</p>}
         </div>
       ))}
     </div>
@@ -431,7 +443,7 @@ export function DashboardLineChart({ values = [], labels = [] }) {
           </g>
         ))}
       </svg>
-      <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] font-semibold text-zinc-500">
+      <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] font-semibold text-[var(--text-muted)]">
         {points.slice(0, 3).map((point) => <span key={point.label} className="truncate">{point.label}</span>)}
       </div>
     </div>
@@ -443,17 +455,17 @@ export function DashboardRadialChart({ value, label, details = [] }) {
   return (
     <div className="grid gap-4 rounded-2xl border border-[var(--border)] bg-[var(--brand-tint)] p-4 sm:grid-cols-[132px_1fr] sm:items-center">
       <div className="relative h-32 w-32 rounded-full" style={{ background: `conic-gradient(var(--brand) ${normalized}%, var(--border) ${normalized}% 100%)` }}>
-        <div className="absolute inset-4 grid place-items-center rounded-full bg-white">
-          <strong className="text-2xl font-semibold tracking-tight text-zinc-950">{Math.round(normalized)}%</strong>
-          <span className="-mt-1 text-[11px] font-semibold text-zinc-400">{label}</span>
+        <div className="absolute inset-4 grid place-items-center rounded-full bg-[var(--surface-raised)]">
+          <strong className="text-2xl font-semibold tracking-tight text-[var(--text)]">{Math.round(normalized)}%</strong>
+          <span className="-mt-1 text-[11px] font-semibold text-[var(--text-muted)]">{label}</span>
         </div>
       </div>
       <div className="grid gap-2">
         {details.map((item) => (
           <div key={item.label} className="grid gap-1">
             <div className="flex justify-between gap-3 text-xs font-semibold">
-              <span className="text-zinc-500">{item.label}</span>
-              <strong className="text-zinc-950">{item.value}</strong>
+              <span className="text-[var(--text-muted)]">{item.label}</span>
+              <strong className="text-[var(--text)]">{item.value}</strong>
             </div>
             <Progress value={item.progress} />
           </div>
@@ -479,11 +491,11 @@ export function DashboardStackChart({ items = [] }) {
       <div className="mt-4 grid gap-2">
         {items.map((item, index) => (
           <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
-            <span className="flex min-w-0 items-center gap-2 font-semibold text-zinc-600">
+            <span className="flex min-w-0 items-center gap-2 font-semibold text-[var(--text-muted)]">
               <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${index === 0 ? "bg-[var(--brand)]" : index === 1 ? "bg-[#111111]" : "bg-[var(--brand-soft)]"}`} />
               <span className="truncate">{item.label}</span>
             </span>
-            <strong className="text-zinc-950">{item.value}</strong>
+            <strong className="text-[var(--text)]">{item.value}</strong>
           </div>
         ))}
       </div>
@@ -497,10 +509,10 @@ export function ProgressRing({ value, label = "Avance" }) {
 
   return (
     <div className="relative mx-auto grid h-32 w-32 place-items-center rounded-full" style={{ background: `conic-gradient(${ringColor} ${safeValue * 3.6}deg, var(--border) 0deg)` }}>
-      <div className="absolute inset-3 rounded-full bg-white" />
+      <div className="absolute inset-3 rounded-full bg-[var(--surface-raised)]" />
       <div className="relative text-center">
-        <p className="text-3xl font-semibold tracking-tight text-zinc-950">{safeValue}%</p>
-        <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-zinc-400">{label}</p>
+        <p className="text-3xl font-semibold tracking-tight text-[var(--text)]">{safeValue}%</p>
+        <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">{label}</p>
       </div>
     </div>
   );

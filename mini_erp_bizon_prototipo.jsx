@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 import CaptadorLeads from "./src/components/CaptadorLeads";
 import { deleteErpRecord, isDatabaseConfigured, loadErpData, logAuditEvent, nextDocumentNumber, saveErpRecord, shouldBlockUnconfiguredDatabase, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
 import { createOrganization, createUserAccount, getCurrentProfile, getInitialSession, getOrganization, listenAuthChanges, listOrganizations, listUserProfiles, signInWithEmail, signOutUser, signUpWithEmail, updateOrganization, updateUserProfile } from "./src/lib/authRepository";
-import { applyBrandTheme } from "./src/lib/theme";
+import { applyBrandTheme, applyColorScheme, getInitialTheme, persistTheme } from "./src/lib/theme";
 import { laborRates, materialPriceCatalog, quoteParameters } from "./src/lib/pricingData";
 import { initialCompanies, initialOpportunities, initialQuotes, initialWorkOrders, inventory, purchases, invoices, employees, tasks, initialDocuments, initialAuditLog, localDatabaseKey } from "./src/lib/demoData";
 import { screens, menuSections, userRoles, accountStatuses, canAccessScreen, screensForRole } from "./src/lib/navigation";
@@ -50,6 +50,7 @@ try {
 
 export default function MiniErpBizonPrototype() {
   const useLocalDemo = !isDatabaseConfigured && !shouldBlockUnconfiguredDatabase;
+  const [theme, setTheme] = useState(getInitialTheme);
   const [active, setActive] = useState("dashboard");
   const [session, setSession] = useState(isDatabaseConfigured ? null : useLocalDemo ? { user: { id: "demo" } } : null);
   const [profile, setProfile] = useState(isDatabaseConfigured ? null : useLocalDemo ? { id: "demo", fullName: "Modo demo", role: "admin", status: "active", menuKeys: null } : null);
@@ -222,12 +223,22 @@ export default function MiniErpBizonPrototype() {
   }, [session, profile?.isSuperAdmin, profile?.status]);
 
   useEffect(() => {
+    applyColorScheme(theme);
+    persistTheme(theme);
+  }, [theme]);
+
+  function toggleTheme() {
+    setTheme((current) => (current === "dark" ? "light" : "dark"));
+  }
+
+  useEffect(() => {
     let cancelled = false;
     const organizationId = profile?.organizationId;
+    const isDark = theme === "dark";
 
     if (!organizationId) {
       setOrganization(null);
-      applyBrandTheme(null);
+      applyBrandTheme(null, isDark);
       return undefined;
     }
 
@@ -235,19 +246,19 @@ export default function MiniErpBizonPrototype() {
       .then((org) => {
         if (cancelled) return;
         setOrganization(org);
-        applyBrandTheme(org?.primaryColor);
+        applyBrandTheme(org?.primaryColor, isDark);
       })
       .catch((error) => {
         console.error("No se pudo cargar la organizacion:", error);
         if (cancelled) return;
         setOrganization(null);
-        applyBrandTheme(null);
+        applyBrandTheme(null, isDark);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [profile?.organizationId]);
+  }, [profile?.organizationId, theme]);
 
   async function saveOrganizationSettings(patch) {
     let saved;
@@ -258,7 +269,7 @@ export default function MiniErpBizonPrototype() {
       saved = { ...(organization || { id: null, name: "Bizon", primaryColor: "#ff7900", logoDataUrl: null }), ...patch };
     }
     setOrganization(saved);
-    applyBrandTheme(saved.primaryColor);
+    applyBrandTheme(saved.primaryColor, theme === "dark");
     return saved;
   }
 
@@ -756,8 +767,8 @@ export default function MiniErpBizonPrototype() {
     return (
       <div className="grid min-h-screen place-items-center bg-[var(--surface-alt)] p-4">
         <Panel className="p-5 text-center">
-          <p className="font-semibold text-zinc-950">Cargando acceso...</p>
-          <p className="mt-1 text-sm text-zinc-500">Validando sesion y permisos.</p>
+          <p className="font-semibold text-[var(--text)]">Cargando acceso...</p>
+          <p className="mt-1 text-sm text-[var(--text-muted)]">Validando sesion y permisos.</p>
         </Panel>
       </div>
     );
@@ -772,7 +783,7 @@ export default function MiniErpBizonPrototype() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--surface-alt)] text-zinc-900">
+    <div className="min-h-screen bg-[var(--surface-alt)] text-[var(--text)]">
       <GlobalStyles />
       <div className="flex">
         <Sidebar
@@ -795,6 +806,8 @@ export default function MiniErpBizonPrototype() {
             databaseStatus={databaseStatus}
             profile={profile}
             organization={organization}
+            theme={theme}
+            onToggleTheme={toggleTheme}
           />
           <MobileNav active={active} setActive={setActive} availableScreens={availableScreens} />
           {Screen}

@@ -16,11 +16,11 @@ export function NewRecordModal({ active, data, onClose, onCreate }) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-zinc-950/50 p-4">
-      <form onSubmit={submit} className={`max-h-[92vh] w-full overflow-y-auto rounded-lg bg-white p-5 shadow-xl ${active === "clientes" ? "max-w-5xl" : "max-w-lg"}`}>
+      <form onSubmit={submit} className={`max-h-[92vh] w-full overflow-y-auto rounded-lg bg-[var(--surface-raised)] p-5 shadow-xl ${active === "clientes" ? "max-w-5xl" : "max-w-lg"}`}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-zinc-950">{title}</h2>
-            <p className="mt-1 text-sm text-zinc-500">{active === "clientes" ? "Ficha completa de empresa, datos comerciales y contacto principal." : "Alta rapida para alimentar el modulo actual."}</p>
+            <h2 className="text-xl font-semibold text-[var(--text)]">{title}</h2>
+            <p className="mt-1 text-sm text-[var(--text-muted)]">{active === "clientes" ? "Ficha completa de empresa, datos comerciales y contacto principal." : "Alta rapida para alimentar el modulo actual."}</p>
           </div>
           <Button type="button" variant="ghost" onClick={onClose}>Cerrar</Button>
         </div>
@@ -182,11 +182,11 @@ export function EditRecordModal({ editTarget, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-zinc-950/50 p-4">
-      <form onSubmit={submit} className={`max-h-[92vh] w-full overflow-y-auto rounded-lg bg-white p-5 shadow-xl ${editTarget.module === "clientes" ? "max-w-5xl" : "max-w-2xl"}`}>
+      <form onSubmit={submit} className={`max-h-[92vh] w-full overflow-y-auto rounded-lg bg-[var(--surface-raised)] p-5 shadow-xl ${editTarget.module === "clientes" ? "max-w-5xl" : "max-w-2xl"}`}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-zinc-950">{title}</h2>
-            <p className="mt-1 text-sm text-zinc-500">Los cambios se guardan en Supabase si la base esta conectada.</p>
+            <h2 className="text-xl font-semibold text-[var(--text)]">{title}</h2>
+            <p className="mt-1 text-sm text-[var(--text-muted)]">Los cambios se guardan en Supabase si la base esta conectada.</p>
           </div>
           <Button type="button" variant="ghost" onClick={onClose}>Cerrar</Button>
         </div>

@@ -51,7 +51,7 @@ function OpportunityFilterBar(filters) {
       <div className="w-full md:w-32">
         <TextInput type="number" placeholder="Monto max" value={filters.maxAmount} onChange={(event) => filters.setMaxAmount(event.target.value)} />
       </div>
-      <label className="flex items-center gap-2 text-[13px] font-medium text-zinc-600">
+      <label className="flex items-center gap-2 text-[13px] font-medium text-[var(--text-muted)]">
         <input type="checkbox" checked={filters.hideClosed} onChange={(event) => filters.setHideClosed(event.target.checked)} />
         Ocultar Ganado/Perdido
       </label>
@@ -84,7 +84,7 @@ export function CRM({ opportunities, setOpportunities, persistUpdate, openEditor
     if (nextStage && nextStage !== opportunity.stage) moveOpportunity(opportunity.id, nextStage);
   }
 
-  const compactAction = "inline-flex h-8 items-center justify-center rounded-lg border border-[var(--border)] bg-white px-2.5 text-xs font-semibold text-zinc-700";
+  const compactAction = "inline-flex h-8 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-2.5 text-xs font-semibold text-[var(--text)]";
 
   return (
     <div className="space-y-4 p-4 md:p-6">
@@ -103,21 +103,21 @@ export function CRM({ opportunities, setOpportunities, persistUpdate, openEditor
             <Panel key={stage} className="min-h-[460px] min-w-0 p-3">
               <div className="mb-3">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="truncate text-sm font-semibold text-zinc-950">{stage}</h3>
+                  <h3 className="truncate text-sm font-semibold text-[var(--text)]">{stage}</h3>
                   <Badge>{cards.length}</Badge>
                 </div>
                 <div className="mt-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5">
-                  <p className="text-xs font-semibold text-zinc-500">Valor etapa</p>
-                  <p className="mt-0.5 truncate text-base font-semibold text-zinc-950">{money(stageTotal)}</p>
+                  <p className="text-xs font-semibold text-[var(--text-muted)]">Valor etapa</p>
+                  <p className="mt-0.5 truncate text-base font-semibold text-[var(--text)]">{money(stageTotal)}</p>
                 </div>
               </div>
               <div className="space-y-2">
                 {cards.map((opportunity) => (
-                  <article key={opportunity.id} className="flex min-h-[340px] flex-col rounded-2xl border border-[var(--border)] bg-white p-3.5 shadow-[0_10px_24px_rgba(15,23,42,0.035)]">
+                  <article key={opportunity.id} className="flex min-h-[340px] flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-3.5 shadow-[0_10px_24px_rgba(15,23,42,0.035)]">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="line-clamp-2 text-sm font-semibold leading-tight text-zinc-950">{opportunity.company}</p>
-                        <p className="mt-0.5 line-clamp-1 text-xs font-medium text-zinc-500">{opportunity.service}</p>
+                        <p className="line-clamp-2 text-sm font-semibold leading-tight text-[var(--text)]">{opportunity.company}</p>
+                        <p className="mt-0.5 line-clamp-1 text-xs font-medium text-[var(--text-muted)]">{opportunity.service}</p>
                       </div>
                       <Badge tone={opportunity.stage === "Ganado" ? "green" : "blue"}>{opportunity.stage}</Badge>
                     </div>
@@ -127,23 +127,23 @@ export function CRM({ opportunities, setOpportunities, persistUpdate, openEditor
 
                     <div className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
                       <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5">
-                        <p className="font-semibold uppercase tracking-wide text-zinc-400">Monto</p>
+                        <p className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Monto</p>
                         <p className="mt-1 truncate font-semibold text-[var(--brand-hover)]">{money(opportunity.amount)}</p>
                       </div>
                       <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5">
-                        <p className="font-semibold uppercase tracking-wide text-zinc-400">Cierre</p>
-                        <p className="mt-1 font-semibold text-zinc-950">{opportunity.due}</p>
+                        <p className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Cierre</p>
+                        <p className="mt-1 font-semibold text-[var(--text)]">{opportunity.due}</p>
                       </div>
-                      <div className="col-span-2 rounded-xl border border-[var(--border)] bg-white p-2.5">
-                        <p className="font-semibold uppercase tracking-wide text-zinc-400">Responsable</p>
-                        <p className="mt-1 truncate font-semibold text-zinc-950">{opportunity.owner}</p>
+                      <div className="col-span-2 rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-2.5">
+                        <p className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Responsable</p>
+                        <p className="mt-1 truncate font-semibold text-[var(--text)]">{opportunity.owner}</p>
                       </div>
                     </div>
                     <div className="hidden">
                       <button type="button" className={compactAction} onClick={() => moveByOffset(opportunity, -1)}>←</button>
                       <button type="button" className={compactAction} onClick={() => moveByOffset(opportunity, 1)}>→</button>
                       <button type="button" className={compactAction} onClick={() => openEditor("crm", opportunity)}>Editar</button>
-                      <button type="button" className={`${compactAction} border-[#f3d2d2] text-[var(--danger)] hover:border-[var(--danger)] hover:text-[var(--danger)]`} onClick={() => removeRecord("opportunities", opportunity.id)}>Borrar</button>
+                      <button type="button" className={`${compactAction} border-[var(--danger-tint-border)] text-[var(--danger)] hover:border-[var(--danger)] hover:text-[var(--danger)]`} onClick={() => removeRecord("opportunities", opportunity.id)}>Borrar</button>
                     </div>
                     <div className="mt-auto grid gap-2 pt-4">
                       <Select value={opportunity.stage} onChange={(event) => moveOpportunity(opportunity.id, event.target.value)}>
@@ -160,7 +160,7 @@ export function CRM({ opportunities, setOpportunities, persistUpdate, openEditor
                     </div>
                   </article>
                 ))}
-                {cards.length === 0 && <p className="rounded-xl border border-dashed border-zinc-300 p-3 text-sm font-medium text-zinc-500">Sin oportunidades</p>}
+                {cards.length === 0 && <p className="rounded-xl border border-dashed border-[var(--border)] p-3 text-sm font-medium text-[var(--text-muted)]">Sin oportunidades</p>}
               </div>
             </Panel>
           );
@@ -237,12 +237,12 @@ export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, open
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => dropOnStage(event, stage)}
             >
-              <div className="sticky top-0 z-10 mb-3 rounded-2xl border border-[var(--border)] bg-white p-3 shadow-[0_8px_18px_rgba(15,23,42,0.035)]">
+              <div className="sticky top-0 z-10 mb-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)] p-3 shadow-[0_8px_18px_rgba(15,23,42,0.035)]">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="truncate text-sm font-semibold text-zinc-950">{stage}</h3>
+                  <h3 className="truncate text-sm font-semibold text-[var(--text)]">{stage}</h3>
                   <Badge>{cards.length}</Badge>
                 </div>
-                <div className="mt-2 flex items-center justify-between gap-2 text-xs font-semibold text-zinc-500">
+                <div className="mt-2 flex items-center justify-between gap-2 text-xs font-semibold text-[var(--text-muted)]">
                   <span>Valor etapa</span>
                   <span className="truncate text-[var(--brand-hover)]">{money(stageTotal)}</span>
                 </div>
@@ -256,17 +256,17 @@ export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, open
                       draggable
                       onDragStart={(event) => startDrag(event, opportunity)}
                       onDragEnd={() => setDraggingId(null)}
-                      className={`overflow-hidden rounded-2xl border bg-white shadow-[0_8px_20px_rgba(15,23,42,0.035)] transition ${draggingId === opportunity.id ? "border-[var(--brand)] opacity-60" : "border-[var(--border)]"}`}
+                      className={`overflow-hidden rounded-2xl border bg-[var(--surface-raised)] shadow-[0_8px_20px_rgba(15,23,42,0.035)] transition ${draggingId === opportunity.id ? "border-[var(--brand)] opacity-60" : "border-[var(--border)]"}`}
                     >
                       <button type="button" onClick={() => toggleExpanded(opportunity.id)} className="flex w-full items-stretch justify-between gap-3 border-l-4 border-[var(--brand)] bg-[var(--brand-tint)] px-3 py-3 text-left transition hover:bg-[var(--brand-tint)]">
                         <div className="min-w-0">
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--brand-hover)]">Cliente</p>
-                          <p className="mt-0.5 truncate text-[15px] font-semibold leading-tight text-zinc-950">{opportunity.company}</p>
-                          <p className="mt-1 truncate text-[11px] font-medium text-zinc-500">{opportunity.service}</p>
+                          <p className="mt-0.5 truncate text-[15px] font-semibold leading-tight text-[var(--text)]">{opportunity.company}</p>
+                          <p className="mt-1 truncate text-[11px] font-medium text-[var(--text-muted)]">{opportunity.service}</p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2 self-center">
                           <span className="rounded-full bg-[var(--brand-tint)] px-2 py-1 text-[11px] font-semibold text-[var(--brand-hover)]">{opportunity.probability}%</span>
-                          <span className="text-xs font-semibold text-zinc-400">{expanded ? "Cerrar" : "Abrir"}</span>
+                          <span className="text-xs font-semibold text-[var(--text-muted)]">{expanded ? "Cerrar" : "Abrir"}</span>
                         </div>
                       </button>
 
@@ -275,16 +275,16 @@ export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, open
                           <ProgressRing value={opportunity.probability} label="Prob." />
                           <div className="mt-4 grid grid-cols-2 gap-2 text-[12px]">
                             <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5">
-                              <p className="font-semibold uppercase tracking-wide text-zinc-400">Monto</p>
+                              <p className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Monto</p>
                               <p className="mt-1 truncate font-semibold text-[var(--brand-hover)]">{money(opportunity.amount)}</p>
                             </div>
                             <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5">
-                              <p className="font-semibold uppercase tracking-wide text-zinc-400">Cierre</p>
-                              <p className="mt-1 font-semibold text-zinc-950">{opportunity.due}</p>
+                              <p className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Cierre</p>
+                              <p className="mt-1 font-semibold text-[var(--text)]">{opportunity.due}</p>
                             </div>
-                            <div className="col-span-2 rounded-xl border border-[var(--border)] bg-white p-2.5">
-                              <p className="font-semibold uppercase tracking-wide text-zinc-400">Responsable</p>
-                              <p className="mt-1 truncate font-semibold text-zinc-950">{opportunity.owner}</p>
+                            <div className="col-span-2 rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-2.5">
+                              <p className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Responsable</p>
+                              <p className="mt-1 truncate font-semibold text-[var(--text)]">{opportunity.owner}</p>
                             </div>
                           </div>
                           <div className="mt-3 grid gap-2">
@@ -292,12 +292,12 @@ export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, open
                               {stages.map((option) => <option key={option}>{option}</option>)}
                             </Select>
                             <div className="grid grid-cols-2 gap-2">
-                              <button type="button" title="Estado anterior" onClick={() => moveByOffset(opportunity, -1)} className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--border)] bg-white text-base font-semibold text-zinc-600 transition hover:border-[var(--brand)] hover:text-[var(--brand-hover)]">{"<"}</button>
-                              <button type="button" title="Estado siguiente" onClick={() => moveByOffset(opportunity, 1)} className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--border)] bg-white text-base font-semibold text-zinc-600 transition hover:border-[var(--brand)] hover:text-[var(--brand-hover)]">{">"}</button>
+                              <button type="button" title="Estado anterior" onClick={() => moveByOffset(opportunity, -1)} className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] text-base font-semibold text-[var(--text-muted)] transition hover:border-[var(--brand)] hover:text-[var(--brand-hover)]">{"<"}</button>
+                              <button type="button" title="Estado siguiente" onClick={() => moveByOffset(opportunity, 1)} className="inline-flex h-8 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] text-base font-semibold text-[var(--text-muted)] transition hover:border-[var(--brand)] hover:text-[var(--brand-hover)]">{">"}</button>
                             </div>
                             <div className="flex gap-2">
-                              <button type="button" onClick={() => openEditor("crm", opportunity)} className="inline-flex h-8 flex-1 items-center justify-center rounded-lg border border-[#cfe7dd] bg-[#f0fdf7] px-2 text-[11px] font-semibold text-[var(--success)] transition hover:border-[var(--success)]">Editar</button>
-                              <button type="button" onClick={() => removeRecord("opportunities", opportunity.id)} className="inline-flex h-8 flex-1 items-center justify-center rounded-lg border border-[#f3d2d2] bg-[#fff5f5] px-2 text-[11px] font-semibold text-[var(--danger)] transition hover:border-[var(--danger)]">Borrar</button>
+                              <button type="button" onClick={() => openEditor("crm", opportunity)} className="inline-flex h-8 flex-1 items-center justify-center rounded-lg border border-[var(--success-tint-border)] bg-[var(--success-tint)] px-2 text-[11px] font-semibold text-[var(--success)] transition hover:border-[var(--success)]">Editar</button>
+                              <button type="button" onClick={() => removeRecord("opportunities", opportunity.id)} className="inline-flex h-8 flex-1 items-center justify-center rounded-lg border border-[var(--danger-tint-border)] bg-[var(--danger-tint)] px-2 text-[11px] font-semibold text-[var(--danger)] transition hover:border-[var(--danger)]">Borrar</button>
                             </div>
                           </div>
                         </div>
@@ -305,7 +305,7 @@ export function CRMCanvas({ opportunities, setOpportunities, persistUpdate, open
                     </article>
                   );
                 })}
-                {cards.length === 0 && <p className="rounded-xl border border-dashed border-zinc-300 p-3 text-sm font-medium text-zinc-500">Sin oportunidades</p>}
+                {cards.length === 0 && <p className="rounded-xl border border-dashed border-[var(--border)] p-3 text-sm font-medium text-[var(--text-muted)]">Sin oportunidades</p>}
               </div>
             </Panel>
           );

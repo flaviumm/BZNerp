@@ -23,10 +23,10 @@ export function Reportes({ data }) {
       <Panel className="p-4">
         <SectionTitle title="Resumen ejecutivo" subtitle="Lectura rapida para reunion semanal" />
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-zinc-700">El pipeline total es de <strong>{money(pipeline)}</strong>, con forecast ponderado de <strong>{money(weightedPipeline(data.opportunities))}</strong>.</p>
-          <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-zinc-700">Hay <strong>{data.inventory.filter((item) => item.stock <= item.min).length}</strong> materiales bajo minimo y <strong>{data.workOrders.filter((item) => item.status === "En ejecucion").length}</strong> ordenes en ejecucion.</p>
-          <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-zinc-700">Las cuentas por cobrar abiertas suman <strong>{money(sum(data.invoices.filter((item) => item.status !== "Cobrada"), "total"))}</strong>.</p>
-          <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-zinc-700">La dotacion registra <strong>{sum(data.employees, "hours")}</strong> horas mensuales informadas.</p>
+          <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--text)]">El pipeline total es de <strong>{money(pipeline)}</strong>, con forecast ponderado de <strong>{money(weightedPipeline(data.opportunities))}</strong>.</p>
+          <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--text)]">Hay <strong>{data.inventory.filter((item) => item.stock <= item.min).length}</strong> materiales bajo minimo y <strong>{data.workOrders.filter((item) => item.status === "En ejecucion").length}</strong> ordenes en ejecucion.</p>
+          <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--text)]">Las cuentas por cobrar abiertas suman <strong>{money(sum(data.invoices.filter((item) => item.status !== "Cobrada"), "total"))}</strong>.</p>
+          <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--text)]">La dotacion registra <strong>{sum(data.employees, "hours")}</strong> horas mensuales informadas.</p>
         </div>
       </Panel>
     </div>

@@ -24,9 +24,9 @@ export function OrdenesTrabajo({ workOrders, setWorkOrders, persistUpdate, openE
             <Panel key={order.number} className="flex min-h-[420px] flex-col p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-400">{order.number}</p>
-                  <h3 className="mt-1 line-clamp-2 text-base font-semibold leading-tight text-zinc-950">{order.client}</h3>
-                  <p className="mt-1 line-clamp-1 text-xs font-medium text-zinc-500">{order.service}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">{order.number}</p>
+                  <h3 className="mt-1 line-clamp-2 text-base font-semibold leading-tight text-[var(--text)]">{order.client}</h3>
+                  <p className="mt-1 line-clamp-1 text-xs font-medium text-[var(--text-muted)]">{order.service}</p>
                 </div>
                 <Badge tone={toneForStatus(order.status)}>{order.status}</Badge>
               </div>
@@ -37,25 +37,25 @@ export function OrdenesTrabajo({ workOrders, setWorkOrders, persistUpdate, openE
 
               <div className="mt-5 grid grid-cols-2 gap-2 text-[12px]">
                 <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
-                  <p className="font-semibold uppercase tracking-wide text-zinc-400">Equipo</p>
-                  <p className="mt-1 line-clamp-1 font-semibold text-zinc-950">{order.team}</p>
+                  <p className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Equipo</p>
+                  <p className="mt-1 line-clamp-1 font-semibold text-[var(--text)]">{order.team}</p>
                 </div>
                 <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3">
-                  <p className="font-semibold uppercase tracking-wide text-zinc-400">Margen</p>
+                  <p className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Margen</p>
                   <p className={`mt-1 text-lg font-semibold ${marginTone}`}>{order.margin}%</p>
                 </div>
-                <div className="rounded-xl border border-[var(--border)] bg-white p-3">
-                  <p className="font-semibold uppercase tracking-wide text-zinc-400">Inicio</p>
-                  <p className="mt-1 font-semibold text-zinc-950">{order.start}</p>
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-3">
+                  <p className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Inicio</p>
+                  <p className="mt-1 font-semibold text-[var(--text)]">{order.start}</p>
                 </div>
-                <div className="rounded-xl border border-[var(--border)] bg-white p-3">
-                  <p className="font-semibold uppercase tracking-wide text-zinc-400">Entrega</p>
-                  <p className="mt-1 font-semibold text-zinc-950">{order.end}</p>
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-3">
+                  <p className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Entrega</p>
+                  <p className="mt-1 font-semibold text-[var(--text)]">{order.end}</p>
                 </div>
               </div>
 
               <div className="mt-5">
-                <div className="mb-2 flex justify-between text-xs font-semibold text-zinc-500">
+                <div className="mb-2 flex justify-between text-xs font-semibold text-[var(--text-muted)]">
                   <span>Actualizar avance</span>
                   <span>{order.progress}%</span>
                 </div>
@@ -73,7 +73,7 @@ export function OrdenesTrabajo({ workOrders, setWorkOrders, persistUpdate, openE
             </Panel>
           );
         })}
-        {!visibleWorkOrders.length && <Panel className="p-5 text-sm font-medium text-zinc-500">No hay ordenes de trabajo para mostrar.</Panel>}
+        {!visibleWorkOrders.length && <Panel className="p-5 text-sm font-medium text-[var(--text-muted)]">No hay ordenes de trabajo para mostrar.</Panel>}
       </div>
     </div>
   );
@@ -103,7 +103,7 @@ export function Inventario({ inventory, openEditor, removeRecord }) {
         headers={["SKU", "Material", "Categoria", "Stock", "Minimo", "Unidad", "Costo", "Estado", "Acciones"]}
         rows={rows.map((item) => [
           item.sku,
-          <strong className="text-zinc-950">{item.name}</strong>,
+          <strong className="text-[var(--text)]">{item.name}</strong>,
           item.category,
           item.stock,
           item.min,
@@ -191,7 +191,7 @@ export function RRHH({ employees, openEditor, removeRecord }) {
       <DataTable
         headers={["Nombre", "Rol", "Equipo", "Estado", "Horas", "Acciones"]}
         rows={employees.map((employee) => [
-          <strong className="text-zinc-950">{employee.name}</strong>,
+          <strong className="text-[var(--text)]">{employee.name}</strong>,
           employee.role,
           employee.team,
           <Badge tone={toneForStatus(employee.status)}>{employee.status}</Badge>,
@@ -220,7 +220,7 @@ export function Tareas({ data, openEditor, removeRecord }) {
       <DataTable
         headers={["Tarea", "Responsable", "Prioridad", "Vencimiento", "Acciones"]}
         rows={data.tasks.map((task) => [
-          <strong className="text-zinc-950">{task.text}</strong>,
+          <strong className="text-[var(--text)]">{task.text}</strong>,
           task.owner,
           <Badge tone={task.priority === "Alta" ? "red" : "amber"}>{task.priority}</Badge>,
           task.due,

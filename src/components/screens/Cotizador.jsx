@@ -251,13 +251,13 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
             <Field label="Valido hasta"><TextInput type="date" value={validUntil} onChange={(event) => setValidUntil(event.target.value)} /></Field>
           </div>
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
-            <p className="text-sm font-semibold text-zinc-950">Resumen</p>
+            <p className="text-sm font-semibold text-[var(--text)]">Resumen</p>
             <div className="mt-3 grid gap-2 text-sm">
               <div className="flex justify-between"><span>Numero</span><strong>{generatedQuote?.number || "Automatico"}</strong></div>
               <div className="flex justify-between"><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
               <div className="flex justify-between"><span>IVA</span><strong>{money(tax)}</strong></div>
               <div className="border-t border-[var(--border)] pt-2" />
-              <div className="flex justify-between text-base text-zinc-950"><span>Total</span><strong>{money(total)}</strong></div>
+              <div className="flex justify-between text-base text-[var(--text)]"><span>Total</span><strong>{money(total)}</strong></div>
             </div>
             {generatedQuote && <Badge tone="green">Generado {generatedQuote.number}</Badge>}
           </div>
@@ -317,11 +317,11 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
                       key={item.id}
                       type="button"
                       onClick={() => setSelectedMaterialId(item.id)}
-                      className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${isSelected ? "bg-zinc-900 text-white" : "bg-white hover:bg-zinc-50 text-zinc-800"}`}
+                      className={`w-full text-left px-3 py-2.5 text-sm transition-colors ${isSelected ? "bg-zinc-900 text-white" : "bg-[var(--surface-raised)] hover:bg-[var(--surface)] text-[var(--text)]"}`}
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`shrink-0 w-12 h-12 rounded overflow-hidden flex items-center justify-center ${isSelected ? "bg-zinc-700" : "bg-zinc-100"} ${item.imagen ? "cursor-zoom-in" : ""}`}
+                          className={`shrink-0 w-12 h-12 rounded overflow-hidden flex items-center justify-center ${isSelected ? "bg-zinc-700" : "bg-[var(--surface)]"} ${item.imagen ? "cursor-zoom-in" : ""}`}
                           onClick={item.imagen ? (e) => { e.stopPropagation(); setLightboxImage({ src: item.imagen, name: item.name }); } : undefined}
                         >
                           {item.imagen
@@ -330,14 +330,14 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
                           }
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className={`font-semibold leading-snug truncate ${isSelected ? "text-white" : "text-zinc-900"}`}>{item.name}</p>
-                          {item.spec && <p className={`text-xs mt-0.5 ${isSelected ? "text-zinc-300" : "text-zinc-500"}`}>{item.spec}</p>}
-                          <p className={`text-xs mt-0.5 ${isSelected ? "text-zinc-400" : "text-zinc-400"}`}>
+                          <p className={`font-semibold leading-snug truncate ${isSelected ? "text-white" : "text-[var(--text)]"}`}>{item.name}</p>
+                          {item.spec && <p className={`text-xs mt-0.5 ${isSelected ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>{item.spec}</p>}
+                          <p className={`text-xs mt-0.5 ${isSelected ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>
                             {[item.brand, item.sku, item.unit ? `Unidad: ${item.unit}` : null, item.provider].filter(Boolean).join(" · ")}
                           </p>
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className={`font-bold text-sm whitespace-nowrap ${isSelected ? "text-white" : "text-zinc-900"}`}>{money(catalogPrice(item))}</p>
+                          <p className={`font-bold text-sm whitespace-nowrap ${isSelected ? "text-white" : "text-[var(--text)]"}`}>{money(catalogPrice(item))}</p>
                           {item.stock !== null && (
                             <p className={`text-xs mt-0.5 ${item.stock > 0 ? (isSelected ? "text-green-300" : "text-green-600") : (isSelected ? "text-red-300" : "text-red-500")}`}>
                               {item.stock > 0 ? `Stock: ${item.stock}` : "Sin stock"}
@@ -351,7 +351,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
               </div>
             )}
             {materialQuery && filteredMaterials.length === 0 && (
-              <p className="text-sm text-zinc-400 text-center py-4">Sin resultados para "{materialQuery}"</p>
+              <p className="text-sm text-[var(--text-muted)] text-center py-4">Sin resultados para "{materialQuery}"</p>
             )}
           </div>
 
@@ -389,12 +389,12 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
               />
             </Field>
             {selectedLabor && (
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm text-zinc-600">
-                <p className="font-semibold text-zinc-950">{selectedLabor.trade}</p>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm text-[var(--text-muted)]">
+                <p className="font-semibold text-[var(--text)]">{selectedLabor.trade}</p>
                 <p>{selectedLabor.category}</p>
                 <p className="mt-1">Convenio: {selectedLabor.agreement} · Tarifa: <strong>{money(selectedLabor.quoteHour)}/h</strong></p>
                 {selectedLabor.baseHour && selectedLabor.quoteHour !== selectedLabor.baseHour && (
-                  <p className="mt-0.5 text-xs text-zinc-400">Base: {money(selectedLabor.baseHour)}/h + 40% costo laboral + 30% ganancia</p>
+                  <p className="mt-0.5 text-xs text-[var(--text-muted)]">Base: {money(selectedLabor.baseHour)}/h + 40% costo laboral + 30% ganancia</p>
                 )}
               </div>
             )}
@@ -409,7 +409,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
         </div>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] border-collapse text-left">
-            <thead className="bg-[var(--surface)] text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+            <thead className="bg-[var(--surface)] text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
               <tr>
                 <th className="px-4 py-3">Detalle del producto</th>
                 <th className="w-[150px] px-4 py-3">Cantidad</th>
@@ -422,7 +422,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
               {lineItems.map((line, index) => {
                 if (line.type === "title") {
                   return (
-                    <tr key={line.id || index} className="bg-zinc-50">
+                    <tr key={line.id || index} className="bg-[var(--surface)]">
                       <td className="px-4 py-3" colSpan={4}>
                         <TextInput
                           value={line.detail}
@@ -441,7 +441,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
                     <td className="px-4 py-4">
                       <TextInput value={line.detail} onChange={(event) => updateLine(index, { detail: event.target.value })} placeholder="Producto, trabajo o servicio cotizado" />
                       {(line.meta?.unit || line.meta?.provider || line.meta?.sku || line.meta?.source || line.meta?.spec) && (
-                        <div className="mt-2 grid gap-1 text-xs font-medium text-zinc-500">
+                        <div className="mt-2 grid gap-1 text-xs font-medium text-[var(--text-muted)]">
                           {line.meta?.spec && <p>{line.meta.spec}</p>}
                           <p>
                             {[
@@ -461,7 +461,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
                       <TextInput type="number" min="0" step="0.01" value={line.unitPrice} onChange={(event) => updateLine(index, { unitPrice: event.target.value })} />
                     </td>
                     <td className="px-4 py-4 text-right">
-                      <p className="text-base font-semibold text-zinc-950">{money(quoteLineTotal(line))}</p>
+                      <p className="text-base font-semibold text-[var(--text)]">{money(quoteLineTotal(line))}</p>
                     </td>
                     <td className="px-4 py-4 text-right">
                       <Button variant="danger" onClick={() => removeLine(index)}>Quitar</Button>
@@ -471,7 +471,7 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
               })}
               {!lineItems.length && (
                 <tr>
-                  <td className="px-4 py-6 text-sm text-zinc-500" colSpan={5}>
+                  <td className="px-4 py-6 text-sm text-[var(--text-muted)]" colSpan={5}>
                     Agrega materiales desde la base, horas de mano de obra o un renglon manual.
                   </td>
                 </tr>
@@ -483,13 +483,13 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
 
       <Panel className="p-5">
         <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
-          <p className="text-sm text-zinc-500">Revisar el detalle, generar la numeracion automatica y abrir el PDF del presupuesto.</p>
+          <p className="text-sm text-[var(--text-muted)]">Revisar el detalle, generar la numeracion automatica y abrir el PDF del presupuesto.</p>
           <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
             <Button onClick={handleGeneratePdf} disabled={saving || !total}>{saving ? "Generando..." : "Generar presupuesto PDF"}</Button>
             {generatedQuote && <Button variant="ghost" onClick={() => generateQuotePdf(generatedQuote)}>Reimprimir PDF</Button>}
           </div>
         </div>
-        <p className="mt-4 text-xs text-zinc-500">La numeracion se asigna automaticamente al generar el PDF usando el contador de Presupuestos.</p>
+        <p className="mt-4 text-xs text-[var(--text-muted)]">La numeracion se asigna automaticamente al generar el PDF usando el contador de Presupuestos.</p>
       </Panel>
 
       {lightboxImage && (
@@ -498,17 +498,17 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
           onClick={() => setLightboxImage(null)}
         >
           <div
-            className="relative max-w-xl w-full bg-white rounded-xl shadow-2xl overflow-hidden"
+            className="relative max-w-xl w-full bg-[var(--surface-raised)] rounded-xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
-              <p className="text-sm font-semibold text-zinc-800 truncate pr-4">{lightboxImage.name}</p>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
+              <p className="text-sm font-semibold text-[var(--text)] truncate pr-4">{lightboxImage.name}</p>
               <button
                 onClick={() => setLightboxImage(null)}
-                className="shrink-0 text-zinc-400 hover:text-zinc-700 text-xl leading-none"
+                className="shrink-0 text-[var(--text-muted)] hover:text-[var(--text)] text-xl leading-none"
               >✕</button>
             </div>
-            <div className="flex items-center justify-center bg-zinc-50 p-6 min-h-[280px]">
+            <div className="flex items-center justify-center bg-[var(--surface)] p-6 min-h-[280px]">
               <img
                 src={lightboxImage.src}
                 alt={lightboxImage.name}

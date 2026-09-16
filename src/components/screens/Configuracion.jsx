@@ -73,19 +73,19 @@ export function Configuracion({ organization, onUpdateOrganization }) {
             </Field>
             <Field label="Color principal">
               <div className="flex items-center gap-3">
-                <input type="color" value={color} onChange={(event) => setColor(event.target.value)} className="h-9 w-14 cursor-pointer rounded-lg border border-[var(--border)] bg-white p-1" aria-label="Elegir color" />
+                <input type="color" value={color} onChange={(event) => setColor(event.target.value)} className="h-9 w-14 cursor-pointer rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] p-1" aria-label="Elegir color" />
                 <TextInput required value={color} onChange={(event) => setColor(event.target.value)} pattern="^#[0-9a-fA-F]{6}$" placeholder="#ff7900" />
                 <span className="inline-flex h-9 items-center rounded-lg px-3 text-[11px] font-semibold text-black" style={{ background: color }}>Muestra</span>
               </div>
             </Field>
             <Field label="Logo">
-              <input type="file" accept="image/*" onChange={handleLogo} className="block w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm font-medium text-zinc-700" />
+              <input type="file" accept="image/*" onChange={handleLogo} className="block w-full rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2 text-sm font-medium text-[var(--text)]" />
             </Field>
             <div className="flex flex-wrap gap-2">
               <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar"}</Button>
               {logo && <Button variant="ghost" onClick={() => setLogo(null)}>Quitar logo</Button>}
             </div>
-            {message && <p className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm text-zinc-700">{message}</p>}
+            {message && <p className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm text-[var(--text)]">{message}</p>}
           </div>
           <div className="grid content-start gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
             <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Vista previa</p>

@@ -11,12 +11,21 @@
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         --surface: #fbfbf8;
         --surface-alt: #f5f5f3;
+        --surface-raised: #ffffff;
+        --surface-inverse: #18181b;
         --border: #ececf0;
+        --track: var(--border);
         --text: #18181b;
         --text-muted: #71717a;
         --success: #0f766e;
         --warning: #b45309;
         --danger: #b42318;
+        --success-tint: #f0fdf7;
+        --success-tint-border: #cfe7dd;
+        --warning-tint: #fff8e8;
+        --warning-tint-border: #f4dfb6;
+        --danger-tint: #fff5f5;
+        --danger-tint-border: #f3d2d2;
         --brand: #ff7900;
         --brand-hover: #cc6100;
         --brand-tint: #fff2e5;
@@ -24,11 +33,45 @@
         --brand-shadow: rgba(255,121,0,0.22);
       }
 
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --surface: #18181b;
+        --surface-alt: #0b0b0d;
+        --surface-raised: #202023;
+        --surface-inverse: #3f3f46;
+        --border: #2f2f34;
+        --text: #f4f4f5;
+        --text-muted: #a1a1aa;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --danger: #f87171;
+        --success-tint: rgba(34,197,94,0.14);
+        --success-tint-border: rgba(34,197,94,0.35);
+        --warning-tint: rgba(245,158,11,0.14);
+        --warning-tint-border: rgba(245,158,11,0.35);
+        --danger-tint: rgba(248,113,113,0.14);
+        --danger-tint-border: rgba(248,113,113,0.35);
+        --brand-tint: #2e1d0d;
+        --brand-soft: #7a4a1f;
+      }
+
       body {
         margin: 0;
         background: var(--surface-alt);
+        color: var(--text);
       }
     </style>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("bizon-theme");
+          var theme = stored === "light" || stored === "dark" ? stored : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+          document.documentElement.dataset.theme = theme;
+        } catch (error) {
+          document.documentElement.dataset.theme = "light";
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

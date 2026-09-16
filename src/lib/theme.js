@@ -39,25 +39,50 @@ function isHex(value) {
   return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value);
 }
 
-export function brandTokens(hex) {
+export function brandTokens(hex, isDark = false) {
   const brand = isHex(hex) ? hex.toLowerCase() : DEFAULT_BRAND;
   const [h, s, l] = hexToHsl(brand);
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(brand.slice(i, i + 2), 16));
   return {
     brand,
     hover: hslToHex(h, s, Math.max(l - 10, 0)),
-    tint: hslToHex(h, s, 95),
-    soft: hslToHex(h, s, 75),
+    tint: isDark ? hslToHex(h, s, 18) : hslToHex(h, s, 95),
+    soft: isDark ? hslToHex(h, s, 35) : hslToHex(h, s, 75),
     shadow: `rgba(${r},${g},${b},0.22)`,
   };
 }
 
-export function applyBrandTheme(hex) {
-  const tokens = brandTokens(hex);
+export function applyBrandTheme(hex, isDark = false) {
+  const tokens = brandTokens(hex, isDark);
   const root = document.documentElement.style;
   root.setProperty("--brand", tokens.brand);
   root.setProperty("--brand-hover", tokens.hover);
   root.setProperty("--brand-tint", tokens.tint);
   root.setProperty("--brand-soft", tokens.soft);
   root.setProperty("--brand-shadow", tokens.shadow);
+}
+
+const THEME_KEY = "bizon-theme";
+
+export function getInitialTheme() {
+  try {
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === "light" || stored === "dark") return stored;
+  } catch {
+    // localStorage unavailable (private mode, etc.) - fall through to system preference
+  }
+  if (typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches) return "dark";
+  return "light";
+}
+
+export function persistTheme(theme) {
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // localStorage unavailable - theme just won't persist across reloads
+  }
+}
+
+export function applyColorScheme(theme) {
+  document.documentElement.dataset.theme = theme;
 }

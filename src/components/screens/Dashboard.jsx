@@ -37,8 +37,8 @@ export function Dashboard({ data, setActive }) {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-wide text-[var(--brand)]">Vista general</p>
-            <h2 className="mt-2 text-[30px] font-semibold tracking-tight text-zinc-950">Operacion diaria Bizon</h2>
-            <p className="mt-2 max-w-2xl text-[15px] font-semibold text-zinc-500">Resumen ejecutivo para ubicar ventas, produccion y control sin ruido visual.</p>
+            <h2 className="mt-2 text-[30px] font-semibold tracking-tight text-[var(--text)]">Operacion diaria Bizon</h2>
+            <p className="mt-2 max-w-2xl text-[15px] font-semibold text-[var(--text-muted)]">Resumen ejecutivo para ubicar ventas, produccion y control sin ruido visual.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="ghost" onClick={() => setActive("reportes")}>Ver reportes</Button>
@@ -102,9 +102,9 @@ export function Dashboard({ data, setActive }) {
             <CleanBarList items={commercialItems} valueFormatter={money} />
           </div>
           <div className="mt-5 grid gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-sm">
-            <p className="flex justify-between gap-3 text-zinc-600">Pipeline <strong className="text-zinc-950">{money(pipelineTotal)}</strong></p>
-            <p className="flex justify-between gap-3 text-zinc-600">Forecast <strong className="text-zinc-950">{money(winForecast)}</strong></p>
-            <p className="flex justify-between gap-3 text-zinc-600">Presupuestos <strong className="text-zinc-950">{data.quotes.length}</strong></p>
+            <p className="flex justify-between gap-3 text-[var(--text-muted)]">Pipeline <strong className="text-[var(--text)]">{money(pipelineTotal)}</strong></p>
+            <p className="flex justify-between gap-3 text-[var(--text-muted)]">Forecast <strong className="text-[var(--text)]">{money(winForecast)}</strong></p>
+            <p className="flex justify-between gap-3 text-[var(--text-muted)]">Presupuestos <strong className="text-[var(--text)]">{data.quotes.length}</strong></p>
           </div>
         </Panel>
 
@@ -125,9 +125,9 @@ export function Dashboard({ data, setActive }) {
             <CleanBarList items={operationsItems} valueFormatter={(value) => `${value}%`} />
           </div>
           <div className="mt-5 grid gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-sm">
-            <p className="flex justify-between gap-3 text-zinc-600">OT activas <strong className="text-zinc-950">{data.workOrders.length}</strong></p>
-            <p className="flex justify-between gap-3 text-zinc-600">Stock bajo minimo <strong className={stockAlerts.length ? "text-[var(--danger)]" : "text-zinc-950"}>{stockAlerts.length}</strong></p>
-            <p className="flex justify-between gap-3 text-zinc-600">Compras abiertas <strong className="text-zinc-950">{data.purchases.filter((item) => item.status !== "Recibida").length}</strong></p>
+            <p className="flex justify-between gap-3 text-[var(--text-muted)]">OT activas <strong className="text-[var(--text)]">{data.workOrders.length}</strong></p>
+            <p className="flex justify-between gap-3 text-[var(--text-muted)]">Stock bajo minimo <strong className={stockAlerts.length ? "text-[var(--danger)]" : "text-[var(--text)]"}>{stockAlerts.length}</strong></p>
+            <p className="flex justify-between gap-3 text-[var(--text-muted)]">Compras abiertas <strong className="text-[var(--text)]">{data.purchases.filter((item) => item.status !== "Recibida").length}</strong></p>
           </div>
         </Panel>
 
@@ -145,7 +145,7 @@ export function Dashboard({ data, setActive }) {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-[var(--text)]">{task.text}</p>
-                    <p className="mt-1 text-xs font-semibold text-zinc-500">{task.owner} - {task.due}</p>
+                    <p className="mt-1 text-xs font-semibold text-[var(--text-muted)]">{task.owner} - {task.due}</p>
                   </div>
                   <Badge tone={task.priority === "Alta" ? "red" : "amber"}>{task.priority}</Badge>
                 </div>

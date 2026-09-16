@@ -38,8 +38,8 @@ export function LoginScreen({ onSessionReady }) {
         <div className="mb-5">
           <img src="/brand/isotipo_bizon.png" alt="Bizon" className="mb-4 h-14 w-14 rounded-lg bg-black object-contain p-1" />
           <p className="text-xs font-bold uppercase tracking-wide text-[#ff7900]">Bizon ERP Industrial</p>
-          <h1 className="mt-1 text-2xl font-semibold text-zinc-950">{mode === "login" ? "Ingresar" : "Crear usuario"}</h1>
-          <p className="mt-2 text-sm text-zinc-500">Acceso protegido por Supabase Auth y permisos por rol.</p>
+          <h1 className="mt-1 text-2xl font-semibold text-[var(--text)]">{mode === "login" ? "Ingresar" : "Crear usuario"}</h1>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">Acceso protegido por Supabase Auth y permisos por rol.</p>
         </div>
 
         <form onSubmit={submit} className="grid gap-3">
@@ -81,10 +81,10 @@ export function AccountStatusScreen({ profile, onSignOut }) {
         <div className="mb-5">
           <img src="/brand/isotipo_bizon.png" alt="Bizon" className="mb-4 h-14 w-14 rounded-lg bg-black object-contain p-1" />
           <p className="text-xs font-bold uppercase tracking-wide text-[#ff7900]">Bizon ERP Industrial</p>
-          <h1 className="mt-1 text-2xl font-semibold text-zinc-950">{title}</h1>
-          <p className="mt-2 text-sm text-zinc-500">{detail}</p>
+          <h1 className="mt-1 text-2xl font-semibold text-[var(--text)]">{title}</h1>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">{detail}</p>
         </div>
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm text-zinc-700">
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm text-[var(--text)]">
           <p><strong>Usuario:</strong> {profile?.fullName || "Sin perfil"}</p>
           <p><strong>Estado:</strong> {status}</p>
         </div>
@@ -103,12 +103,12 @@ export function DatabaseSetupScreen() {
         <div className="mb-5">
           <img src="/brand/isotipo_bizon.png" alt="Bizon" className="mb-4 h-14 w-14 rounded-lg bg-black object-contain p-1" />
           <p className="text-xs font-bold uppercase tracking-wide text-[#ff7900]">Bizon ERP Industrial</p>
-          <h1 className="mt-1 text-2xl font-semibold text-zinc-950">Configurar base real</h1>
-          <p className="mt-2 text-sm text-zinc-500">Produccion requiere Supabase para habilitar login, roles y datos persistentes.</p>
+          <h1 className="mt-1 text-2xl font-semibold text-[var(--text)]">Configurar base real</h1>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">Produccion requiere Supabase para habilitar login, roles y datos persistentes.</p>
         </div>
-        <div className="grid gap-3 text-sm text-zinc-700">
+        <div className="grid gap-3 text-sm text-[var(--text)]">
           <p>Crear el proyecto en Supabase, ejecutar los SQL de la carpeta <strong>database</strong> y cargar estas variables en Vercel:</p>
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 font-mono text-xs text-zinc-900">
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 font-mono text-xs text-[var(--text)]">
             <p>VITE_SUPABASE_URL</p>
             <p>VITE_SUPABASE_ANON_KEY</p>
           </div>

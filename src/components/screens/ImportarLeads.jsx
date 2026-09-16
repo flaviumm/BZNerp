@@ -58,7 +58,7 @@ export function ImportarLeads({ companies, opportunities, onImportLeads }) {
       <Panel className="p-5">
         <div className="grid gap-4 xl:grid-cols-[1fr_220px_180px_auto] xl:items-end">
           <Field label="Archivo Excel">
-            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="block w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-sm font-medium text-zinc-700 file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--brand)] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white" />
+            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="block w-full rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2 text-sm font-medium text-[var(--text)] file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--brand)] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white" />
           </Field>
           <Field label="Hoja">
             <Select value={sheetName} onChange={(event) => workbook && parseSheet(workbook, event.target.value)}>
@@ -94,12 +94,12 @@ export function ImportarLeads({ companies, opportunities, onImportLeads }) {
             primary.email || "-",
             primary.phone || "-",
             lead.city,
-            <span className="line-clamp-2 text-xs font-medium text-zinc-600">{lead.next}</span>,
+            <span className="line-clamp-2 text-xs font-medium text-[var(--text-muted)]">{lead.next}</span>,
           ];
         })}
         empty="Subi un Excel para previsualizar los leads"
       />
-      {normalizedLeads.length > 40 && <p className="text-sm font-medium text-zinc-500">Vista previa limitada a 40 filas. La importacion procesa todas las filas validas.</p>}
+      {normalizedLeads.length > 40 && <p className="text-sm font-medium text-[var(--text-muted)]">Vista previa limitada a 40 filas. La importacion procesa todas las filas validas.</p>}
     </div>
   );
 }

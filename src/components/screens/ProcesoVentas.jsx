@@ -7,11 +7,11 @@ export function ScriptBox({ boxId, text, copied, onCopy }) {
       <button
         type="button"
         onClick={() => onCopy(text, boxId)}
-        className="absolute right-3 top-3 rounded-lg border border-[var(--border)] bg-white px-2 py-1 text-[11px] font-semibold text-zinc-600 transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
+        className="absolute right-3 top-3 rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-2 py-1 text-[11px] font-semibold text-[var(--text-muted)] transition hover:border-[var(--brand)] hover:text-[var(--brand)]"
       >
         {copied === boxId ? "Copiado ✓" : "Copiar"}
       </button>
-      <pre className="mr-16 whitespace-pre-wrap font-[inherit] text-[13px] leading-relaxed text-zinc-700">{text}</pre>
+      <pre className="mr-16 whitespace-pre-wrap font-[inherit] text-[13px] leading-relaxed text-[var(--text)]">{text}</pre>
     </div>
   );
 }
@@ -65,8 +65,8 @@ export function ProcesoVentas() {
   return (
     <div className="space-y-8 p-4 md:p-8">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-zinc-950">Proceso comercial por WhatsApp</h1>
-        <p className="mt-1.5 max-w-3xl text-[14px] text-zinc-500">Flujo práctico para contactar empresas Oil & Gas, constructoras, arquitectos y estudios. El objetivo es identificar necesidad, llegar al decisor, generar confianza y avanzar hacia registro como proveedor, visita técnica, reunión o cotización.</p>
+        <h1 className="text-[28px] font-semibold tracking-tight text-[var(--text)]">Proceso comercial por WhatsApp</h1>
+        <p className="mt-1.5 max-w-3xl text-[14px] text-[var(--text-muted)]">Flujo práctico para contactar empresas Oil & Gas, constructoras, arquitectos y estudios. El objetivo es identificar necesidad, llegar al decisor, generar confianza y avanzar hacia registro como proveedor, visita técnica, reunión o cotización.</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {["Soldadura industrial", "Electricidad industrial", "Reparaciones", "Construcción", "WhatsApp B2B"].map((tag) => (
             <Badge key={tag} tone="zinc">{tag}</Badge>
@@ -77,15 +77,15 @@ export function ProcesoVentas() {
       <div>
         <div className="mb-5 flex items-center gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">1</span>
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Mapa general del proceso</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-[var(--text)]">Mapa general del proceso</h2>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
           {processSteps.map((step, i) => (
             <Panel key={i} className={`p-4 ${step.decision ? "bg-amber-50" : ""}`}>
               <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--brand)]">{step.stage}</p>
-              <p className="mt-1.5 text-[13px] font-semibold text-zinc-900">{step.title}</p>
-              <p className="mt-1 text-[12px] text-zinc-500">{step.desc}</p>
-              <p className="mt-2 text-[11px] font-medium text-zinc-400">{step.meta}</p>
+              <p className="mt-1.5 text-[13px] font-semibold text-[var(--text)]">{step.title}</p>
+              <p className="mt-1 text-[12px] text-[var(--text-muted)]">{step.desc}</p>
+              <p className="mt-2 text-[11px] font-medium text-[var(--text-muted)]">{step.meta}</p>
             </Panel>
           ))}
         </div>
@@ -94,22 +94,22 @@ export function ProcesoVentas() {
       <div>
         <div className="mb-5 flex items-center gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">2</span>
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Dos caminos comerciales</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-[var(--text)]">Dos caminos comerciales</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #4a55c8" }}>
-            <h3 className="font-semibold text-zinc-950">Empresas Oil & Gas / Industria</h3>
-            <p className="mt-2 text-[13px] text-zinc-500"><span className="font-semibold text-zinc-700">Dolores:</span> urgencias operativas, paradas, seguridad, documentación, mantenimiento correctivo, proveedores disponibles.</p>
-            <ul className="mt-3 space-y-1.5 text-[13px] text-zinc-600">
+          <div className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #4a55c8" }}>
+            <h3 className="font-semibold text-[var(--text)]">Empresas Oil & Gas / Industria</h3>
+            <p className="mt-2 text-[13px] text-[var(--text-muted)]"><span className="font-semibold text-[var(--text)]">Dolores:</span> urgencias operativas, paradas, seguridad, documentación, mantenimiento correctivo, proveedores disponibles.</p>
+            <ul className="mt-3 space-y-1.5 text-[13px] text-[var(--text-muted)]">
               <li>• <span className="font-medium">Enfoque:</span> continuidad operativa y respuesta técnica.</li>
               <li>• <span className="font-medium">Decisor:</span> mantenimiento, operaciones, compras, HSE, ingeniería.</li>
               <li>• <span className="font-medium">Cierre:</span> registro proveedor, visita/relevamiento o cotización técnica.</li>
             </ul>
           </div>
-          <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid var(--brand)" }}>
-            <h3 className="font-semibold text-zinc-950">Constructoras / Arquitectos / Estudios</h3>
-            <p className="mt-2 text-[13px] text-zinc-500"><span className="font-semibold text-zinc-700">Dolores:</span> cumplimiento de obra, coordinación, proveedores que no responden, trabajos metálicos y eléctricos puntuales.</p>
-            <ul className="mt-3 space-y-1.5 text-[13px] text-zinc-600">
+          <div className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid var(--brand)" }}>
+            <h3 className="font-semibold text-[var(--text)]">Constructoras / Arquitectos / Estudios</h3>
+            <p className="mt-2 text-[13px] text-[var(--text-muted)]"><span className="font-semibold text-[var(--text)]">Dolores:</span> cumplimiento de obra, coordinación, proveedores que no responden, trabajos metálicos y eléctricos puntuales.</p>
+            <ul className="mt-3 space-y-1.5 text-[13px] text-[var(--text-muted)]">
               <li>• <span className="font-medium">Enfoque:</span> apoyo en obra, resolución y cumplimiento.</li>
               <li>• <span className="font-medium">Decisor:</span> dueño, jefe de obra, arquitecto, compras o administración técnica.</li>
               <li>• <span className="font-medium">Cierre:</span> carpeta, reunión breve, cotización por planos/fotos o visita a obra.</li>
@@ -121,24 +121,24 @@ export function ProcesoVentas() {
       <div>
         <div className="mb-5 flex items-center gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">3</span>
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Speech WhatsApp para Oil & Gas</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-[var(--text)]">Speech WhatsApp para Oil & Gas</h2>
         </div>
-        <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #4a55c8" }}>
+        <div className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid #4a55c8" }}>
           <div className="space-y-5">
             <div>
-              <p className="text-[13px] font-semibold text-zinc-800">Primer contacto</p>
+              <p className="text-[13px] font-semibold text-[var(--text)]">Primer contacto</p>
               {box("og-1", "Hola, [Nombre]. ¿Cómo estás? Soy [Tu nombre], de Bizon Soluciones Industriales.\n\nBrindamos servicios de soldadura industrial, electricidad industrial, reparaciones y trabajos técnicos para empresas, bases, plantas y operaciones.\n\nQuería consultar quién ve en [Empresa] el tema de proveedores técnicos para mantenimiento, reparaciones, obra o urgencias operativas.")}
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-zinc-800">Cuando responde la persona correcta</p>
+              <p className="text-[13px] font-semibold text-[var(--text)]">Cuando responde la persona correcta</p>
               {box("og-2", "Gracias, [Nombre]. Te cuento brevemente.\n\nEn Bizon trabajamos como apoyo técnico para empresas que necesitan resolver trabajos de soldadura industrial, electricidad, reparaciones, mantenimiento correctivo o trabajos especiales en campo/planta.\n\nLa idea es presentarnos como proveedor alternativo para urgencias, trabajos programados o futuras cotizaciones.\n\n¿Actualmente trabajan con proveedores externos para este tipo de servicios?")}
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-zinc-800">Diagnóstico</p>
+              <p className="text-[13px] font-semibold text-[var(--text)]">Diagnóstico</p>
               {box("og-3", "Para orientarme mejor, ¿qué tipo de trabajos suelen tercerizar más?\n\n1. Soldadura industrial\n2. Electricidad / tableros / instalaciones\n3. Reparaciones y mantenimiento\n4. Estructuras metálicas\n5. Trabajos en obra, base o planta\n6. Urgencias o paradas\n\nCon eso te envío una presentación más enfocada y no algo genérico.")}
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-zinc-800">Cierre</p>
+              <p className="text-[13px] font-semibold text-[var(--text)]">Cierre</p>
               {box("og-4", "Perfecto, [Nombre]. ¿Cuál sería el proceso para que Bizon quede registrado como proveedor o pueda ser considerado en próximas cotizaciones?\n\nTambién podemos coordinar una visita/relevamiento si tienen algún trabajo pendiente o necesidad actual.")}
             </div>
           </div>
@@ -148,24 +148,24 @@ export function ProcesoVentas() {
       <div>
         <div className="mb-5 flex items-center gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">4</span>
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Speech WhatsApp para constructoras y arquitectos</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-[var(--text)]">Speech WhatsApp para constructoras y arquitectos</h2>
         </div>
-        <div className="rounded-[22px] border border-[var(--border)] bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid var(--brand)" }}>
+        <div className="rounded-[22px] border border-[var(--border)] bg-[var(--surface-raised)] p-5 shadow-[0_18px_45px_rgba(15,23,42,0.035)]" style={{ borderTop: "4px solid var(--brand)" }}>
           <div className="space-y-5">
             <div>
-              <p className="text-[13px] font-semibold text-zinc-800">Primer contacto para constructora</p>
+              <p className="text-[13px] font-semibold text-[var(--text)]">Primer contacto para constructora</p>
               {box("cons-1", "Hola, [Nombre]. ¿Cómo estás? Soy [Tu nombre], de Bizon Soluciones Industriales.\n\nTrabajamos con servicios de soldadura, electricidad, reparaciones y apoyo técnico para obras y empresas constructoras.\n\nQuería consultar quién ve en [Empresa] la incorporación o evaluación de proveedores para trabajos en obra, estructuras metálicas, electricidad o reparaciones.")}
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-zinc-800">Primer contacto para arquitectos / estudios</p>
+              <p className="text-[13px] font-semibold text-[var(--text)]">Primer contacto para arquitectos / estudios</p>
               {box("cons-2", "Hola, [Nombre]. ¿Cómo estás? Soy [Tu nombre], de Bizon Soluciones Industriales.\n\nQuería presentarnos como apoyo técnico para estudios de arquitectura y obras: realizamos trabajos de soldadura, estructuras metálicas, electricidad, reparaciones y soluciones constructivas.\n\n¿Suelen trabajar con proveedores externos para ejecutar este tipo de trabajos en sus proyectos?")}
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-zinc-800">Diagnóstico para obra</p>
+              <p className="text-[13px] font-semibold text-[var(--text)]">Diagnóstico para obra</p>
               {box("cons-3", "Para entender si podemos serles útiles, te consulto:\n\n¿Actualmente tienen obras en ejecución o próximas donde necesiten apoyo en soldadura, estructuras, electricidad, reparaciones o trabajos especiales?\n\nPodemos cotizar por planos, fotos, visita a obra o alcance preliminar.")}
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-zinc-800">Cierre</p>
+              <p className="text-[13px] font-semibold text-[var(--text)]">Cierre</p>
               {box("cons-4", "Si te parece, te envío una presentación breve de Bizon con servicios y datos de contacto.\n\nY si tienen algún trabajo puntual, nos pueden pasar fotos, planos o ubicación para revisar y cotizar.")}
             </div>
           </div>
@@ -175,7 +175,7 @@ export function ProcesoVentas() {
       <div>
         <div className="mb-5 flex items-center gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">5</span>
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Mapa de respuestas según reacción</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-[var(--text)]">Mapa de respuestas según reacción</h2>
         </div>
         <Panel className="overflow-hidden p-0">
           <div className="overflow-x-auto">
@@ -190,9 +190,9 @@ export function ProcesoVentas() {
               <tbody>
                 {matrixRows.map((row, i) => (
                   <tr key={i} className={`border-b border-[var(--border)] last:border-0 ${i % 2 === 1 ? "bg-[var(--surface)]" : ""}`}>
-                    <td className="w-44 border-r border-[var(--border)] px-4 py-3 align-top text-[12px] font-semibold text-zinc-800">{row.resp}</td>
-                    <td className="border-r border-[var(--border)] px-4 py-3 align-top text-[12px] text-zinc-600">{row.og}</td>
-                    <td className="px-4 py-3 align-top text-[12px] text-zinc-600">{row.cons}</td>
+                    <td className="w-44 border-r border-[var(--border)] px-4 py-3 align-top text-[12px] font-semibold text-[var(--text)]">{row.resp}</td>
+                    <td className="border-r border-[var(--border)] px-4 py-3 align-top text-[12px] text-[var(--text-muted)]">{row.og}</td>
+                    <td className="px-4 py-3 align-top text-[12px] text-[var(--text-muted)]">{row.cons}</td>
                   </tr>
                 ))}
               </tbody>
@@ -204,14 +204,14 @@ export function ProcesoVentas() {
       <div>
         <div className="mb-5 flex items-center gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">6</span>
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Secuencia de seguimiento</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-[var(--text)]">Secuencia de seguimiento</h2>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
           {followUpDays.map((d, i) => (
             <Panel key={i} className="p-4">
               <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--brand)]">{d.day}</p>
-              <p className="mt-1.5 text-[13px] font-semibold text-zinc-900">{d.title}</p>
-              <p className="mt-1.5 text-[12px] text-zinc-500 leading-relaxed">{d.desc}</p>
+              <p className="mt-1.5 text-[13px] font-semibold text-[var(--text)]">{d.title}</p>
+              <p className="mt-1.5 text-[12px] text-[var(--text-muted)] leading-relaxed">{d.desc}</p>
             </Panel>
           ))}
         </div>
@@ -220,7 +220,7 @@ export function ProcesoVentas() {
       <div>
         <div className="mb-5 flex items-center gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[13px] font-black text-black">7</span>
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Embudo comercial sugerido</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-[var(--text)]">Embudo comercial sugerido</h2>
         </div>
         <Panel className="p-6">
           <div className="mx-auto flex max-w-xl flex-col items-center gap-2">
@@ -230,13 +230,13 @@ export function ProcesoVentas() {
               </div>
             ))}
           </div>
-          <p className="mt-5 text-center text-[12.5px] text-zinc-500">La métrica clave no es solo venta inmediata: es contacto correcto, empresa registrada, cotización abierta y reunión técnica generada.</p>
+          <p className="mt-5 text-center text-[12.5px] text-[var(--text-muted)]">La métrica clave no es solo venta inmediata: es contacto correcto, empresa registrada, cotización abierta y reunión técnica generada.</p>
         </Panel>
       </div>
 
       <div className="rounded-[22px] border border-[var(--brand-soft)] bg-[var(--brand-tint)] p-5" style={{ borderLeft: "4px solid var(--brand)" }}>
         <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--brand)]">Frase central</p>
-        <p className="mt-2 text-[14px] font-semibold leading-relaxed text-zinc-900">Bizon no se presenta como un proveedor más de soldadura o electricidad; se presenta como una solución técnica confiable para empresas que necesitan resolver trabajos industriales, obras, reparaciones y urgencias con rapidez, cumplimiento y responsabilidad.</p>
+        <p className="mt-2 text-[14px] font-semibold leading-relaxed text-[var(--text)]">Bizon no se presenta como un proveedor más de soldadura o electricidad; se presenta como una solución técnica confiable para empresas que necesitan resolver trabajos industriales, obras, reparaciones y urgencias con rapidez, cumplimiento y responsabilidad.</p>
       </div>
     </div>
   );
