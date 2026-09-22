@@ -263,16 +263,19 @@ export default function MiniErpBizonPrototype() {
     };
   }, [profile?.organizationId, theme]);
 
-  async function saveOrganizationSettings(patch) {
+  async function saveOrganizationSettings(patch, organizationId = organization?.id) {
     let saved;
     if (isDatabaseConfigured) {
-      if (!organization?.id) throw new Error("No se pudo cargar tu organizacion; recarga la pagina e intenta de nuevo.");
-      saved = await updateOrganization(organization.id, patch);
+      if (!organizationId) throw new Error("No se pudo cargar tu organizacion; recarga la pagina e intenta de nuevo.");
+      saved = await updateOrganization(organizationId, patch);
     } else {
       saved = { ...(organization || { id: null, name: "Bizon", primaryColor: "#ff7900", logoDataUrl: null }), ...patch };
     }
-    setOrganization(saved);
-    applyBrandTheme(saved.primaryColor, theme === "dark");
+    // El super admin puede editar otra organizacion: no pisar la propia marca en ese caso.
+    if (!isDatabaseConfigured || organizationId === organization?.id) {
+      setOrganization(saved);
+      applyBrandTheme(saved.primaryColor, theme === "dark");
+    }
     return saved;
   }
 
