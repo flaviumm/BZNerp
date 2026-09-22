@@ -45,10 +45,10 @@ Para pruebas rapidas, en `Authentication > Sign In / Providers > Email`, se pued
 En `Authentication > URL Configuration`, configurar:
 
 ```text
-Site URL: https://bznerp.vercel.app
+Site URL: https://erp-snowy-one.vercel.app
 Redirect URLs:
-https://bznerp.vercel.app
-https://bznerp.vercel.app/**
+https://erp-snowy-one.vercel.app
+https://erp-snowy-one.vercel.app/**
 ```
 
 Si el email de confirmacion manda a `localhost`, esta configuracion esta pendiente o el usuario fue creado antes de corregirla.
@@ -89,7 +89,7 @@ Antes de redeploy:
 
 - `Authentication > Providers > Email` activo.
 - Confirmacion de email activa para operacion real.
-- `Authentication > URL Configuration` apuntando a `https://bznerp.vercel.app`.
+- `Authentication > URL Configuration` apuntando a `https://erp-snowy-one.vercel.app`.
 - Bucket `erp-documents` creado como privado por `database/documents.sql`.
 - `VITE_ALLOW_DEMO_MODE=false` en Vercel.
 - No cargar `SUPABASE_SERVICE_ROLE_KEY` en variables `VITE_*`.
