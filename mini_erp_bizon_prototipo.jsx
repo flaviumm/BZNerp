@@ -25,7 +25,7 @@ import { Organizaciones } from "./src/components/screens/Organizaciones";
 import { Configuracion } from "./src/components/screens/Configuracion";
 import { Reportes } from "./src/components/screens/Reportes";
 import { NewRecordModal, EditRecordModal } from "./src/components/screens/modals";
-import { LoginScreen, AccountStatusScreen, DatabaseSetupScreen } from "./src/components/screens/auth";
+import { LoginScreen, NewPasswordScreen, AccountStatusScreen, DatabaseSetupScreen } from "./src/components/screens/auth";
 import { ProcesoVentas } from "./src/components/screens/ProcesoVentas";
 
 
@@ -55,6 +55,7 @@ export default function MiniErpBizonPrototype() {
   const [session, setSession] = useState(isDatabaseConfigured ? null : useLocalDemo ? { user: { id: "demo" } } : null);
   const [profile, setProfile] = useState(isDatabaseConfigured ? null : useLocalDemo ? { id: "demo", fullName: "Modo demo", role: "admin", status: "active", menuKeys: null } : null);
   const [authLoading, setAuthLoading] = useState(isDatabaseConfigured);
+  const [recoveringPassword, setRecoveringPassword] = useState(false);
   const [companies, setCompanies] = useState(initialCompanies);
   const [opportunities, setOpportunities] = useState(initialOpportunities);
   const [quotes, setQuotes] = useState(initialQuotes);
@@ -99,7 +100,8 @@ export default function MiniErpBizonPrototype() {
     }
 
     bootAuth();
-    const stopListening = listenAuthChanges((nextSession) => {
+    const stopListening = listenAuthChanges((nextSession, event) => {
+      if (event === "PASSWORD_RECOVERY") setRecoveringPassword(true);
       setSession(nextSession);
       if (!nextSession) {
         setProfile(null);
@@ -776,6 +778,10 @@ export default function MiniErpBizonPrototype() {
 
   if (isDatabaseConfigured && !session) {
     return <LoginScreen onSessionReady={setSession} />;
+  }
+
+  if (recoveringPassword) {
+    return <NewPasswordScreen onDone={() => setRecoveringPassword(false)} />;
   }
 
   if (isDatabaseConfigured && profile && profile.status !== "active") {

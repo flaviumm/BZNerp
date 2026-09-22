@@ -22,7 +22,7 @@ export function listenAuthChanges(callback) {
 
   const { data } = supabase.auth.onAuthStateChange((event, session) => {
     console.log("[auth] event:", event, "session:", session ? session.user?.email : null);
-    callback(session);
+    callback(session, event);
   });
 
   return () => data.subscription.unsubscribe();
@@ -49,6 +49,18 @@ export async function signUpWithEmail(email, password, fullName) {
   });
   if (error) throw error;
   return data.session;
+}
+
+export async function requestPasswordReset(email) {
+  const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) throw error;
+}
+
+// Solo valido con la sesion temporal que crea el link de recuperacion (evento PASSWORD_RECOVERY).
+export async function updatePassword(password) {
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
 }
 
 export async function signOutUser() {

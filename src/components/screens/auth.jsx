@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Button, Panel, Field, TextInput } from "../ui";
-import { signInWithEmail, signUpWithEmail } from "../../lib/authRepository";
+import { requestPasswordReset, signInWithEmail, signUpWithEmail, updatePassword } from "../../lib/authRepository";
+
+const TITLES = { login: "Ingresar", signup: "Crear usuario", reset: "Recuperar contraseña" };
 
 export function LoginScreen({ onSessionReady }) {
   const [mode, setMode] = useState("login");
@@ -16,6 +18,12 @@ export function LoginScreen({ onSessionReady }) {
     setMessage("");
 
     try {
+      if (mode === "reset") {
+        await requestPasswordReset(email);
+        setMessage("Si el email existe, te enviamos un link para crear una nueva contraseña.");
+        return;
+      }
+
       const session = mode === "login"
         ? await signInWithEmail(email, password)
         : await signUpWithEmail(email, password, fullName || email);
@@ -38,7 +46,7 @@ export function LoginScreen({ onSessionReady }) {
         <div className="mb-5">
           <img src="/brand/isotipo_bizon.png" alt="Bizon" className="mb-4 h-14 w-14 rounded-lg bg-black object-contain p-1" />
           <p className="text-xs font-bold uppercase tracking-wide text-[#ff7900]">Bizon ERP Industrial</p>
-          <h1 className="mt-1 text-2xl font-semibold text-[var(--text)]">{mode === "login" ? "Ingresar" : "Crear usuario"}</h1>
+          <h1 className="mt-1 text-2xl font-semibold text-[var(--text)]">{TITLES[mode]}</h1>
           <p className="mt-2 text-sm text-[var(--text-muted)]">Acceso protegido por Supabase Auth y permisos por rol.</p>
         </div>
 
@@ -51,18 +59,63 @@ export function LoginScreen({ onSessionReady }) {
           <Field label="Email">
             <TextInput type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="usuario@bizon.com" />
           </Field>
-          <Field label="Password">
-            <TextInput type="password" required minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Minimo 6 caracteres" />
-          </Field>
+          {mode !== "reset" && (
+            <Field label="Password">
+              <TextInput type="password" required minLength={6} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Minimo 6 caracteres" />
+            </Field>
+          )}
           {message && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{message}</p>}
-          <Button type="submit">{loading ? "Procesando..." : mode === "login" ? "Ingresar" : "Crear cuenta"}</Button>
+          <Button type="submit">{loading ? "Procesando..." : mode === "login" ? "Ingresar" : mode === "signup" ? "Crear cuenta" : "Enviar link"}</Button>
         </form>
 
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Button variant="ghost" onClick={() => setMode(mode === "login" ? "signup" : "login")}>
             {mode === "login" ? "Crear usuario" : "Ya tengo usuario"}
           </Button>
+          {mode === "login" && (
+            <Button variant="ghost" onClick={() => setMode("reset")}>Olvidé mi contraseña</Button>
+          )}
         </div>
+      </Panel>
+    </div>
+  );
+}
+
+export function NewPasswordScreen({ onDone }) {
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function submit(event) {
+    event.preventDefault();
+    setLoading(true);
+    setMessage("");
+    try {
+      await updatePassword(password);
+      onDone();
+    } catch (error) {
+      setMessage(error.message || "No se pudo actualizar la contraseña");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="grid min-h-screen place-items-center bg-[var(--surface-alt)] p-4">
+      <Panel className="w-full max-w-md p-5">
+        <div className="mb-5">
+          <img src="/brand/isotipo_bizon.png" alt="Bizon" className="mb-4 h-14 w-14 rounded-lg bg-black object-contain p-1" />
+          <p className="text-xs font-bold uppercase tracking-wide text-[#ff7900]">Bizon ERP Industrial</p>
+          <h1 className="mt-1 text-2xl font-semibold text-[var(--text)]">Nueva contraseña</h1>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">Elegí una contraseña nueva para tu cuenta.</p>
+        </div>
+        <form onSubmit={submit} className="grid gap-3">
+          <Field label="Nueva contraseña">
+            <TextInput type="password" required minLength={6} autoFocus value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Minimo 6 caracteres" />
+          </Field>
+          {message && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{message}</p>}
+          <Button type="submit">{loading ? "Guardando..." : "Guardar contraseña"}</Button>
+        </form>
       </Panel>
     </div>
   );
