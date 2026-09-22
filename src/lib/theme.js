@@ -45,6 +45,7 @@ export function brandTokens(hex, isDark = false) {
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(brand.slice(i, i + 2), 16));
   return {
     brand,
+    rgb: `${r} ${g} ${b}`, // triplete para tailwind `rgb(var(--brand-rgb) / <alpha-value>)`
     hover: hslToHex(h, s, Math.max(l - 10, 0)),
     tint: isDark ? hslToHex(h, s, 18) : hslToHex(h, s, 95),
     soft: isDark ? hslToHex(h, s, 35) : hslToHex(h, s, 75),
@@ -56,6 +57,7 @@ export function applyBrandTheme(hex, isDark = false) {
   const tokens = brandTokens(hex, isDark);
   const root = document.documentElement.style;
   root.setProperty("--brand", tokens.brand);
+  root.setProperty("--brand-rgb", tokens.rgb);
   root.setProperty("--brand-hover", tokens.hover);
   root.setProperty("--brand-tint", tokens.tint);
   root.setProperty("--brand-soft", tokens.soft);

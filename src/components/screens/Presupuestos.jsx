@@ -1,7 +1,8 @@
 import { Button, Badge, StatCard, SectionTitle, DataTable } from "../ui";
-import { money, sum, generateQuotePdf, toneForStatus } from "../../lib/utils";
+import { money, sum, toneForStatus } from "../../lib/utils";
+import { generateQuotePdf } from "../../cotizador/Cotizador";
 
-export function Presupuestos({ quotes, setQuotes, persistUpdate, openEditor, removeRecord, setActive, currentProfile }) {
+export function Presupuestos({ quotes, setQuotes, persistUpdate, openCotizador, removeRecord, currentProfile }) {
   const readOnlyClient = currentProfile?.role === "cliente";
   const visibleQuotes = readOnlyClient && currentProfile?.companyName ? quotes.filter((quote) => quote.client === currentProfile.companyName) : quotes;
   const pendingQuotes = visibleQuotes.filter((quote) => quote.status !== "Aprobado");
@@ -17,7 +18,7 @@ export function Presupuestos({ quotes, setQuotes, persistUpdate, openEditor, rem
 
   return (
     <div className="space-y-5 p-4 md:p-6">
-      <SectionTitle title="Presupuestos" subtitle={readOnlyClient ? `Cotizaciones visibles para ${currentProfile?.companyName || "tu empresa"}` : "Cotizaciones cargadas, estados y vencimientos"} action={readOnlyClient ? null : "Abrir cotizador"} onAction={readOnlyClient ? null : () => setActive("cotizador")} />
+      <SectionTitle title="Presupuestos" subtitle={readOnlyClient ? `Cotizaciones visibles para ${currentProfile?.companyName || "tu empresa"}` : "Cotizaciones cargadas, estados y vencimientos"} action={readOnlyClient ? null : "Abrir cotizador"} onAction={readOnlyClient ? null : () => openCotizador()} />
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard title="Cotizaciones" value={visibleQuotes.length} subtitle={`${pendingQuotes.length} pendientes`} tone="blue" />
         <StatCard title="Aprobadas" value={approvedQuotes.length} subtitle="Presupuestos ganados" tone="green" />
@@ -38,7 +39,7 @@ export function Presupuestos({ quotes, setQuotes, persistUpdate, openEditor, rem
           readOnlyClient ? <Button variant="ghost" onClick={() => generateQuotePdf(quote)}>PDF</Button> : <div className="flex gap-2">
             <Button variant="ghost" onClick={() => generateQuotePdf(quote)}>PDF</Button>
             <Button variant="ghost" onClick={() => approveQuote(quote.number)}>Aprobar</Button>
-            <Button variant="ghost" onClick={() => openEditor("presupuestos", quote)}>Editar</Button>
+            <Button variant="ghost" onClick={() => openCotizador(quote)}>Editar</Button>
             <Button variant="danger" onClick={() => removeRecord("quotes", quote.number)}>Borrar</Button>
           </div>,
         ])}

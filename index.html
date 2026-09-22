@@ -5,9 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bizon ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Tokens del cotizador (wizard en src/cotizador) mapeados a las CSS vars del ERP:
+      // heredan dark mode y el color de marca por organizacion sin tocar el wizard.
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "rgb(var(--brand-rgb) / <alpha-value>)",
+              "on-primary": "#ffffff",
+              "primary-container": "var(--brand-tint)",
+              surface: "var(--surface-alt)",
+              "surface-container-lowest": "var(--surface-raised)",
+              "surface-container-low": "var(--surface)",
+              "surface-container": "var(--surface-alt)",
+              "surface-container-high": "var(--border)",
+              "on-surface": "var(--text)",
+              "on-surface-variant": "var(--text-muted)",
+              outline: "var(--border)",
+              "outline-variant": "var(--brand-soft)",
+              secondary: "var(--success)",
+              "secondary-container": "var(--success-tint)",
+              "on-secondary-container": "var(--success)",
+              "inverse-surface": "var(--surface-inverse)",
+              error: "rgb(var(--danger-rgb) / <alpha-value>)",
+            },
+          },
+        },
+      };
+    </script>
     <style>
+      /* Subset de Material Symbols (46 iconos) que usa el cotizador; self-hosteado para que no dependa de fonts.gstatic. */
+      @font-face {
+        font-family: "Material Symbols Outlined";
+        font-style: normal;
+        font-weight: 300 600;
+        font-display: block;
+        src: url("/material-symbols-subset.woff2") format("woff2");
+      }
+      .material-symbols-outlined {
+        font-family: "Material Symbols Outlined";
+        font-weight: normal;
+        font-style: normal;
+        font-size: 24px;
+        line-height: 1;
+        display: inline-block;
+        white-space: nowrap;
+        letter-spacing: normal;
+        text-transform: none; /* uppercase/tracking del padre romperian la ligadura */
+        direction: ltr;
+        font-feature-settings: "liga";
+        -webkit-font-smoothing: antialiased;
+        font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 20;
+        vertical-align: middle;
+      }
       :root {
         color-scheme: light;
+        --brand-rgb: 255 121 0;
+        --danger-rgb: 180 35 24;
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         --surface: #fbfbf8;
         --surface-alt: #f5f5f3;
@@ -45,6 +100,7 @@
         --success: #22c55e;
         --warning: #f59e0b;
         --danger: #f87171;
+        --danger-rgb: 248 113 113;
         --success-tint: rgba(34,197,94,0.14);
         --success-tint-border: rgba(34,197,94,0.35);
         --warning-tint: rgba(245,158,11,0.14);

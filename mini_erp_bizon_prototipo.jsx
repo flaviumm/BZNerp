@@ -4,7 +4,7 @@ import CaptadorLeads from "./src/components/CaptadorLeads";
 import { deleteErpRecord, isDatabaseConfigured, loadErpData, logAuditEvent, nextDocumentNumber, saveErpRecord, shouldBlockUnconfiguredDatabase, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
 import { createOrganization, createUserAccount, getCurrentProfile, getInitialSession, getOrganization, listenAuthChanges, listOrganizations, listUserProfiles, signInWithEmail, signOutUser, signUpWithEmail, updateOrganization, updateUserProfile } from "./src/lib/authRepository";
 import { applyBrandTheme, applyColorScheme, getInitialTheme, persistTheme } from "./src/lib/theme";
-import { laborRates, materialPriceCatalog, quoteParameters } from "./src/lib/pricingData";
+import { laborRates, quoteParameters } from "./src/lib/pricingData";
 import { initialCompanies, initialOpportunities, initialQuotes, initialWorkOrders, inventory, purchases, invoices, employees, tasks, initialDocuments, initialAuditLog, localDatabaseKey } from "./src/lib/demoData";
 import { screens, menuSections, userRoles, accountStatuses, canAccessScreen, screensForRole } from "./src/lib/navigation";
 import { money, pct, clamp, sum, quoteLineTotal, catalogPrice, htmlEscape, openQuotePdfWindow, generateQuotePdf, withTimeout, weightedPipeline, nextLocalNumber, normalizeKey, worksheetToRows, addDaysIso, isValidDateValue, formatDate, formatDateTime, normalizeLeadRow, toneForStatus } from "./src/lib/utils";
@@ -74,6 +74,7 @@ export default function MiniErpBizonPrototype() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  const [editingQuote, setEditingQuote] = useState(null); // presupuesto abierto en el cotizador (null = nuevo)
   const [localDatabaseReady, setLocalDatabaseReady] = useState(isDatabaseConfigured || shouldBlockUnconfiguredDatabase);
   const [databaseStatus, setDatabaseStatus] = useState(isDatabaseConfigured ? "Conectando..." : useLocalDemo ? "Base local" : "Configurar Supabase");
 
@@ -466,6 +467,15 @@ export default function MiniErpBizonPrototype() {
     setEditTarget({ module, record });
   }
 
+  function openCotizador(quote = null) {
+    setEditingQuote(quote);
+    setActive("cotizador");
+  }
+
+  useEffect(() => {
+    if (active !== "cotizador") setEditingQuote(null);
+  }, [active]);
+
   function saveEditedRecord(module, record) {
     if (module === "clientes") {
       setCompanies((items) => items.map((item) => item.id === record.id ? record : item));
@@ -736,7 +746,7 @@ export default function MiniErpBizonPrototype() {
     persistRecord("tasks", record);
   }
 
-  const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, removeRecord, uploadDocument, createCalendarEvent, userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true), organizations, organizationsError, onCreateOrganization: createOrganizationAccount, onRefreshOrganizations: refreshOrganizations, organization, onUpdateOrganization: saveOrganizationSettings };
+  const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, openCotizador, removeRecord, uploadDocument, createCalendarEvent, userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true), organizations, organizationsError, onCreateOrganization: createOrganizationAccount, onRefreshOrganizations: refreshOrganizations, organization, onUpdateOrganization: saveOrganizationSettings };
   const Screen = {
     dashboard: <Dashboard {...screenProps} />,
     clientes: <ClientesCards {...screenProps} />,
@@ -744,7 +754,7 @@ export default function MiniErpBizonPrototype() {
     importar: <ImportarLeads {...screenProps} />,
     captador_leads: <CaptadorLeads {...screenProps} />, 
     presupuestos: <Presupuestos {...screenProps} />,
-    cotizador: <Cotizador {...screenProps} />,
+    cotizador: <Cotizador {...screenProps} editingQuote={editingQuote} />,
     ventas: <ProcesoVentas />,
     ot: <OrdenesTrabajo {...screenProps} />,
     inventario: <Inventario {...screenProps} inventory={data.inventory} />,

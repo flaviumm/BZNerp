@@ -91,8 +91,16 @@ const modules = {
       valid_until: item.validUntil,
       line_items: item.lineItems || [],
       client_details: item.clientDetails || {},
+      pricing: {
+        jobTitle: item.jobTitle || "",
+        adminAmount: Number(item.adminAmount || 0),
+        adminOverheadRate: Number(item.adminOverheadRate || 0),
+        contingencyAmount: Number(item.contingencyAmount || 0),
+        technicalContingencyRate: Number(item.technicalContingencyRate || 0),
+        ivaRate: Number(item.ivaRate ?? 0.21),
+      },
     }),
-    fromDb: (item) => ({ number: item.number, client: item.client, service: item.service, subtotal: Number(item.subtotal || 0), tax: Number(item.tax || 0), total: Number(item.total || 0), status: item.status, validUntil: item.valid_until, lineItems: Array.isArray(item.line_items) ? item.line_items : [], clientDetails: item.client_details || {} }),
+    fromDb: (item) => ({ number: item.number, client: item.client, service: item.service, subtotal: Number(item.subtotal || 0), tax: Number(item.tax || 0), total: Number(item.total || 0), status: item.status, validUntil: item.valid_until, lineItems: Array.isArray(item.line_items) ? item.line_items : [], clientDetails: item.client_details || {}, ...(item.pricing || {}) }),
   },
   workOrders: {
     table: "work_orders",
