@@ -3,6 +3,7 @@ import { Button, SectionTitle } from "../ui";
 import { Icon } from "../../cotizador/ui";
 import Wizard from "../../cotizador/Cotizador";
 import { laborRates, quoteParameters } from "../../lib/pricingData";
+import { isDatabaseConfigured, supabase } from "../../lib/supabaseClient";
 
 const STEPS = [
   { key: "datosEmpresa", label: "Datos empresa", icon: "business" },
@@ -58,6 +59,21 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
     await persistRecord("companies", record);
   }
 
+  // Dispara el workflow de GitHub que scrapea proveedores y redeploya (~5 min).
+  const [priceUpdate, setPriceUpdate] = useState({ status: "idle", message: "" });
+  async function updatePrices() {
+    setPriceUpdate({ status: "loading", message: "" });
+    try {
+      const { data } = await supabase.auth.getSession();
+      const res = await fetch("/api/update-prices", { method: "POST", headers: { Authorization: `Bearer ${data.session?.access_token || ""}` } });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || `Error ${res.status}`);
+      setPriceUpdate({ status: "done", message: "Actualización lanzada: en ~5 min recargá la página para ver precios nuevos." });
+    } catch (error) {
+      setPriceUpdate({ status: "error", message: error.message });
+    }
+  }
+
   const autosaveLabel = { pending: "Guardando…", saved: "Guardado", idle: "" }[autosave];
 
   return (
@@ -109,8 +125,16 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
         onSavingStatusChange={setAutosave}
       />
 
-      <div className="flex justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Button variant="ghost" disabled={stepIndex === 0} onClick={() => setStep(STEPS[stepIndex - 1].key)}>Anterior</Button>
+        {isDatabaseConfigured && (
+          <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
+            <Button variant="ghost" disabled={priceUpdate.status === "loading"} onClick={updatePrices}>
+              {priceUpdate.status === "loading" ? "Lanzando..." : "Actualizar precios"}
+            </Button>
+            {priceUpdate.message && <span className={priceUpdate.status === "error" ? "text-[var(--danger)]" : ""}>{priceUpdate.message}</span>}
+          </div>
+        )}
         {stepIndex < STEPS.length - 1
           ? <Button onClick={() => setStep(STEPS[stepIndex + 1].key)}>Siguiente</Button>
           : <Button onClick={() => wizardRef.current?.generatePdf()}>Generar PDF</Button>}

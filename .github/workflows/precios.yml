@@ -1,0 +1,52 @@
+name: Actualizar precios
+
+# Corre el scraper del repo cotizador y commitea el catalogo al ERP (Vercel redeploya).
+# Se dispara desde el boton "Actualizar precios" del ERP (api/update-prices.js),
+# a mano desde GitHub, o solo todas las noches.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *" # 00:00 Argentina (UTC-3)
+
+concurrency: precios
+
+permissions:
+  contents: write
+
+jobs:
+  precios:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: flaviumm/cotizador
+          path: cotizador
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm ci
+        working-directory: cotizador
+
+      - run: npm run precios
+        working-directory: cotizador
+        env:
+          # Neucon solo publica precios con sesion iniciada; sin cookie quedan los anteriores.
+          NEUCON_COOKIE: ${{ secrets.NEUCON_COOKIE }}
+
+      - run: cp cotizador/public/materialPriceCatalog.json public/materialPriceCatalog.json
+
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/materialPriceCatalog.json
+          if git diff --cached --quiet; then
+            echo "Sin cambios de precios"
+          else
+            git commit -m "chore: catalogo de precios $(TZ=America/Argentina/Buenos_Aires date +%d/%m/%Y)"
+            git push
+          fi
