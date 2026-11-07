@@ -259,20 +259,20 @@ Deno.serve(async (request) => {
           const contact = normalizeText(body.contact_name || lead.contact_name || '');
 
           const leadFilters = [];
-          if (email) leadFilters.push(`email.eq.${email}`);
-          if (phone) leadFilters.push(`phone.eq.${phone}`);
-          if (contact) leadFilters.push(`contact_name.ilike.*${contact}*`);
-          if (companyName) leadFilters.push(`company_name.ilike.*${companyName}*`);
+          if (email) leadFilters.push(`email.eq.${pgFilterValue(email)}`);
+          if (phone) leadFilters.push(`phone.eq.${pgFilterValue(phone)}`);
+          if (contact) leadFilters.push(`contact_name.ilike.${pgFilterValue(contact, { wildcard: true })}`);
+          if (companyName) leadFilters.push(`company_name.ilike.${pgFilterValue(companyName, { wildcard: true })}`);
 
           const duplicateLeads = leadFilters.length
             ? await fetchDuplicateCapturedLeads(adminClient, id, organizationId, leadFilters)
             : [];
 
           const companyFilters = [];
-          if (companyName) companyFilters.push(`name.ilike.*${companyName}*`);
-          if (phone) companyFilters.push(`phone.eq.${phone}`);
-          if (email) companyFilters.push(`contacts.ilike.*${email}*`);
-          if (phone) companyFilters.push(`contacts.ilike.*${phone}*`);
+          if (companyName) companyFilters.push(`name.ilike.${pgFilterValue(companyName, { wildcard: true })}`);
+          if (phone) companyFilters.push(`phone.eq.${pgFilterValue(phone)}`);
+          if (email) companyFilters.push(`contacts.ilike.${pgFilterValue(email, { wildcard: true })}`);
+          if (phone) companyFilters.push(`contacts.ilike.${pgFilterValue(phone, { wildcard: true })}`);
 
           const duplicateCompanies = companyFilters.length
             ? await fetchDuplicateCompanies(adminClient, organizationId, companyFilters)
@@ -338,6 +338,20 @@ function normalizeText(value) {
 
 function normalizePhone(value) {
   return String(value || '').replace(/[^\d+]/g, '');
+}
+
+// PostgREST trata `,` `(` `)` como separadores estructurales de .or()/.and() —
+// un company_name o contact_name con una coma (ej. "ACME, S.A.") o un
+// paréntesis rompía el filtro previsto e inyectaba condiciones nuevas en la
+// misma query (ver find-duplicates). La sintaxis de filtros de PostgREST
+// permite escapar esto envolviendo el valor en comillas dobles y escapando
+// backslash/comillas internas: https://docs.postgrest.org/en/latest/references/api/tables_views.html#operators
+// Envolver SIEMPRE en comillas (no solo cuando "parece" tener un caracter
+// especial) evita tener que mantener una lista de casos a detectar.
+function pgFilterValue(raw: unknown, { wildcard = false }: { wildcard?: boolean } = {}) {
+  const escaped = String(raw ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const core = wildcard ? `*${escaped}*` : escaped;
+  return `"${core}"`;
 }
 
 async function fetchDuplicateCapturedLeads(adminClient, currentId, organizationId, filters) {
