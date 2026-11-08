@@ -12,6 +12,7 @@ if (!url || !anonKey || !serviceRoleKey) {
 const adminClient = createClient(url, serviceRoleKey, { auth: { persistSession: false } });
 
 let failures = 0;
+let cleanupFailures = 0;
 
 function assertTrue(condition, message) {
   if (!condition) {
@@ -22,7 +23,9 @@ function assertTrue(condition, message) {
   }
 }
 
-async function createTestOrgAndAdmin(label) {
+// Registra cada org/usuario en `track` apenas se crea (no al final): si algo
+// falla a mitad de camino, el cleanup igual sabe que borrar.
+async function createTestOrgAndAdmin(label, track) {
   const stamp = Date.now();
   const { data: organization, error: organizationError } = await adminClient
     .from("organizations")
@@ -30,6 +33,7 @@ async function createTestOrgAndAdmin(label) {
     .select("id, name")
     .single();
   if (organizationError) throw organizationError;
+  track.organizationIds.push(organization.id);
 
   const email = `test-${label.toLowerCase()}-${stamp}@isolation.test`;
   const password = `Test${stamp}pass!`;
@@ -40,6 +44,7 @@ async function createTestOrgAndAdmin(label) {
     user_metadata: { full_name: `Test Admin ${label}` },
   });
   if (createError) throw createError;
+  track.userIds.push(created.user.id);
 
   const { error: upsertError } = await adminClient
     .from("profiles")
@@ -53,33 +58,55 @@ async function createTestOrgAndAdmin(label) {
   return { organization, userId: created.user.id, userClient, session };
 }
 
+// Antes el cleanup ignoraba los errores: si un borrado fallaba (por ejemplo
+// por una FK), los datos de prueba quedaban en la base sin que nadie se
+// enterara. Cada paso ahora informa su falla y el script termina con exit 1.
+async function cleanupStep(label, run) {
+  try {
+    const result = await run();
+    if (result?.error) throw result.error;
+  } catch (error) {
+    cleanupFailures += 1;
+    console.error(`CLEANUP FAIL: ${label} (${error?.message || error})`);
+  }
+}
+
 async function cleanup(ids) {
-  await adminClient.from("labor_rate_catalog").delete().in("organization_id", ids.organizationIds);
-  await adminClient.from("quote_calculation_profiles").delete().in("organization_id", ids.organizationIds);
+  const orgIds = ids.organizationIds;
+  if (orgIds.length) {
+    await cleanupStep("labor_rate_catalog", () => adminClient.from("labor_rate_catalog").delete().in("organization_id", orgIds));
+    await cleanupStep("quote_calculation_profiles", () => adminClient.from("quote_calculation_profiles").delete().in("organization_id", orgIds));
+    await cleanupStep("companies", () => adminClient.from("companies").delete().in("organization_id", orgIds));
+  }
   if (ids.globalMaterialId) {
-    await adminClient.from("material_price_catalog").delete().eq("id", ids.globalMaterialId);
+    await cleanupStep("material_price_catalog (fila global de prueba)", () => adminClient.from("material_price_catalog").delete().eq("id", ids.globalMaterialId));
+    // La fila global no tiene organization_id: si el trigger de auditoria
+    // (log_table_audit) esta activo, su rastro en audit_log se limpia por record_key.
+    await cleanupStep("audit_log de la fila global de prueba", () => adminClient.from("audit_log").delete().eq("record_key", ids.globalMaterialId));
   }
-  await adminClient.from("companies").delete().in("organization_id", ids.organizationIds);
-  await adminClient.from("profiles").delete().in("id", ids.userIds);
-  for (const userId of ids.userIds) {
-    await adminClient.auth.admin.deleteUser(userId);
+  if (ids.userIds.length) {
+    await cleanupStep("profiles", () => adminClient.from("profiles").delete().in("id", ids.userIds));
+    for (const userId of ids.userIds) {
+      await cleanupStep(`auth user ${userId}`, () => adminClient.auth.admin.deleteUser(userId));
+    }
   }
-  await adminClient.from("organizations").delete().in("id", ids.organizationIds);
+  if (orgIds.length) {
+    // audit_log.organization_id referencia organizations sin ON DELETE: con el
+    // trigger de auditoria activo, cada insert/delete de arriba deja filas que
+    // bloquean el borrado de la organizacion. Va despues de todo lo auditado,
+    // porque borrar filas auditadas genera MAS filas de auditoria.
+    await cleanupStep("audit_log de las orgs de prueba", () => adminClient.from("audit_log").delete().in("organization_id", orgIds));
+    await cleanupStep("organizations", () => adminClient.from("organizations").delete().in("id", orgIds));
+  }
 }
 
 async function main() {
-  const organizationIds = [];
-  const userIds = [];
+  const track = { organizationIds: [], userIds: [] };
   let globalMaterialId = null;
 
   try {
-    const orgA = await createTestOrgAndAdmin("A");
-    organizationIds.push(orgA.organization.id);
-    userIds.push(orgA.userId);
-
-    const orgB = await createTestOrgAndAdmin("B");
-    organizationIds.push(orgB.organization.id);
-    userIds.push(orgB.userId);
+    const orgA = await createTestOrgAndAdmin("A", track);
+    const orgB = await createTestOrgAndAdmin("B", track);
 
     const { data: companyA, error: companyAError } = await orgA.userClient
       .from("companies")
@@ -159,6 +186,13 @@ async function main() {
     assertTrue(!crossReadLaborRateError, `org B querying org A's labor rate does not error (error: ${crossReadLaborRateError?.message})`);
     assertTrue((crossReadLaborRate || []).length === 0, "org B cannot read org A's labor rate (RLS filters it out)");
 
+    const { data: crossUpdateLaborRate, error: crossUpdateLaborRateError } = await orgB.userClient
+      .from("labor_rate_catalog")
+      .update({ quote_hour: 1 })
+      .eq("id", laborRateA?.id ?? null)
+      .select("id");
+    assertTrue(!crossUpdateLaborRateError && (crossUpdateLaborRate || []).length === 0, "org B cannot update org A's labor rate (0 rows affected)");
+
     // --- quote_calculation_profiles: el trigger seed_default_quote_calculation_profile
     // (20261108100100) ya deberia haber sembrado una fila al crear cada
     // organizacion -- se confirma que existe y que la otra org no la ve.
@@ -179,8 +213,8 @@ async function main() {
     // GLOBAL a proposito (docs/superpowers/specs/2026-08-01-multiempresa-design.md,
     // "Shared vs per-tenant data") -- NO debe quedar escopeado por
     // organizacion. Si alguien le agrega organization_id/RLS por org sin
-    // mirar ese diseño (como paso en esta misma sesion), este check lo
-    // detecta: ambas orgs tienen que poder leer la misma fila global.
+    // mirar ese diseño, este check lo detecta: ambas orgs tienen que poder
+    // leer la misma fila global.
     globalMaterialId = `test-material-global-${Date.now()}`;
     const { error: globalMaterialInsertError } = await adminClient
       .from("material_price_catalog")
@@ -216,11 +250,15 @@ async function main() {
     // privilegiado de la misma fila (fiscal_condition, igual que
     // name/primary_color ya cubiertos por organizations_update_own_admin)
     // tiene que seguir funcionando.
-    const { error: legitimateSelfUpdateError } = await orgA.userClient
+    const { data: legitimateSelfUpdate, error: legitimateSelfUpdateError } = await orgA.userClient
       .from("organizations")
       .update({ fiscal_condition: "Responsable Inscripto" })
-      .eq("id", orgA.organization.id);
-    assertTrue(!legitimateSelfUpdateError, `org A admin can still update its own non-privileged org fields (error: ${legitimateSelfUpdateError?.message})`);
+      .eq("id", orgA.organization.id)
+      .select("id, fiscal_condition");
+    assertTrue(
+      !legitimateSelfUpdateError && legitimateSelfUpdate?.[0]?.fiscal_condition === "Responsable Inscripto",
+      `org A admin can still update its own non-privileged org fields (error: ${legitimateSelfUpdateError?.message ?? "none"})`
+    );
 
     // Legitimate enable (service role, bypasses the trigger's auth.uid()
     // check) -- confirma que un super-admin SI puede setear enabled_modules.
@@ -269,15 +307,17 @@ async function main() {
       "promoted super-admin can read org B's company (real cross-org access, not just its own org)"
     );
   } finally {
-    if (organizationIds.length || userIds.length || globalMaterialId) {
-      await cleanup({ organizationIds, userIds, globalMaterialId });
-    }
+    await cleanup({ ...track, globalMaterialId });
   }
 
+  if (cleanupFailures > 0) {
+    console.error(`\n${cleanupFailures} cleanup step(s) failed -- quedaron datos de prueba en la base (ver CLEANUP FAIL arriba).`);
+  }
   if (failures > 0) {
     console.error(`\n${failures} isolation check(s) failed.`);
     process.exit(1);
   }
+  if (cleanupFailures > 0) process.exit(1);
   console.log("\nAll multi-tenant isolation checks passed.");
 }
 
