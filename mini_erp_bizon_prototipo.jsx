@@ -28,6 +28,10 @@ import { NewRecordModal, EditRecordModal } from "./src/components/screens/modals
 import { LoginScreen, NewPasswordScreen, AccountStatusScreen, DatabaseSetupScreen } from "./src/components/screens/auth";
 import { ProcesoVentas } from "./src/components/screens/ProcesoVentas";
 
+// Modulos que audita la base con el trigger log_table_audit
+// (supabase/migrations/20261107120000_quotes_pricing_audit_trigger.sql).
+// audit() no los escribe en audit_log para no duplicar cada cambio.
+const DB_AUDITED_MODULES = new Set(["quotes"]);
 
 
 function runTests() {
@@ -371,7 +375,11 @@ export default function MiniErpBizonPrototype() {
     };
 
     setAuditLog((items) => [event, ...items].slice(0, 500));
-    if (isDatabaseConfigured) {
+    // Los modulos de DB_AUDITED_MODULES los audita la base con un trigger
+    // (log_table_audit, con diff antes/despues): si el frontend tambien
+    // escribiera, cada cambio quedaria duplicado en audit_log. El evento
+    // igual se muestra en el estado local de la pantalla de Auditoria.
+    if (isDatabaseConfigured && !DB_AUDITED_MODULES.has(module)) {
       logAuditEvent(event).catch((error) => {
         console.error("No se pudo registrar auditoria:", error);
       });

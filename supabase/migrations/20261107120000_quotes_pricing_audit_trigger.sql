@@ -1,13 +1,16 @@
 -- Auditoria automatica (trigger) de cotizaciones y tablas de precios.
 --
--- Por que: `logAuditEvent` (src/lib/erpRepository.js) existe desde hace meses
--- pero no tiene ningun call-site en el frontend (grep confirma 0 usos reales
--- fuera de la definicion). Hoy `audit_log` esta vacia para quotes/pricing:
--- la auditoria depende de que alguien se acuerde de llamarla a mano en cada
--- pantalla nueva, lo que para catalogos de precios y cotizaciones (plata de
--- por medio) no es aceptable. Este trigger corre en la base, sin depender del
--- cliente: nadie puede tocar precio/cotizacion sin dejar rastro, ni aunque
--- escriba directo por SQL/API saltandose el frontend.
+-- Por que: el frontend ya audita (audit() en mini_erp_bizon_prototipo.jsx ->
+-- logAuditEvent), pero solo lo que pasa POR la app, y sin diff de valores.
+-- Cualquier escritura directa por la API REST de Supabase o por SQL (o una
+-- pantalla nueva que no pase por persistRecord/persistUpdate, como
+-- PreciosConfiguracion, o el GitHub Action que actualiza precios con
+-- service_role) no deja rastro. Para catalogos de precios y cotizaciones
+-- (plata de por medio) la auditoria tiene que vivir en la base, donde nadie
+-- la puede saltear, y registrar el antes/despues de cada campo.
+--
+-- Para no duplicar: el frontend deja de escribir en audit_log para los
+-- modulos que cubre este trigger (DB_AUDITED_MODULES en el shell de la app).
 --
 -- Que cubre: quotes, material_price_catalog, labor_rate_catalog,
 -- quote_calculation_profiles. La funcion es generica (usa to_jsonb(NEW/OLD),
@@ -120,3 +123,58 @@ drop trigger if exists audit_quote_calculation_profiles on public.quote_calculat
 create trigger audit_quote_calculation_profiles
 after insert or update or delete on public.quote_calculation_profiles
 for each row execute function public.log_table_audit();
+
+-- actor_id: este trigger completa actor_id = auth.uid(). El frontend
+-- (audit() en mini_erp_bizon_prototipo.jsx) nunca lo completaba, por eso la
+-- FK original sin ON DELETE nunca molesto. Con el trigger activo, borrar un
+-- usuario que alguna vez toco una cotizacion o un precio fallaria por
+-- violacion de FK. ON DELETE SET NULL: la fila de auditoria sobrevive y
+-- actor_name (texto) conserva quien fue.
+-- El nombre de la constraint se busca en el catalogo en vez de asumir el
+-- default de Postgres: si se asumiera mal, el drop no haria nada y quedarian
+-- DOS FKs (la vieja seguiria bloqueando el borrado).
+do $$
+declare
+  v_name text;
+begin
+  for v_name in
+    select con.conname
+    from pg_constraint con
+    join pg_attribute att on att.attrelid = con.conrelid and att.attnum = any (con.conkey)
+    where con.conrelid = 'public.audit_log'::regclass
+      and con.contype = 'f'
+      and att.attname = 'actor_id'
+  loop
+    execute format('alter table public.audit_log drop constraint %I', v_name);
+  end loop;
+end;
+$$;
+
+alter table public.audit_log
+  add constraint audit_log_actor_id_fkey
+  foreign key (actor_id) references auth.users(id) on delete set null;
+
+-- 'import': el frontend registra la carga masiva de leads con
+-- action = 'import' (importLeads en mini_erp_bizon_prototipo.jsx), pero el
+-- CHECK original solo aceptaba create/update/delete/upload: esas filas
+-- fallaban en silencio (el .catch del frontend solo hace console.error).
+do $$
+declare
+  v_name text;
+begin
+  for v_name in
+    select con.conname
+    from pg_constraint con
+    join pg_attribute att on att.attrelid = con.conrelid and att.attnum = any (con.conkey)
+    where con.conrelid = 'public.audit_log'::regclass
+      and con.contype = 'c'
+      and att.attname = 'action'
+  loop
+    execute format('alter table public.audit_log drop constraint %I', v_name);
+  end loop;
+end;
+$$;
+
+alter table public.audit_log
+  add constraint audit_log_action_check
+  check (action in ('create', 'update', 'delete', 'upload', 'import'));
