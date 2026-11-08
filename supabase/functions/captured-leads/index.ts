@@ -354,19 +354,38 @@ function pgFilterValue(raw: unknown, { wildcard = false }: { wildcard?: boolean 
   return `"${core}"`;
 }
 
+// Todos los criterios van en UN solo .or(): postgrest-js agrega un parametro
+// `or=` por cada llamada a .or(), y PostgREST combina esos parametros con AND.
+// Con un .or() por criterio (como estaba), un duplicado solo aparecia si
+// coincidian TODOS los campos cargados (email Y telefono Y contacto Y
+// empresa) en vez de cualquiera. Unirlos con coma es seguro porque cada
+// valor ya viene entrecomillado por pgFilterValue().
 async function fetchDuplicateCapturedLeads(adminClient, currentId, organizationId, filters) {
-  const query = adminClient.from('captured_leads').select('*').eq('organization_id', organizationId).neq('id', currentId);
-  filters.forEach((filter) => query.or(filter));
-  const { data, error } = await query.limit(10);
-  if (error) return [];
+  const { data, error } = await adminClient
+    .from('captured_leads')
+    .select('*')
+    .eq('organization_id', organizationId)
+    .neq('id', currentId)
+    .or(filters.join(','))
+    .limit(10);
+  if (error) {
+    console.error('find-duplicates leads query failed', error.message);
+    return [];
+  }
   return data;
 }
 
 async function fetchDuplicateCompanies(adminClient, organizationId, filters) {
-  const query = adminClient.from('companies').select('*').eq('organization_id', organizationId);
-  filters.forEach((filter) => query.or(filter));
-  const { data, error } = await query.limit(10);
-  if (error) return [];
+  const { data, error } = await adminClient
+    .from('companies')
+    .select('*')
+    .eq('organization_id', organizationId)
+    .or(filters.join(','))
+    .limit(10);
+  if (error) {
+    console.error('find-duplicates companies query failed', error.message);
+    return [];
+  }
   return data;
 }
 
