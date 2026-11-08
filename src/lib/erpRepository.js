@@ -342,3 +342,139 @@ export async function logAuditEvent(event) {
   if (!isDatabaseConfigured) return null;
   return saveErpRecord("audit", event);
 }
+
+// --- Configuracion de precios por organizacion -----------------------------
+// labor_rate_catalog y quote_calculation_profiles ya estaban escopeados por
+// organization_id en la base (migracion multiempresa), pero no tenian CRUD
+// propio: la unica forma de cargarlos era un INSERT a mano en el SQL Editor
+// de Supabase (database/pricing.sql). Esto le da a cada organizacion una
+// pantalla para administrar sus propias tarifas sin depender de un dev de
+// Bizon.
+
+function laborRateToDb(item) {
+  return {
+    trade: item.trade,
+    agreement: item.agreement || "",
+    category: item.category || "",
+    base_hour: Number(item.baseHour || 0),
+    monthly_bonus: Number(item.monthlyBonus || 0),
+    monthly_hours: Number(item.monthlyHours || 176),
+    load_factor: Number(item.loadFactor || 0),
+    quote_hour: Number(item.quoteHour || 0),
+  };
+}
+
+function laborRateFromDb(item) {
+  return {
+    id: item.id,
+    trade: item.trade,
+    agreement: item.agreement || "",
+    category: item.category || "",
+    baseHour: Number(item.base_hour || 0),
+    monthlyBonus: Number(item.monthly_bonus || 0),
+    monthlyHours: Number(item.monthly_hours || 176),
+    loadFactor: Number(item.load_factor || 0),
+    quoteHour: Number(item.quote_hour || 0),
+  };
+}
+
+function slugifyId(label) {
+  return String(label || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || `tarifa-${Date.now()}`;
+}
+
+export async function listOwnLaborRates() {
+  if (!isDatabaseConfigured) return [];
+  const { data, error } = await supabase.from("labor_rate_catalog").select("*").order("trade", { ascending: true });
+  if (error) throw error;
+  return data.map(laborRateFromDb);
+}
+
+export async function createLaborRate(item) {
+  if (!isDatabaseConfigured) return null;
+  // organization_id lo completa el trigger set_organization_id en base a la
+  // sesion -- no se manda desde el cliente (ver 20260801120000_multiempresa.sql).
+  const payload = { id: item.id || slugifyId(item.trade), ...laborRateToDb(item) };
+  const { data, error } = await supabase.from("labor_rate_catalog").insert(payload).select("*").single();
+  if (error) throw error;
+  return laborRateFromDb(data);
+}
+
+export async function updateLaborRate(id, item) {
+  if (!isDatabaseConfigured) return null;
+  const { data, error } = await supabase.from("labor_rate_catalog").update(laborRateToDb(item)).eq("id", id).select("*").single();
+  if (error) throw error;
+  return laborRateFromDb(data);
+}
+
+export async function deleteLaborRate(id) {
+  if (!isDatabaseConfigured) return null;
+  const { error } = await supabase.from("labor_rate_catalog").delete().eq("id", id);
+  if (error) throw error;
+  return true;
+}
+
+function quoteProfileToDb(item) {
+  return {
+    name: item.name,
+    iva: Number(item.iva ?? 0.21),
+    iibb: Number(item.iibb ?? 0.035),
+    target_profit: Number(item.targetProfit ?? 0.25),
+    admin_overhead: Number(item.adminOverhead ?? 0.10),
+    technical_contingency: Number(item.technicalContingency ?? 0.05),
+    energy_per_kwh: Number(item.energyPerKwh ?? 150),
+    travel_per_km: Number(item.travelPerKm ?? 700),
+    round_to: Number(item.roundTo ?? 1000),
+    validity_days: Number(item.validityDays ?? 7),
+  };
+}
+
+function quoteProfileFromDb(item) {
+  return {
+    id: item.id,
+    name: item.name,
+    iva: Number(item.iva || 0),
+    iibb: Number(item.iibb || 0),
+    targetProfit: Number(item.target_profit || 0),
+    adminOverhead: Number(item.admin_overhead || 0),
+    technicalContingency: Number(item.technical_contingency || 0),
+    energyPerKwh: Number(item.energy_per_kwh || 0),
+    travelPerKm: Number(item.travel_per_km || 0),
+    roundTo: Number(item.round_to || 1000),
+    validityDays: Number(item.validity_days || 7),
+  };
+}
+
+// Convencion de 1 perfil por organizacion: el trigger seed_default_quote_calculation_profile
+// (20261108100100) crea la fila con id = organization_id al dar de alta la
+// empresa. Si por algun motivo no existe (organizaciones creadas antes de esa
+// migracion), se toma la primera fila de esa organizacion que haya.
+export async function getOwnQuoteCalculationProfile(organizationId) {
+  if (!isDatabaseConfigured || !organizationId) return null;
+  const { data, error } = await supabase
+    .from("quote_calculation_profiles")
+    .select("*")
+    .eq("organization_id", organizationId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? quoteProfileFromDb(data) : null;
+}
+
+export async function saveOwnQuoteCalculationProfile(organizationId, patch, existingId) {
+  if (!isDatabaseConfigured || !organizationId) return null;
+  const payload = { id: existingId || organizationId, organization_id: organizationId, ...quoteProfileToDb(patch) };
+  const { data, error } = await supabase
+    .from("quote_calculation_profiles")
+    .upsert(payload, { onConflict: "id" })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return quoteProfileFromDb(data);
+}

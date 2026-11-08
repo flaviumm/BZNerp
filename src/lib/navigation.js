@@ -20,21 +20,38 @@ export const screens = [
   { key: "reportes", label: "Reportes", icon: "chart", roles: ["admin", "direccion"] },
   { key: "organizaciones", label: "Organizaciones", icon: "building", roles: [] },
   { key: "configuracion", label: "Configuracion", icon: "userCog", roles: ["admin"] },
+  { key: "precios", label: "Precios y condiciones", icon: "wallet", roles: ["admin", "direccion"] },
 ];
 
 export const menuSections = [
   { title: "Gestion comercial", keys: ["dashboard", "clientes", "crm", "importar", "captador_leads", "presupuestos", "cotizador", "ventas"] },
   { title: "Operacion", keys: ["ot", "inventario", "compras", "finanzas", "rrhh"] },
-  { title: "Control", keys: ["tareas", "calendario", "documentos", "auditoria", "usuarios", "reportes"] },
+  { title: "Control", keys: ["tareas", "calendario", "documentos", "auditoria", "usuarios", "reportes", "precios"] },
 ];
+
+// Pantallas de plataforma: no son "modulos" de un plan/contrato, no se
+// togglean por organizacion. "organizaciones" es exclusivo de super-admin;
+// "configuracion" (nombre/marca/fiscal) la necesita toda organizacion.
+const PLATFORM_SCREEN_KEYS = ["organizaciones", "configuracion"];
+
+// Claves que un super-admin puede habilitar/deshabilitar por organizacion
+// (que modulos incluye el plan que le vendimos a esa empresa cliente).
+export const MODULE_KEYS = screens.filter((screen) => !PLATFORM_SCREEN_KEYS.includes(screen.key)).map((screen) => screen.key);
 
 export const userRoles = ["admin", "direccion", "ventas", "operaciones", "compras", "finanzas", "rrhh", "cliente"];
 export const accountStatuses = ["pending", "active", "suspended"];
 
-export function canAccessScreen(screen, profileOrRole) {
+export function canAccessScreen(screen, profileOrRole, organization) {
   const profile = typeof profileOrRole === "string" ? { role: profileOrRole, menuKeys: null } : profileOrRole || {};
   if (screen.key === "organizaciones") return Boolean(profile.isSuperAdmin);
   if (screen.key === "configuracion") return profile.role === "admin";
+  // Gate de modulo por organizacion: el super-admin (viendo/soportando otra
+  // organizacion) nunca queda bloqueado por esto. `enabledModules` null o
+  // vacio = sin restriccion (organizaciones viejas, o plan "todo incluido"),
+  // mismo criterio que ya usa `menuKeys` en profiles.
+  if (!profile.isSuperAdmin && Array.isArray(organization?.enabledModules) && organization.enabledModules.length && !organization.enabledModules.includes(screen.key)) {
+    return false;
+  }
   const roleAllowed = screen.roles.includes(profile.role || "ventas");
   if (!roleAllowed) return false;
   if (Array.isArray(profile.menuKeys) && profile.menuKeys.length) return profile.menuKeys.includes(screen.key);

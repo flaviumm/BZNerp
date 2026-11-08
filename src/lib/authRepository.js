@@ -167,6 +167,10 @@ function mapOrganization(org) {
     name: org.name,
     primaryColor: org.primary_color || "#ff7900",
     logoDataUrl: org.logo_data_url || null,
+    currency: org.currency || "ARS",
+    taxId: org.tax_id || "",
+    fiscalCondition: org.fiscal_condition || "",
+    enabledModules: Array.isArray(org.enabled_modules) ? org.enabled_modules : null,
     createdAt: org.created_at,
   };
 }
@@ -176,7 +180,7 @@ export async function getOrganization(id) {
 
   const { data, error } = await supabase
     .from("organizations")
-    .select("id, name, primary_color, logo_data_url, created_at")
+    .select("id, name, primary_color, logo_data_url, currency, tax_id, fiscal_condition, enabled_modules, created_at")
     .eq("id", id)
     .maybeSingle();
 
@@ -191,12 +195,22 @@ export async function updateOrganization(id, patch) {
   if (patch.name !== undefined) payload.name = patch.name;
   if (patch.primaryColor !== undefined) payload.primary_color = patch.primaryColor;
   if (patch.logoDataUrl !== undefined) payload.logo_data_url = patch.logoDataUrl || null;
+  if (patch.currency !== undefined) payload.currency = patch.currency;
+  if (patch.taxId !== undefined) payload.tax_id = patch.taxId || null;
+  if (patch.fiscalCondition !== undefined) payload.fiscal_condition = patch.fiscalCondition || null;
+  // enabledModules: la UI nunca manda [] con intencion de "vaciar y bloquear
+  // todo" -- un array vacio se guarda como null (sin restriccion), igual que
+  // ya hace menuKeys en profiles. Para deshabilitar modulos puntuales hay que
+  // mandar la lista de los que SI quedan habilitados.
+  if (patch.enabledModules !== undefined) {
+    payload.enabled_modules = Array.isArray(patch.enabledModules) && patch.enabledModules.length ? patch.enabledModules : null;
+  }
 
   const { data, error } = await supabase
     .from("organizations")
     .update(payload)
     .eq("id", id)
-    .select("id, name, primary_color, logo_data_url, created_at")
+    .select("id, name, primary_color, logo_data_url, currency, tax_id, fiscal_condition, enabled_modules, created_at")
     .single();
 
   if (error) throw error;
