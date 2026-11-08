@@ -9,6 +9,15 @@ if (!url || !anonKey || !serviceRoleKey) {
   process.exit(1);
 }
 
+// Este test crea y borra organizaciones, usuarios y datos: nunca contra
+// produccion (ref de supabase/config.toml y .env.production). Ojo que
+// VITE_SUPABASE_URL de un .env.production local apunta justamente ahi.
+const PRODUCTION_REF = "bewqfxodhhanbxbqngsf";
+if (url.includes(PRODUCTION_REF)) {
+  console.error("ABORTADO: la URL de Supabase apunta al proyecto de PRODUCCION. Este test es solo para staging/dev.");
+  process.exit(1);
+}
+
 const adminClient = createClient(url, serviceRoleKey, { auth: { persistSession: false } });
 
 let failures = 0;
