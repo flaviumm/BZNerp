@@ -54,6 +54,11 @@ async function createTestOrgAndAdmin(label) {
 }
 
 async function cleanup(ids) {
+  await adminClient.from("labor_rate_catalog").delete().in("organization_id", ids.organizationIds);
+  await adminClient.from("quote_calculation_profiles").delete().in("organization_id", ids.organizationIds);
+  if (ids.globalMaterialId) {
+    await adminClient.from("material_price_catalog").delete().eq("id", ids.globalMaterialId);
+  }
   await adminClient.from("companies").delete().in("organization_id", ids.organizationIds);
   await adminClient.from("profiles").delete().in("id", ids.userIds);
   for (const userId of ids.userIds) {
@@ -65,6 +70,7 @@ async function cleanup(ids) {
 async function main() {
   const organizationIds = [];
   const userIds = [];
+  let globalMaterialId = null;
 
   try {
     const orgA = await createTestOrgAndAdmin("A");
@@ -136,6 +142,94 @@ async function main() {
       .eq("id", companyA?.id ?? null);
     assertTrue((verifyStillExists || []).length === 1, "org A's company still exists after org B's blocked delete");
 
+    // --- labor_rate_catalog: mismo patron de aislamiento que companies,
+    // pero sobre la tabla que alimenta la pantalla Precios y condiciones.
+    const { data: laborRateA, error: laborRateAError } = await orgA.userClient
+      .from("labor_rate_catalog")
+      .insert({ id: `test-rate-a-${Date.now()}`, trade: "Soldador de prueba", base_hour: 1000, quote_hour: 2000 })
+      .select("id, organization_id")
+      .single();
+    assertTrue(!laborRateAError, `org A admin can create a labor rate (error: ${laborRateAError?.message})`);
+    assertTrue(laborRateA?.organization_id === orgA.organization.id, "created labor rate is auto-stamped with org A's organization_id");
+
+    const { data: crossReadLaborRate, error: crossReadLaborRateError } = await orgB.userClient
+      .from("labor_rate_catalog")
+      .select("id")
+      .eq("id", laborRateA?.id ?? null);
+    assertTrue(!crossReadLaborRateError, `org B querying org A's labor rate does not error (error: ${crossReadLaborRateError?.message})`);
+    assertTrue((crossReadLaborRate || []).length === 0, "org B cannot read org A's labor rate (RLS filters it out)");
+
+    // --- quote_calculation_profiles: el trigger seed_default_quote_calculation_profile
+    // (20261108100100) ya deberia haber sembrado una fila al crear cada
+    // organizacion -- se confirma que existe y que la otra org no la ve.
+    const { data: ownProfileA, error: ownProfileAError } = await orgA.userClient
+      .from("quote_calculation_profiles")
+      .select("id, organization_id")
+      .eq("organization_id", orgA.organization.id);
+    assertTrue(!ownProfileAError && (ownProfileA || []).length >= 1, `org A has a seeded quote_calculation_profiles row (error: ${ownProfileAError?.message ?? "none found"})`);
+
+    const { data: crossReadProfile, error: crossReadProfileError } = await orgB.userClient
+      .from("quote_calculation_profiles")
+      .select("id")
+      .eq("organization_id", orgA.organization.id);
+    assertTrue(!crossReadProfileError, `org B querying org A's quote_calculation_profiles does not error (error: ${crossReadProfileError?.message})`);
+    assertTrue((crossReadProfile || []).length === 0, "org B cannot read org A's quote_calculation_profiles (RLS filters it out)");
+
+    // --- material_price_catalog: guardia de regresion. Este catalogo es
+    // GLOBAL a proposito (docs/superpowers/specs/2026-08-01-multiempresa-design.md,
+    // "Shared vs per-tenant data") -- NO debe quedar escopeado por
+    // organizacion. Si alguien le agrega organization_id/RLS por org sin
+    // mirar ese diseño (como paso en esta misma sesion), este check lo
+    // detecta: ambas orgs tienen que poder leer la misma fila global.
+    globalMaterialId = `test-material-global-${Date.now()}`;
+    const { error: globalMaterialInsertError } = await adminClient
+      .from("material_price_catalog")
+      .insert({ id: globalMaterialId, source: "Test", category: "Test", name: "Material de prueba", base_price: 100 });
+    assertTrue(!globalMaterialInsertError, `service role can seed a global material_price_catalog row (error: ${globalMaterialInsertError?.message})`);
+
+    const { data: materialFromOrgA } = await orgA.userClient.from("material_price_catalog").select("id").eq("id", globalMaterialId);
+    assertTrue((materialFromOrgA || []).length === 1, "org A can read the global material_price_catalog row (shared on purpose, not tenant-scoped)");
+
+    const { data: materialFromOrgB, error: materialFromOrgBError } = await orgB.userClient.from("material_price_catalog").select("id").eq("id", globalMaterialId);
+    assertTrue(!materialFromOrgBError && (materialFromOrgB || []).length === 1, "org B can read the same global material_price_catalog row (shared on purpose, not tenant-scoped)");
+
+    // --- enabled_modules: mismo patron de guardia que is_super_admin -- la
+    // propia sesion del admin de org A no puede auto-habilitarse modulos
+    // que Bizon no le vendio (ejercita guard_organization_privileges).
+    const { data: selfEnableAttempt, error: selfEnableError } = await orgA.userClient
+      .from("organizations")
+      .update({ enabled_modules: ["usuarios", "reportes", "finanzas"] })
+      .eq("id", orgA.organization.id)
+      .select("id");
+    assertTrue(
+      !!selfEnableError || (selfEnableAttempt || []).length === 0,
+      `org A admin cannot self-enable modules via its own session (error: ${selfEnableError?.message ?? "none, but 0 rows affected"})`
+    );
+    const { data: verifyModulesUnchanged } = await adminClient
+      .from("organizations")
+      .select("enabled_modules")
+      .eq("id", orgA.organization.id)
+      .single();
+    assertTrue(verifyModulesUnchanged?.enabled_modules == null, "org A's enabled_modules is still unset after the blocked self-enable attempt");
+
+    // La guardia es columna-especifica: un cambio legitimo a un campo no
+    // privilegiado de la misma fila (fiscal_condition, igual que
+    // name/primary_color ya cubiertos por organizations_update_own_admin)
+    // tiene que seguir funcionando.
+    const { error: legitimateSelfUpdateError } = await orgA.userClient
+      .from("organizations")
+      .update({ fiscal_condition: "Responsable Inscripto" })
+      .eq("id", orgA.organization.id);
+    assertTrue(!legitimateSelfUpdateError, `org A admin can still update its own non-privileged org fields (error: ${legitimateSelfUpdateError?.message})`);
+
+    // Legitimate enable (service role, bypasses the trigger's auth.uid()
+    // check) -- confirma que un super-admin SI puede setear enabled_modules.
+    const { error: legitimateEnableError } = await adminClient
+      .from("organizations")
+      .update({ enabled_modules: ["dashboard", "clientes"] })
+      .eq("id", orgA.organization.id);
+    assertTrue(!legitimateEnableError, `service role can set org A's enabled_modules (error: ${legitimateEnableError?.message})`);
+
     // Privilege escalation: org A's own (non-super-admin) session must not be
     // able to promote itself by writing is_super_admin via its own client —
     // this exercises the guard_profile_privileges trigger directly.
@@ -175,8 +269,8 @@ async function main() {
       "promoted super-admin can read org B's company (real cross-org access, not just its own org)"
     );
   } finally {
-    if (organizationIds.length || userIds.length) {
-      await cleanup({ organizationIds, userIds });
+    if (organizationIds.length || userIds.length || globalMaterialId) {
+      await cleanup({ organizationIds, userIds, globalMaterialId });
     }
   }
 
