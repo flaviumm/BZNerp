@@ -259,20 +259,20 @@ Deno.serve(async (request) => {
           const contact = normalizeText(body.contact_name || lead.contact_name || '');
 
           const leadFilters = [];
-          if (email) leadFilters.push(`email.eq.${email}`);
-          if (phone) leadFilters.push(`phone.eq.${phone}`);
-          if (contact) leadFilters.push(`contact_name.ilike.*${contact}*`);
-          if (companyName) leadFilters.push(`company_name.ilike.*${companyName}*`);
+          if (email) leadFilters.push(`email.eq.${pgFilterValue(email)}`);
+          if (phone) leadFilters.push(`phone.eq.${pgFilterValue(phone)}`);
+          if (contact) leadFilters.push(`contact_name.ilike.${pgFilterValue(contact, { wildcard: true })}`);
+          if (companyName) leadFilters.push(`company_name.ilike.${pgFilterValue(companyName, { wildcard: true })}`);
 
           const duplicateLeads = leadFilters.length
             ? await fetchDuplicateCapturedLeads(adminClient, id, organizationId, leadFilters)
             : [];
 
           const companyFilters = [];
-          if (companyName) companyFilters.push(`name.ilike.*${companyName}*`);
-          if (phone) companyFilters.push(`phone.eq.${phone}`);
-          if (email) companyFilters.push(`contacts.ilike.*${email}*`);
-          if (phone) companyFilters.push(`contacts.ilike.*${phone}*`);
+          if (companyName) companyFilters.push(`name.ilike.${pgFilterValue(companyName, { wildcard: true })}`);
+          if (phone) companyFilters.push(`phone.eq.${pgFilterValue(phone)}`);
+          if (email) companyFilters.push(`contacts.ilike.${pgFilterValue(email, { wildcard: true })}`);
+          if (phone) companyFilters.push(`contacts.ilike.${pgFilterValue(phone, { wildcard: true })}`);
 
           const duplicateCompanies = companyFilters.length
             ? await fetchDuplicateCompanies(adminClient, organizationId, companyFilters)
@@ -340,19 +340,52 @@ function normalizePhone(value) {
   return String(value || '').replace(/[^\d+]/g, '');
 }
 
+// PostgREST trata `,` `(` `)` como separadores estructurales de .or()/.and() —
+// un company_name o contact_name con una coma (ej. "ACME, S.A.") o un
+// paréntesis rompía el filtro previsto e inyectaba condiciones nuevas en la
+// misma query (ver find-duplicates). La sintaxis de filtros de PostgREST
+// permite escapar esto envolviendo el valor en comillas dobles y escapando
+// backslash/comillas internas: https://docs.postgrest.org/en/latest/references/api/tables_views.html#operators
+// Envolver SIEMPRE en comillas (no solo cuando "parece" tener un caracter
+// especial) evita tener que mantener una lista de casos a detectar.
+function pgFilterValue(raw: unknown, { wildcard = false }: { wildcard?: boolean } = {}) {
+  const escaped = String(raw ?? '').replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  const core = wildcard ? `*${escaped}*` : escaped;
+  return `"${core}"`;
+}
+
+// Todos los criterios van en UN solo .or(): postgrest-js agrega un parametro
+// `or=` por cada llamada a .or(), y PostgREST combina esos parametros con AND.
+// Con un .or() por criterio (como estaba), un duplicado solo aparecia si
+// coincidian TODOS los campos cargados (email Y telefono Y contacto Y
+// empresa) en vez de cualquiera. Unirlos con coma es seguro porque cada
+// valor ya viene entrecomillado por pgFilterValue().
 async function fetchDuplicateCapturedLeads(adminClient, currentId, organizationId, filters) {
-  const query = adminClient.from('captured_leads').select('*').eq('organization_id', organizationId).neq('id', currentId);
-  filters.forEach((filter) => query.or(filter));
-  const { data, error } = await query.limit(10);
-  if (error) return [];
+  const { data, error } = await adminClient
+    .from('captured_leads')
+    .select('*')
+    .eq('organization_id', organizationId)
+    .neq('id', currentId)
+    .or(filters.join(','))
+    .limit(10);
+  if (error) {
+    console.error('find-duplicates leads query failed', error.message);
+    return [];
+  }
   return data;
 }
 
 async function fetchDuplicateCompanies(adminClient, organizationId, filters) {
-  const query = adminClient.from('companies').select('*').eq('organization_id', organizationId);
-  filters.forEach((filter) => query.or(filter));
-  const { data, error } = await query.limit(10);
-  if (error) return [];
+  const { data, error } = await adminClient
+    .from('companies')
+    .select('*')
+    .eq('organization_id', organizationId)
+    .or(filters.join(','))
+    .limit(10);
+  if (error) {
+    console.error('find-duplicates companies query failed', error.message);
+    return [];
+  }
   return data;
 }
 
