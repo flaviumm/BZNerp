@@ -35,6 +35,9 @@ export function Configuracion({ organization, organizations = [], currentProfile
   const [name, setName] = useState(target?.name || "");
   const [color, setColor] = useState(target?.primaryColor || "#ff7900");
   const [logo, setLogo] = useState(target?.logoDataUrl || null);
+  const [currency, setCurrency] = useState(target?.currency || "ARS");
+  const [taxId, setTaxId] = useState(target?.taxId || "");
+  const [fiscalCondition, setFiscalCondition] = useState(target?.fiscalCondition || "");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -51,6 +54,9 @@ export function Configuracion({ organization, organizations = [], currentProfile
     setName(target?.name || "");
     setColor(target?.primaryColor || "#ff7900");
     setLogo(target?.logoDataUrl || null);
+    setCurrency(target?.currency || "ARS");
+    setTaxId(target?.taxId || "");
+    setFiscalCondition(target?.fiscalCondition || "");
   }, [target?.id]);
 
   async function handleLogo(event) {
@@ -70,7 +76,7 @@ export function Configuracion({ organization, organizations = [], currentProfile
     setMessage("");
     try {
       if (isSuperAdmin && !target?.id) throw new Error("Elegi la organizacion a configurar.");
-      const saved = await onUpdateOrganization({ name: name.trim(), primaryColor: color, logoDataUrl: logo }, target?.id);
+      const saved = await onUpdateOrganization({ name: name.trim(), primaryColor: color, logoDataUrl: logo, currency, taxId: taxId.trim(), fiscalCondition: fiscalCondition.trim() }, target?.id);
       if (isSuperAdmin) { setSelectedOrg(saved); onRefreshOrganizations?.(); }
       setMessage("Configuracion guardada.");
     } catch (error) {
@@ -106,6 +112,18 @@ export function Configuracion({ organization, organizations = [], currentProfile
             </Field>
             <Field label="Logo">
               <input type="file" accept="image/*" onChange={handleLogo} className="block w-full rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2 text-sm font-medium text-[var(--text)]" />
+            </Field>
+            <Field label="Moneda de trabajo">
+              <Select value={currency} onChange={(event) => setCurrency(event.target.value)}>
+                <option value="ARS">Pesos argentinos (ARS)</option>
+                <option value="USD">Dolares (USD)</option>
+              </Select>
+            </Field>
+            <Field label="CUIT">
+              <TextInput value={taxId} onChange={(event) => setTaxId(event.target.value)} placeholder="30-12345678-9" />
+            </Field>
+            <Field label="Condicion frente al IVA">
+              <TextInput value={fiscalCondition} onChange={(event) => setFiscalCondition(event.target.value)} placeholder="Responsable Inscripto" />
             </Field>
             <div className="flex flex-wrap gap-2">
               <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar"}</Button>

@@ -23,6 +23,7 @@ import { Auditoria } from "./src/components/screens/Auditoria";
 import { Usuarios } from "./src/components/screens/Usuarios";
 import { Organizaciones } from "./src/components/screens/Organizaciones";
 import { Configuracion } from "./src/components/screens/Configuracion";
+import { PreciosConfiguracion } from "./src/components/screens/PreciosConfiguracion";
 import { Reportes } from "./src/components/screens/Reportes";
 import { NewRecordModal, EditRecordModal } from "./src/components/screens/modals";
 import { LoginScreen, NewPasswordScreen, AccountStatusScreen, DatabaseSetupScreen } from "./src/components/screens/auth";
@@ -300,7 +301,7 @@ export default function MiniErpBizonPrototype() {
   }, [data, localDatabaseReady]);
 
   const activeLabel = screens.find((item) => item.key === active)?.label || "Dashboard";
-  const availableScreens = screens.filter((item) => canAccessScreen(item, profile || { role: "ventas", menuKeys: null }));
+  const availableScreens = screens.filter((item) => canAccessScreen(item, profile || { role: "ventas", menuKeys: null }, organization));
   const adminKeys = [profile?.isSuperAdmin ? "organizaciones" : null, profile?.role === "admin" ? "configuracion" : null].filter(Boolean);
   const sidebarMenuSections = adminKeys.length
     ? [...menuSections, { title: "Administracion", keys: adminKeys }]
@@ -771,6 +772,7 @@ export default function MiniErpBizonPrototype() {
     usuarios: <Usuarios {...screenProps} />,
     organizaciones: <Organizaciones {...screenProps} />,
     configuracion: <Configuracion {...screenProps} />,
+    precios: <PreciosConfiguracion {...screenProps} />,
     reportes: <Reportes {...screenProps} />,
   }[active] || <Dashboard {...screenProps} />;
 
