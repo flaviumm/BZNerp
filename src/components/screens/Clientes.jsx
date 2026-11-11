@@ -338,16 +338,15 @@ export function ClientesCards({ companies, setCompanies, persistUpdate, openEdit
             </Select>
           </div>
         </div>
-        <Button onClick={onNewRecord}>Agregar cliente</Button>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+      <div className="flex gap-3 overflow-x-auto pb-2">
         {CLIENT_STATUSES.map((status) => {
           const cards = filtered.filter((company) => company.status === status);
           const columnValue = cards.reduce((total, company) => total + (Number(company.value) || 0), 0);
           return (
             <Panel
               key={status}
-              className={`min-h-[420px] min-w-0 p-3 transition ${draggingId ? "ring-1 ring-[var(--brand)]/20" : ""}`}
+              className={`min-h-[420px] w-[290px] shrink-0 p-3 transition ${draggingId ? "ring-1 ring-[var(--brand)]/20" : ""}`}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => dropOnStatus(event, status)}
             >
@@ -379,7 +378,7 @@ export function ClientesCards({ companies, setCompanies, persistUpdate, openEdit
                       <button type="button" onClick={() => toggleExpanded(company.id)} className="flex w-full items-stretch justify-between gap-3 border-l-4 border-[var(--brand)] bg-[var(--brand-tint)] px-3 py-3 text-left transition hover:bg-[var(--brand-tint)]">
                         <div className="min-w-0">
                           <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--brand-hover)]">Cliente</p>
-                          <p className="mt-0.5 truncate text-[15px] font-semibold leading-tight text-[var(--text)]">{company.name}</p>
+                          <p className="mt-0.5 line-clamp-2 text-[15px] font-semibold leading-tight text-[var(--text)]">{company.name}</p>
                           <p className="mt-1 truncate text-[11px] font-medium text-[var(--text-muted)]">{company.type} - {company.city}</p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2 self-center">

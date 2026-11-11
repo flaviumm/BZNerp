@@ -1,4 +1,4 @@
-import { Panel, StatCard, SectionTitle, DataTable, CleanBarList } from "../ui";
+import { Panel, StatCard, SectionTitle, CleanBarList } from "../ui";
 import { money, pct, sum, weightedPipeline, addDaysIso, overdueWorkOrders } from "../../lib/utils";
 import { QUOTE_STATUSES } from "./Presupuestos";
 
@@ -8,15 +8,15 @@ export function Reportes({ data }) {
   const { companies, opportunities, quotes, workOrders, tasks } = data;
 
   const won = opportunities.filter((item) => item.stage === "Ganado");
-  const lost = opportunities.filter((item) => item.stage === "Perdido");
+  const lost = opportunities.filter((item) => item.stage.toUpperCase() === "PERDIDO");
   const closed = won.length + lost.length;
-  const openPipeline = opportunities.filter((item) => !["Ganado", "Perdido"].includes(item.stage));
+  const openPipeline = opportunities.filter((item) => item.stage !== "Ganado" && String(item.stage).toUpperCase() !== "PERDIDO");
 
   const approvedQuotes = quotes.filter((item) => item.status === "Aprobado");
   const decidedQuotes = quotes.filter((item) => ["Aprobado", "Rechazado"].includes(item.status));
   const quoteRows = QUOTE_STATUSES.map((status) => {
     const list = quotes.filter((item) => item.status === status);
-    return [status, list.length, money(sum(list, "total"))];
+    return { status, count: list.length, total: sum(list, "total") };
   });
 
   const executing = workOrders.filter((item) => item.status === "En ejecucion");
@@ -45,8 +45,13 @@ export function Reportes({ data }) {
       <div className="grid gap-5 xl:grid-cols-2">
         <Panel className="p-5">
           <SectionTitle title="Presupuestos por estado" subtitle="Cantidad e importe" />
-          <div className="mt-4">
-            <DataTable headers={["Estado", "Cantidad", "Importe"]} rows={quoteRows} />
+          <div className="mt-4 grid gap-2 text-sm">
+            {quoteRows.map((row) => (
+              <p key={row.status} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[var(--text-muted)]">
+                <span>{row.status} <strong className="ml-2 text-[var(--text)]">{row.count}</strong></span>
+                <strong className="text-[var(--text)]">{money(row.total)}</strong>
+              </p>
+            ))}
           </div>
         </Panel>
         <Panel className="p-5">

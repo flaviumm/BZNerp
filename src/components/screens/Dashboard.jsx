@@ -3,7 +3,7 @@ import { money, sum, weightedPipeline, addDaysIso, dueWithinDays, overdueWorkOrd
 
 export function Dashboard({ data, setActive, organization, openCotizador }) {
   const today = addDaysIso(0);
-  const openOpportunities = data.opportunities.filter((item) => !["Ganado", "Perdido"].includes(item.stage));
+  const openOpportunities = data.opportunities.filter((item) => item.stage !== "Ganado" && String(item.stage).toUpperCase() !== "PERDIDO");
   const pipelineTotal = sum(openOpportunities, "amount");
   const winForecast = weightedPipeline(openOpportunities);
   const dueSoon = dueWithinDays(openOpportunities, addDaysIso(30));

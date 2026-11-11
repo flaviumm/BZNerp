@@ -743,7 +743,7 @@ export default function MiniErpBizonPrototype() {
           onSignOut={isDatabaseConfigured ? handleSignOut : null}
           onNew={active === "presupuestos" ? () => openCotizador() : creatableScreens.has(active) ? () => setModalOpen(true) : null}
         />
-        <main className="min-h-screen flex-1">
+        <main className="min-h-screen min-w-0 flex-1">
           <Header
             activeLabel={activeLabel}
             databaseStatus={databaseStatus}

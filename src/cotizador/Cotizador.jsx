@@ -332,9 +332,14 @@ const Cotizador = forwardRef(function Cotizador(
   ref
 ) {
   const defaultValidUntil = addDaysIso(quoteParameters.offerValidityDays || 7);
-  const [clientMode, setClientMode] = useState(() => (initialQuote ? "new" : "existing"));
-  const [selectedCompany, setSelectedCompany] = useState(() => (initialQuote ? "" : companies[0]?.name || ""));
-  const [clientDetails, setClientDetails] = useState(() => initialQuote?.clientDetails || { name: companies[0]?.name || "", taxId: "", contact: companies[0]?.contact || "", phone: companies[0]?.phone || "", email: "", address: "" });
+  // Al editar, el cliente del presupuesto manda: si existe en la cartera se selecciona, si no queda como empresa nueva.
+  const initialClientName = initialQuote?.client || initialQuote?.clientDetails?.name || "";
+  const initialClientKnown = Boolean(initialQuote) && companies.some((item) => item.name === initialClientName);
+  const [clientMode, setClientMode] = useState(() => (initialQuote && !initialClientKnown ? "new" : "existing"));
+  const [selectedCompany, setSelectedCompany] = useState(() => (initialQuote ? (initialClientKnown ? initialClientName : "") : companies[0]?.name || ""));
+  const [clientDetails, setClientDetails] = useState(() => initialQuote
+    ? { taxId: "", contact: "", phone: "", email: "", address: "", ...(initialQuote.clientDetails || {}), name: initialClientName }
+    : { name: companies[0]?.name || "", taxId: "", contact: companies[0]?.contact || "", phone: companies[0]?.phone || "", email: "", address: "" });
   const [validUntil, setValidUntil] = useState(() => initialQuote?.validUntil || defaultValidUntil);
   const [lineItems, setLineItems] = useState(() => initialQuote?.lineItems || []);
   const [quoteNumber, setQuoteNumber] = useState(() => initialQuote?.number || null);
