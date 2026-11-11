@@ -89,8 +89,8 @@ export function TextArea(props) {
 
 
 
-export function Header({ activeLabel, databaseStatus, profile, organization, theme, onToggleTheme }) {
-  const brandName = organization?.name || "Bizon ERP Industrial";
+export function Header({ activeLabel, databaseStatus, profile, organization, organizations = [], actingOrganizationId = "", onChangeOrganization, theme, onToggleTheme }) {
+  const brandName = organization?.name || (profile?.isSuperAdmin ? "Plataforma" : "Bizon ERP Industrial");
   const brandLogo = organization?.logoDataUrl || "/brand/isotipo_bizon.png";
   return (
     <header className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-4 md:px-8">
@@ -103,6 +103,19 @@ export function Header({ activeLabel, databaseStatus, profile, organization, the
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {onChangeOrganization && (
+            <label className="flex items-center gap-2 rounded-2xl border border-[var(--brand)] bg-[var(--brand-tint)] px-3 py-1.5 text-xs font-semibold text-[var(--brand-hover)]">
+              Empresa activa
+              <select
+                value={actingOrganizationId || ""}
+                onChange={(event) => onChangeOrganization(event.target.value || null)}
+                className="min-h-8 rounded-lg border border-[var(--border)] bg-[var(--surface-raised)] px-2 text-[13px] font-medium text-[var(--text)] outline-none"
+              >
+                <option value="">Ninguna (solo plataforma)</option>
+                {organizations.map((org) => <option key={org.id} value={org.id}>{org.name}{org.status === "suspended" ? " (suspendida)" : ""}</option>)}
+              </select>
+            </label>
+          )}
           <Badge tone={databaseStatus === "Conectado a Supabase" || databaseStatus === "Base local" ? "green" : databaseStatus === "Error de base" ? "red" : "amber"}>{databaseStatus}</Badge>
           {onToggleTheme && (
             <button

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button, SectionTitle } from "../ui";
 import { Icon } from "../../cotizador/ui";
 import Wizard from "../../cotizador/Cotizador";
-import { laborRates, quoteParameters } from "../../lib/pricingData";
+import { laborRates as defaultLaborRates, quoteParameters as defaultQuoteParameters } from "../../lib/pricingData";
 import { isDatabaseConfigured, supabase } from "../../lib/supabaseClient";
 
 const STEPS = [
@@ -20,7 +20,10 @@ function loadCatalog() {
   return catalogPromise;
 }
 
-export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, persistUpdate, getDocumentNumber, editingQuote = null, setActive }) {
+export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistRecord, persistUpdate, getDocumentNumber, editingQuote = null, setActive, pricing = {} }) {
+  // Tarifas y parametros de la empresa; si no cargo nada, los de Bizon por defecto.
+  const laborRates = pricing.laborRates || defaultLaborRates;
+  const quoteParameters = pricing.quoteParameters || defaultQuoteParameters;
   const [materials, setMaterials] = useState([]);
   const [step, setStep] = useState("datosEmpresa");
   const [lightboxImage, setLightboxImage] = useState(null);

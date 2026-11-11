@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Button, Panel, Field, TextInput, Select, SectionTitle } from "../ui";
-import { getOrganization } from "../../lib/authRepository";
+import { Button, Panel, Field, TextInput, SectionTitle } from "../ui";
+import { laborRates as defaultLaborRates, quoteParameters as defaultQuoteParameters } from "../../lib/pricingData";
 
 const LOGO_SIZE = 256;
 
@@ -25,33 +25,53 @@ function resizeToDataUrl(file) {
   });
 }
 
-export function Configuracion({ organization, organizations = [], currentProfile, onUpdateOrganization, onRefreshOrganizations }) {
-  // El super admin no pertenece a ninguna organizacion: elige cual editar.
+const PARAMETER_FIELDS = [
+  ["iva", "IVA", "0.21 = 21%"],
+  ["iibb", "Ingresos brutos", "0.035 = 3,5%"],
+  ["targetProfit", "Ganancia objetivo", "0.25 = 25%"],
+  ["adminOverhead", "Gastos administrativos", "0.10 = 10%"],
+  ["technicalContingency", "Contingencia tecnica", "0.05 = 5%"],
+  ["energyPerKwh", "Energia por kWh ($)", ""],
+  ["travelPerKm", "Traslado por km ($)", ""],
+  ["roundTo", "Redondear total a ($)", ""],
+  ["offerValidityDays", "Validez de la oferta (dias)", ""],
+];
+
+const RATE_COLUMNS = [
+  ["trade", "Oficio", "text"],
+  ["agreement", "Convenio", "text"],
+  ["category", "Categoria", "text"],
+  ["baseHour", "Hora base", "number"],
+  ["monthlyBonus", "Plus mensual", "number"],
+  ["monthlyHours", "Horas/mes", "number"],
+  ["loadFactor", "Cargas", "number"],
+  ["quoteHour", "Hora cotizada", "number"],
+];
+
+function slug(text) {
+  return String(text || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
+
+export function Configuracion({ organization, currentProfile, onUpdateOrganization, pricing = {}, onSavePricing }) {
   const isSuperAdmin = Boolean(currentProfile?.isSuperAdmin);
-  const [selectedOrgId, setSelectedOrgId] = useState("");
-  const [selectedOrg, setSelectedOrg] = useState(null);
-  const target = isSuperAdmin ? selectedOrg : organization;
-
-  const [name, setName] = useState(target?.name || "");
-  const [color, setColor] = useState(target?.primaryColor || "#ff7900");
-  const [logo, setLogo] = useState(target?.logoDataUrl || null);
-  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState(organization?.name || "");
+  const [color, setColor] = useState(organization?.primaryColor || "#ff7900");
+  const [logo, setLogo] = useState(organization?.logoDataUrl || null);
+  const [saving, setSaving] = useState("");
   const [message, setMessage] = useState("");
+  const [rates, setRates] = useState(() => pricing.laborRates || defaultLaborRates);
+  const [params, setParams] = useState(() => pricing.quoteParameters || defaultQuoteParameters);
 
   useEffect(() => {
-    if (!isSuperAdmin || !selectedOrgId) { setSelectedOrg(null); return; }
-    let cancelled = false;
-    getOrganization(selectedOrgId)
-      .then((org) => { if (!cancelled) setSelectedOrg(org); })
-      .catch((error) => { if (!cancelled) setMessage(error.message); });
-    return () => { cancelled = true; };
-  }, [isSuperAdmin, selectedOrgId]);
+    setName(organization?.name || "");
+    setColor(organization?.primaryColor || "#ff7900");
+    setLogo(organization?.logoDataUrl || null);
+  }, [organization?.id]);
 
   useEffect(() => {
-    setName(target?.name || "");
-    setColor(target?.primaryColor || "#ff7900");
-    setLogo(target?.logoDataUrl || null);
-  }, [target?.id]);
+    setRates(pricing.laborRates || defaultLaborRates);
+    setParams(pricing.quoteParameters || defaultQuoteParameters);
+  }, [pricing.laborRates, pricing.quoteParameters]);
 
   async function handleLogo(event) {
     const file = event.target.files?.[0];
@@ -64,36 +84,48 @@ export function Configuracion({ organization, organizations = [], currentProfile
     }
   }
 
-  async function save(event) {
-    event.preventDefault();
-    setSaving(true);
+  async function runSave(key, action, okMessage) {
+    setSaving(key);
     setMessage("");
     try {
-      if (isSuperAdmin && !target?.id) throw new Error("Elegi la organizacion a configurar.");
-      const saved = await onUpdateOrganization({ name: name.trim(), primaryColor: color, logoDataUrl: logo }, target?.id);
-      if (isSuperAdmin) { setSelectedOrg(saved); onRefreshOrganizations?.(); }
-      setMessage("Configuracion guardada.");
+      await action();
+      setMessage(okMessage);
     } catch (error) {
-      setMessage(error.message || "No se pudo guardar la configuracion.");
+      setMessage(error.message || "No se pudo guardar.");
     } finally {
-      setSaving(false);
+      setSaving("");
     }
+  }
+
+  function saveBranding(event) {
+    event.preventDefault();
+    runSave("branding", async () => {
+      if (!organization?.id) throw new Error("Elegi una empresa activa para configurar.");
+      await onUpdateOrganization({ name: name.trim(), primaryColor: color, logoDataUrl: logo }, organization.id);
+    }, "Configuracion guardada.");
+  }
+
+  function updateRate(index, key, value) {
+    setRates((current) => current.map((rate, i) => (i === index ? { ...rate, [key]: value, id: key === "trade" ? slug(value) : rate.id } : rate)));
+  }
+
+  if (!organization && isSuperAdmin) {
+    return (
+      <div className="space-y-5 p-4 md:p-6">
+        <SectionTitle title="Configuracion" subtitle="Elegi una empresa activa en el encabezado para configurar su marca, tarifas y parametros." />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-5 p-4 md:p-6">
-      <SectionTitle title="Configuracion" subtitle={isSuperAdmin ? "Nombre, color y logo de cada organizacion" : "Nombre, color y logo de tu empresa"} />
+      <SectionTitle title="Configuracion" subtitle={`Marca, tarifas y parametros de calculo de ${organization?.name || "tu empresa"}`} />
+      {message && <p className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm text-[var(--text)]">{message}</p>}
+
       <Panel className="p-5">
-        <form onSubmit={save} className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <SectionTitle title="Marca" subtitle="Nombre, color y logo que ven los usuarios" />
+        <form onSubmit={saveBranding} className="mt-4 grid gap-4 lg:grid-cols-[1.4fr_1fr]">
           <div className="grid gap-4">
-            {isSuperAdmin && (
-              <Field label="Organizacion">
-                <Select value={selectedOrgId} onChange={(event) => { setSelectedOrgId(event.target.value); setMessage(""); }}>
-                  <option value="">Elegir organizacion...</option>
-                  {organizations.map((org) => <option key={org.id} value={org.id}>{org.name}</option>)}
-                </Select>
-              </Field>
-            )}
             <Field label="Nombre de la empresa">
               <TextInput required value={name} onChange={(event) => setName(event.target.value)} placeholder="Mi Empresa SA" />
             </Field>
@@ -108,10 +140,9 @@ export function Configuracion({ organization, organizations = [], currentProfile
               <input type="file" accept="image/*" onChange={handleLogo} className="block w-full rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] px-3 py-2 text-sm font-medium text-[var(--text)]" />
             </Field>
             <div className="flex flex-wrap gap-2">
-              <Button type="submit" disabled={saving}>{saving ? "Guardando..." : "Guardar"}</Button>
+              <Button type="submit" disabled={saving === "branding"}>{saving === "branding" ? "Guardando..." : "Guardar marca"}</Button>
               {logo && <Button variant="ghost" onClick={() => setLogo(null)}>Quitar logo</Button>}
             </div>
-            {message && <p className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 text-sm text-[var(--text)]">{message}</p>}
           </div>
           <div className="grid content-start gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
             <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">Vista previa</p>
@@ -124,6 +155,55 @@ export function Configuracion({ organization, organizations = [], currentProfile
             </div>
           </div>
         </form>
+      </Panel>
+
+      <Panel className="p-5">
+        <SectionTitle
+          title="Parametros de calculo"
+          subtitle={pricing.quoteParameters ? "Valores propios de la empresa" : "Valores por defecto (Bizon). Al guardar quedan propios de la empresa."}
+          action={saving === "params" ? "Guardando..." : "Guardar parametros"}
+          onAction={() => runSave("params", () => onSavePricing({ quoteParameters: params }), "Parametros guardados.")}
+        />
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          {PARAMETER_FIELDS.map(([key, label, hint]) => (
+            <Field key={key} label={hint ? `${label} (${hint})` : label}>
+              <TextInput type="number" step="any" value={params[key] ?? ""} onChange={(event) => setParams({ ...params, [key]: event.target.value })} />
+            </Field>
+          ))}
+        </div>
+      </Panel>
+
+      <Panel className="p-5">
+        <SectionTitle
+          title="Tarifas de mano de obra"
+          subtitle={pricing.laborRates ? "Tarifas propias de la empresa" : "Tarifas por defecto (Bizon). Al guardar quedan propias de la empresa."}
+          action={saving === "rates" ? "Guardando..." : "Guardar tarifas"}
+          onAction={() => runSave("rates", () => onSavePricing({ laborRates: rates.filter((rate) => rate.trade?.trim()) }), "Tarifas guardadas.")}
+        />
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[980px] border-collapse text-left text-[12px]">
+            <thead className="text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+              <tr>{RATE_COLUMNS.map(([key, label]) => <th key={key} className="px-2 py-2">{label}</th>)}<th /></tr>
+            </thead>
+            <tbody>
+              {rates.map((rate, index) => (
+                <tr key={index} className="border-t border-[var(--border)]">
+                  {RATE_COLUMNS.map(([key, , type]) => (
+                    <td key={key} className="px-1 py-1">
+                      <TextInput type={type} step="any" value={rate[key] ?? ""} onChange={(event) => updateRate(index, key, type === "number" ? Number(event.target.value || 0) : event.target.value)} />
+                    </td>
+                  ))}
+                  <td className="px-1 py-1"><Button variant="danger" onClick={() => setRates((current) => current.filter((_, i) => i !== index))}>Quitar</Button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button variant="ghost" onClick={() => setRates((current) => [...current, { id: "", trade: "", agreement: "", category: "", baseHour: 0, monthlyBonus: 0, monthlyHours: 176, loadFactor: 0.65, quoteHour: 0 }])}>Agregar oficio</Button>
+          <Button variant="ghost" onClick={() => setRates(defaultLaborRates)}>Volver a las tarifas de Bizon</Button>
+        </div>
+        <p className="mt-3 text-xs text-[var(--text-muted)]">El cotizador usa la hora cotizada de cada oficio. Las otras columnas son de referencia para calcularla.</p>
       </Panel>
     </div>
   );

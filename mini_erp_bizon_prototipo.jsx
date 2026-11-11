@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { deleteErpRecord, isDatabaseConfigured, loadErpData, logAuditEvent, nextDocumentNumber, saveErpRecord, shouldBlockUnconfiguredDatabase, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
-import { createOrganization, createUserAccount, getCurrentProfile, getInitialSession, getOrganization, listenAuthChanges, listOrganizations, listUserProfiles, signOutUser, updateOrganization, updateUserProfile } from "./src/lib/authRepository";
+import { deleteErpRecord, isDatabaseConfigured, loadErpData, loadPricing, logAuditEvent, nextDocumentNumber, saveErpRecord, savePricing, shouldBlockUnconfiguredDatabase, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
+import { createOrganization, createUserAccount, deleteOrganization, getCurrentProfile, getInitialSession, getOrganization, listenAuthChanges, listOrganizations, listUserProfiles, resetUserPassword, signOutUser, updateOrganization, updateUserProfile } from "./src/lib/authRepository";
 import { applyBrandTheme, applyColorScheme, getInitialTheme, persistTheme } from "./src/lib/theme";
 import { initialCompanies, initialOpportunities, initialQuotes, initialWorkOrders, tasks, initialDocuments, initialAuditLog, localDatabaseKey } from "./src/lib/demoData";
 import { screens, menuSections, creatableScreens, canAccessScreen } from "./src/lib/navigation";
@@ -64,6 +64,7 @@ export default function MiniErpBizonPrototype() {
   const [organizations, setOrganizations] = useState([]);
   const [organizationsError, setOrganizationsError] = useState("");
   const [organization, setOrganization] = useState(null);
+  const [pricing, setPricing] = useState({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -146,15 +147,26 @@ export default function MiniErpBizonPrototype() {
     }
   }, []);
 
+  // Empresa sobre la que se trabaja: la propia, o la activa elegida por el super admin.
+  // orgScope solo lo usa el super admin: a los demas los acota RLS.
+  const effectiveOrgId = profile?.organizationId || (profile?.isSuperAdmin ? profile?.actingOrganizationId : null) || null;
+  const orgScope = profile?.isSuperAdmin ? effectiveOrgId : undefined;
+
   useEffect(() => {
     let cancelled = false;
 
     async function hydrateFromDatabase() {
       if (!isDatabaseConfigured || !session || profile?.status !== "active") return;
+      if (profile?.isSuperAdmin && !effectiveOrgId) {
+        [setCompanies, setOpportunities, setQuotes, setWorkOrders, setTaskList, setDocuments, setAuditLog].forEach((set) => set([]));
+        setPricing({});
+        return;
+      }
 
       try {
-        const remoteData = await loadErpData();
+        const [remoteData, remotePricing] = await Promise.all([loadErpData(orgScope), loadPricing(effectiveOrgId)]);
         if (cancelled || !remoteData) return;
+        setPricing(remotePricing || {});
         // Nunca rellenar con demo: una organizacion nueva vacia veria clientes
         // y presupuestos falsos de Bizon.
         setCompanies(remoteData.companies || []);
@@ -175,10 +187,10 @@ export default function MiniErpBizonPrototype() {
     return () => {
       cancelled = true;
     };
-  }, [session, profile?.status]);
+  }, [session, profile?.status, effectiveOrgId]);
 
   async function refreshUserProfiles() {
-    if (!isDatabaseConfigured || profile?.role !== "admin" || profile?.status !== "active") return;
+    if (!isDatabaseConfigured || profile?.status !== "active" || (profile?.role !== "admin" && !profile?.isSuperAdmin)) return;
 
     try {
       const users = await listUserProfiles();
@@ -192,7 +204,7 @@ export default function MiniErpBizonPrototype() {
 
   useEffect(() => {
     refreshUserProfiles();
-  }, [session, profile?.role, profile?.status]);
+  }, [session, profile?.role, profile?.status, profile?.isSuperAdmin]);
 
   async function refreshOrganizations() {
     if (!isDatabaseConfigured || !profile?.isSuperAdmin || profile?.status !== "active") return;
@@ -223,7 +235,7 @@ export default function MiniErpBizonPrototype() {
 
   useEffect(() => {
     let cancelled = false;
-    const organizationId = profile?.organizationId;
+    const organizationId = effectiveOrgId;
     const isDark = theme === "dark";
 
     if (!organizationId) {
@@ -248,7 +260,7 @@ export default function MiniErpBizonPrototype() {
     return () => {
       cancelled = true;
     };
-  }, [profile?.organizationId, theme]);
+  }, [effectiveOrgId, theme]);
 
   async function saveOrganizationSettings(patch, organizationId = organization?.id) {
     let saved;
@@ -258,12 +270,45 @@ export default function MiniErpBizonPrototype() {
     } else {
       saved = { ...(organization || { id: null, name: "Bizon", primaryColor: "#ff7900", logoDataUrl: null }), ...patch };
     }
-    // El super admin puede editar otra organizacion: no pisar la propia marca en ese caso.
     if (!isDatabaseConfigured || organizationId === organization?.id) {
       setOrganization(saved);
       applyBrandTheme(saved.primaryColor, theme === "dark");
     }
+    setOrganizations((items) => items.map((item) => (item.id === saved.id ? { ...item, ...saved } : item)));
+    audit("update", "organizaciones", { id: organizationId }, `Organizacion ${saved.name}: ${Object.keys(patch).join(", ")}`);
     return saved;
+  }
+
+  // Super admin: elegir la empresa activa (persistida en su perfil).
+  async function setActingOrganization(organizationId) {
+    if (!profile?.isSuperAdmin) return;
+    const updated = await updateUserProfile(profile.id, { actingOrganizationId: organizationId });
+    setProfile((current) => ({ ...current, ...updated }));
+    setActive(organizationId ? "dashboard" : "organizaciones");
+  }
+
+  async function deleteOrganizationAccount(organizationId) {
+    const target = organizations.find((item) => item.id === organizationId);
+    await deleteOrganization(organizationId);
+    setOrganizations((items) => items.filter((item) => item.id !== organizationId));
+    setUserProfiles((items) => items.filter((item) => item.organizationId !== organizationId));
+    if (profile?.actingOrganizationId === organizationId) {
+      setProfile((current) => ({ ...current, actingOrganizationId: null }));
+    }
+    audit("delete", "organizaciones", { id: organizationId }, `Organizacion ${target?.name || organizationId} borrada con todos sus datos`);
+  }
+
+  async function resetPassword(userId, password) {
+    await resetUserPassword(userId, password);
+    const target = userProfiles.find((item) => item.id === userId);
+    audit("update", "usuarios", { id: userId }, `Nueva contrasena para ${target?.fullName || userId}`);
+  }
+
+  async function savePricingForOrganization(patch) {
+    if (!effectiveOrgId) throw new Error("Elegi una empresa activa.");
+    await savePricing(effectiveOrgId, patch);
+    setPricing((current) => ({ ...current, ...patch }));
+    audit("update", "configuracion", { id: effectiveOrgId }, `Parametros de cotizacion actualizados (${Object.keys(patch).join(", ")})`);
   }
 
   const data = useMemo(() => ({
@@ -283,8 +328,11 @@ export default function MiniErpBizonPrototype() {
   }, [data, localDatabaseReady]);
 
   const activeLabel = screens.find((item) => item.key === active)?.label || "Dashboard";
-  const availableScreens = screens.filter((item) => canAccessScreen(item, profile || { role: "ventas", menuKeys: null }));
-  const adminKeys = [profile?.isSuperAdmin ? "organizaciones" : null, profile?.role === "admin" ? "configuracion" : null].filter(Boolean);
+  // Super admin sin empresa activa: solo Plataforma.
+  const availableScreens = profile?.isSuperAdmin && !effectiveOrgId
+    ? screens.filter((item) => item.key === "organizaciones")
+    : screens.filter((item) => canAccessScreen(item, profile || { role: "ventas", menuKeys: null }));
+  const adminKeys = [profile?.isSuperAdmin ? "organizaciones" : null, profile?.role === "admin" || profile?.isSuperAdmin ? "configuracion" : null].filter(Boolean);
   const sidebarMenuSections = adminKeys.length
     ? [...menuSections, { title: "Administracion", keys: adminKeys }]
     : menuSections;
@@ -385,7 +433,7 @@ export default function MiniErpBizonPrototype() {
     }
 
     try {
-      await updateErpRecord(module, key, record);
+      await updateErpRecord(module, key, record, orgScope);
       audit("update", module, record, `Actualizacion en ${module}`);
       setDatabaseStatus("Conectado a Supabase");
     } catch (error) {
@@ -408,7 +456,7 @@ export default function MiniErpBizonPrototype() {
   async function createManagedUser(payload) {
     if (!isDatabaseConfigured) return;
 
-    const created = await createUserAccount(payload);
+    const created = await createUserAccount({ ...payload, organizationId: effectiveOrgId });
     setUserProfiles((items) => [created, ...items]);
     audit("create", "usuarios", { id: created.id }, `Alta de usuario ${created.fullName}`);
   }
@@ -429,7 +477,7 @@ export default function MiniErpBizonPrototype() {
     }
 
     try {
-      await deleteErpRecord(module, key);
+      await deleteErpRecord(module, key, orgScope);
       audit("delete", module, { id: key }, `Borrado en ${module}`);
       setDatabaseStatus("Conectado a Supabase");
     } catch (error) {
@@ -531,7 +579,7 @@ export default function MiniErpBizonPrototype() {
     };
 
     if (isDatabaseConfigured) {
-      const saved = await uploadDocumentFile(file, baseRecord, profile?.organizationId);
+      const saved = await uploadDocumentFile(file, baseRecord, effectiveOrgId);
       const record = saved || baseRecord;
       setDocuments((items) => [...items, record]);
       audit("upload", "documents", record, `Documento cargado: ${record.name}`);
@@ -678,7 +726,7 @@ export default function MiniErpBizonPrototype() {
     setters[key]((items) => [...items, saved]);
   }
 
-  const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, openCotizador, removeRecord, uploadDocument, createCalendarEvent, userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true), organizations, organizationsError, onCreateOrganization: createOrganizationAccount, onRefreshOrganizations: refreshOrganizations, organization, onUpdateOrganization: saveOrganizationSettings };
+  const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, openCotizador, removeRecord, uploadDocument, createCalendarEvent, userProfiles: profile?.isSuperAdmin ? userProfiles.filter((user) => user.organizationId === effectiveOrgId) : userProfiles, allUserProfiles: userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onResetPassword: resetPassword, pricing, onSavePricing: savePricingForOrganization, actingOrganizationId: profile?.actingOrganizationId || null, onOperateOrganization: setActingOrganization, onDeleteOrganization: deleteOrganizationAccount, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true), organizations, organizationsError, onCreateOrganization: createOrganizationAccount, onRefreshOrganizations: refreshOrganizations, organization, onUpdateOrganization: saveOrganizationSettings };
   const Screen = {
     dashboard: <Dashboard {...screenProps} />,
     clientes: <ClientesCards {...screenProps} />,
@@ -749,6 +797,9 @@ export default function MiniErpBizonPrototype() {
             databaseStatus={databaseStatus}
             profile={profile}
             organization={organization}
+            organizations={organizations}
+            actingOrganizationId={profile?.actingOrganizationId || ""}
+            onChangeOrganization={profile?.isSuperAdmin ? setActingOrganization : null}
             theme={theme}
             onToggleTheme={toggleTheme}
           />

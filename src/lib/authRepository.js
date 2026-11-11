@@ -51,16 +51,22 @@ export async function signOutUser() {
   if (error) throw error;
 }
 
+const PROFILE_COLUMNS = "id, full_name, role, status, company_name, menu_keys, organization_id, is_super_admin, acting_organization_id, created_at";
+
 function mapProfile(profile) {
+  // Una organizacion suspendida bloquea a todos sus usuarios (la base ya niega
+  // lecturas y escrituras; aca solo se refleja en la pantalla de estado).
+  const organizationSuspended = profile.organizations?.status === "suspended";
   return {
     id: profile.id,
     fullName: profile.full_name,
     role: profile.role,
-    status: profile.status || "pending",
+    status: organizationSuspended ? "suspended" : profile.status || "pending",
     companyName: profile.company_name || "",
     menuKeys: Array.isArray(profile.menu_keys) ? profile.menu_keys : null,
     organizationId: profile.organization_id || null,
     isSuperAdmin: Boolean(profile.is_super_admin),
+    actingOrganizationId: profile.acting_organization_id || null,
     createdAt: profile.created_at,
   };
 }
@@ -78,7 +84,7 @@ export async function getCurrentProfile(userId) {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, status, company_name, menu_keys, organization_id, is_super_admin")
+    .select(`${PROFILE_COLUMNS}, organizations!profiles_organization_id_fkey(status)`)
     .eq("id", id)
     .maybeSingle();
 
@@ -92,7 +98,7 @@ export async function listUserProfiles() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, status, company_name, menu_keys, organization_id, is_super_admin, created_at")
+    .select(PROFILE_COLUMNS)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -108,23 +114,24 @@ export async function updateUserProfile(id, patch) {
   if (patch.status !== undefined) payload.status = patch.status;
   if (patch.companyName !== undefined) payload.company_name = patch.companyName || null;
   if (patch.menuKeys !== undefined) payload.menu_keys = Array.isArray(patch.menuKeys) && patch.menuKeys.length ? patch.menuKeys : null;
+  if (patch.actingOrganizationId !== undefined) payload.acting_organization_id = patch.actingOrganizationId || null;
 
   const { data, error } = await supabase
     .from("profiles")
     .update(payload)
     .eq("id", id)
-    .select("id, full_name, role, status, company_name, menu_keys, organization_id, is_super_admin, created_at")
+    .select(PROFILE_COLUMNS)
     .single();
 
   if (error) throw error;
   return mapProfile(data);
 }
 
-export async function createUserAccount({ fullName, email, password, role, status, companyName, menuKeys }) {
+export async function createUserAccount({ fullName, email, password, role, status, companyName, menuKeys, organizationId }) {
   if (!isDatabaseConfigured) return null;
 
   const { data, error } = await supabase.functions.invoke("admin-create-user", {
-    body: { fullName, email, password, role, status, companyName, menuKeys },
+    body: { fullName, email, password, role, status, companyName, menuKeys, organizationId },
   });
 
   if (error) throw await unwrapFunctionError(error);
@@ -132,26 +139,41 @@ export async function createUserAccount({ fullName, email, password, role, statu
   return data.user;
 }
 
-export async function listOrganizations() {
-  if (!isDatabaseConfigured) return [];
+export async function resetUserPassword(userId, password) {
+  if (!isDatabaseConfigured) return null;
 
-  const { data, error } = await supabase
-    .from("organizations")
-    .select("id, name, created_at")
-    .order("created_at", { ascending: false });
+  const { data, error } = await supabase.functions.invoke("admin-create-user", {
+    body: { action: "reset-password", userId, password },
+  });
 
-  if (error) throw error;
-  return data.map((org) => ({ id: org.id, name: org.name, createdAt: org.created_at }));
+  if (error) throw await unwrapFunctionError(error);
+  if (data?.error) throw new Error(data.error);
+  return true;
 }
 
 function mapOrganization(org) {
   return {
     id: org.id,
     name: org.name,
+    status: org.status || "active",
     primaryColor: org.primary_color || "#ff7900",
     logoDataUrl: org.logo_data_url || null,
     createdAt: org.created_at,
   };
+}
+
+const ORGANIZATION_COLUMNS = "id, name, status, primary_color, logo_data_url, created_at";
+
+export async function listOrganizations() {
+  if (!isDatabaseConfigured) return [];
+
+  const { data, error } = await supabase
+    .from("organizations")
+    .select("id, name, status, created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data.map(mapOrganization);
 }
 
 export async function getOrganization(id) {
@@ -159,7 +181,7 @@ export async function getOrganization(id) {
 
   const { data, error } = await supabase
     .from("organizations")
-    .select("id, name, primary_color, logo_data_url, created_at")
+    .select(ORGANIZATION_COLUMNS)
     .eq("id", id)
     .maybeSingle();
 
@@ -172,6 +194,7 @@ export async function updateOrganization(id, patch) {
 
   const payload = {};
   if (patch.name !== undefined) payload.name = patch.name;
+  if (patch.status !== undefined) payload.status = patch.status;
   if (patch.primaryColor !== undefined) payload.primary_color = patch.primaryColor;
   if (patch.logoDataUrl !== undefined) payload.logo_data_url = patch.logoDataUrl || null;
 
@@ -179,11 +202,20 @@ export async function updateOrganization(id, patch) {
     .from("organizations")
     .update(payload)
     .eq("id", id)
-    .select("id, name, primary_color, logo_data_url, created_at")
+    .select(ORGANIZATION_COLUMNS)
     .single();
 
   if (error) throw error;
   return mapOrganization(data);
+}
+
+// Borra la organizacion con todos sus datos, archivos y usuarios. Solo super admin (lo valida la base).
+export async function deleteOrganization(id) {
+  if (!isDatabaseConfigured) return null;
+
+  const { error } = await supabase.rpc("delete_organization", { target: id });
+  if (error) throw error;
+  return true;
 }
 
 export async function createOrganization({ organizationName, email, password, fullName }) {

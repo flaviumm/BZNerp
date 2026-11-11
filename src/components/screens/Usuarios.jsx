@@ -3,8 +3,9 @@ import { Button, Badge, Panel, Field, TextInput, Select, StatCard, SectionTitle,
 import { formatDate } from "../../lib/utils";
 import { userRoles, accountStatuses, screensForRole } from "../../lib/navigation";
 
-export function Usuarios({ userProfiles, companies, currentProfile, onCreateUserProfile, onUpdateUserProfile, onRefreshUsers }) {
+export function Usuarios({ userProfiles, companies, currentProfile, onCreateUserProfile, onUpdateUserProfile, onRefreshUsers, onResetPassword }) {
   const [query, setQuery] = useState("");
+  const [resetTarget, setResetTarget] = useState({ id: "", password: "" });
   const [message, setMessage] = useState("");
   const [creating, setCreating] = useState(false);
   const [newUser, setNewUser] = useState({ fullName: "", email: "", password: "", role: "ventas", status: "active", companyName: "" });
@@ -73,6 +74,17 @@ export function Usuarios({ userProfiles, companies, currentProfile, onCreateUser
       setMessage("Menu restablecido segun el rol.");
     } catch (error) {
       setMessage(error.message || "No se pudo restablecer el menu.");
+    }
+  }
+
+  async function submitReset(event) {
+    event.preventDefault();
+    try {
+      await onResetPassword(resetTarget.id, resetTarget.password);
+      setResetTarget({ id: "", password: "" });
+      setMessage("Contrasena actualizada. Avisale al usuario.");
+    } catch (error) {
+      setMessage(error.message || "No se pudo cambiar la contrasena.");
     }
   }
 
@@ -160,10 +172,22 @@ export function Usuarios({ userProfiles, companies, currentProfile, onCreateUser
           <div className="flex flex-wrap gap-2">
             <Button variant="ghost" onClick={() => updateProfile(user, { status: "active" })}>Activar</Button>
             <Button variant="danger" onClick={() => updateProfile(user, { status: "suspended" })}>Baja</Button>
+            {onResetPassword && <Button variant="ghost" onClick={() => setResetTarget({ id: user.id, password: "" })}>Clave</Button>}
           </div>,
         ])}
         empty="No hay usuarios para mostrar"
       />
+      {resetTarget.id && (
+        <Panel className="p-4">
+          <form onSubmit={submitReset} className="grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-end">
+            <Field label={`Nueva contrasena para ${userProfiles.find((item) => item.id === resetTarget.id)?.fullName || "el usuario"}`}>
+              <TextInput type="password" required minLength={6} autoFocus value={resetTarget.password} onChange={(event) => setResetTarget({ ...resetTarget, password: event.target.value })} placeholder="Minimo 6 caracteres" />
+            </Field>
+            <Button type="submit">Guardar contrasena</Button>
+            <Button type="button" variant="ghost" onClick={() => setResetTarget({ id: "", password: "" })}>Cancelar</Button>
+          </form>
+        </Panel>
+      )}
       {selectedUser && (
         <Panel className="p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">

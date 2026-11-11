@@ -1,5 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Alta de usuarios y reseteo de contrasena.
+// - Admin de empresa: crea usuarios en su organizacion y resetea claves de su organizacion.
+// - Super admin: crea en la organizacion que indique (organizationId) y resetea cualquier clave.
+// Body alta: { fullName, email, password, role, status, companyName, menuKeys, organizationId? }
+// Body reset: { action: "reset-password", userId, password }
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://erp-snowy-one.vercel.app",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -55,22 +61,43 @@ Deno.serve(async (request) => {
       return json({ error: "Sesion invalida." }, 401);
     }
 
-    const { data: callerProfile, error: profileError } = await adminClient
+    const { data: caller, error: profileError } = await adminClient
       .from("profiles")
-      .select("role, status, organization_id")
+      .select("role, status, organization_id, is_super_admin")
       .eq("id", callerData.user.id)
       .single();
+    if (profileError || !caller) {
+      return json({ error: "Perfil no encontrado." }, 403);
+    }
 
-    if (
-      profileError ||
-      callerProfile?.role !== "admin" ||
-      callerProfile?.status !== "active" ||
-      !callerProfile?.organization_id
-    ) {
-      return json({ error: "Solo un administrador activo de una organizacion puede crear usuarios." }, 403);
+    const isSuperAdmin = Boolean(caller.is_super_admin);
+    const isOrgAdmin = caller.role === "admin" && caller.status === "active" && Boolean(caller.organization_id);
+    if (!isSuperAdmin && !isOrgAdmin) {
+      return json({ error: "Solo un administrador activo puede administrar usuarios." }, 403);
     }
 
     const body = await request.json();
+
+    if (body.action === "reset-password") {
+      const userId = String(body.userId || "");
+      const password = String(body.password || "");
+      if (!userId || password.length < 6) {
+        return json({ error: "Usuario y password de al menos 6 caracteres son obligatorios." }, 400);
+      }
+      const { data: target } = await adminClient.from("profiles").select("organization_id").eq("id", userId).single();
+      if (!target || (!isSuperAdmin && target.organization_id !== caller.organization_id)) {
+        return json({ error: "Usuario fuera de tu organizacion." }, 403);
+      }
+      const { error: resetError } = await adminClient.auth.admin.updateUserById(userId, { password });
+      if (resetError) return json({ error: resetError.message }, 400);
+      return json({ ok: true });
+    }
+
+    const organizationId = isSuperAdmin ? String(body.organizationId || "") : caller.organization_id;
+    if (!organizationId) {
+      return json({ error: "Elegi la organizacion en la que crear el usuario." }, 400);
+    }
+
     const email = String(body.email || "").trim().toLowerCase();
     const password = String(body.password || "");
     const fullName = String(body.fullName || email).trim();
@@ -106,7 +133,7 @@ Deno.serve(async (request) => {
           status,
           company_name: companyName,
           menu_keys: menuKeys.length ? menuKeys : null,
-          organization_id: callerProfile.organization_id,
+          organization_id: organizationId,
         },
         { onConflict: "id" }
       )
@@ -130,7 +157,7 @@ Deno.serve(async (request) => {
       },
     });
   } catch (error) {
-    return json({ error: error.message || "No se pudo crear el usuario." }, 500);
+    return json({ error: error.message || "No se pudo completar la operacion." }, 500);
   }
 });
 

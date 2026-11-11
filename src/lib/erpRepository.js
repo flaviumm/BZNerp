@@ -229,17 +229,38 @@ const modules = {
   },
 };
 
-export async function loadErpData() {
+// organizationId: solo lo pasa el super admin (RLS ya acota a los usuarios normales).
+// Sin filtro veria todas las empresas mezcladas y, con unicidad por organizacion,
+// un update/delete por numero tocaria la misma numeracion en todas.
+function scoped(query, organizationId) {
+  return organizationId ? query.eq("organization_id", organizationId) : query;
+}
+
+export async function loadErpData(organizationId) {
   if (!isDatabaseConfigured) return null;
 
   const entries = await Promise.all(Object.entries(modules).map(async ([key, config]) => {
-    const { data, error } = await supabase.from(config.table).select("*").order("created_at", { ascending: true });
+    const { data, error } = await scoped(supabase.from(config.table).select("*"), organizationId).order("created_at", { ascending: true });
     if (error) throw error;
     return [key, data.map(config.fromDb)];
   }));
 
   return Object.fromEntries(entries);
 }
+
+const primaryKeys = {
+  companies: "id",
+  opportunities: "id",
+  quotes: "number",
+  workOrders: "number",
+  inventory: "sku",
+  purchases: "number",
+  invoices: "number",
+  employees: "id",
+  tasks: "id",
+  documents: "id",
+  audit: "id",
+};
 
 export async function saveErpRecord(module, record) {
   if (!isDatabaseConfigured) return null;
@@ -253,54 +274,93 @@ export async function saveErpRecord(module, record) {
   return config.fromDb(data);
 }
 
-export async function updateErpRecord(module, key, record) {
+export async function updateErpRecord(module, key, record, organizationId) {
   if (!isDatabaseConfigured) return null;
 
   const config = modules[module];
   if (!config) return null;
 
-  const primaryKey = {
-    companies: "id",
-    opportunities: "id",
-    quotes: "number",
-    workOrders: "number",
-    inventory: "sku",
-    purchases: "number",
-    invoices: "number",
-    employees: "id",
-    tasks: "id",
-    documents: "id",
-    audit: "id",
-  }[module];
-
   const payload = config.toDb(record);
-  const { data, error } = await supabase.from(config.table).update(payload).eq(primaryKey, key).select("*").single();
+  const { data, error } = await scoped(supabase.from(config.table).update(payload).eq(primaryKeys[module], key), organizationId).select("*").single();
   if (error) throw error;
   return config.fromDb(data);
 }
 
-export async function deleteErpRecord(module, key) {
+export async function deleteErpRecord(module, key, organizationId) {
   if (!isDatabaseConfigured) return null;
 
   const config = modules[module];
   if (!config) return null;
 
-  const primaryKey = {
-    companies: "id",
-    opportunities: "id",
-    quotes: "number",
-    workOrders: "number",
-    inventory: "sku",
-    purchases: "number",
-    invoices: "number",
-    employees: "id",
-    tasks: "id",
-    documents: "id",
-    audit: "id",
-  }[module];
-
-  const { error } = await supabase.from(config.table).delete().eq(primaryKey, key);
+  const { error } = await scoped(supabase.from(config.table).delete().eq(primaryKeys[module], key), organizationId);
   if (error) throw error;
+  return true;
+}
+
+// --- Tarifas de mano de obra y parametros de calculo por organizacion ---
+
+const laborToDb = (rate, organizationId) => ({
+  organization_id: organizationId,
+  id: rate.id,
+  trade: rate.trade,
+  agreement: rate.agreement || "",
+  category: rate.category || "",
+  base_hour: Number(rate.baseHour || 0),
+  monthly_bonus: Number(rate.monthlyBonus || 0),
+  monthly_hours: Number(rate.monthlyHours || 176),
+  load_factor: Number(rate.loadFactor || 0),
+  quote_hour: Number(rate.quoteHour || 0),
+});
+const laborFromDb = (row) => ({ id: row.id, trade: row.trade, agreement: row.agreement, category: row.category, baseHour: Number(row.base_hour), monthlyBonus: Number(row.monthly_bonus), monthlyHours: Number(row.monthly_hours), loadFactor: Number(row.load_factor), quoteHour: Number(row.quote_hour) });
+
+const profileToDb = (params, organizationId) => ({
+  organization_id: organizationId,
+  id: "default",
+  name: "Parametros de la empresa",
+  iva: Number(params.iva),
+  iibb: Number(params.iibb),
+  target_profit: Number(params.targetProfit),
+  admin_overhead: Number(params.adminOverhead),
+  technical_contingency: Number(params.technicalContingency),
+  energy_per_kwh: Number(params.energyPerKwh),
+  travel_per_km: Number(params.travelPerKm),
+  round_to: Number(params.roundTo),
+  validity_days: Number(params.offerValidityDays),
+});
+const profileFromDb = (row) => ({ iva: Number(row.iva), iibb: Number(row.iibb), targetProfit: Number(row.target_profit), adminOverhead: Number(row.admin_overhead), technicalContingency: Number(row.technical_contingency), energyPerKwh: Number(row.energy_per_kwh), travelPerKm: Number(row.travel_per_km), roundTo: Number(row.round_to), offerValidityDays: Number(row.validity_days) });
+
+// Devuelve { laborRates, quoteParameters } con null en cada clave si la empresa no cargo nada.
+export async function loadPricing(organizationId) {
+  if (!isDatabaseConfigured || !organizationId) return { laborRates: null, quoteParameters: null };
+
+  const [rates, profile] = await Promise.all([
+    supabase.from("labor_rate_catalog").select("*").eq("organization_id", organizationId).order("trade"),
+    supabase.from("quote_calculation_profiles").select("*").eq("organization_id", organizationId).eq("id", "default").maybeSingle(),
+  ]);
+  if (rates.error) throw rates.error;
+  if (profile.error) throw profile.error;
+  return {
+    laborRates: rates.data.length ? rates.data.map(laborFromDb) : null,
+    quoteParameters: profile.data ? profileFromDb(profile.data) : null,
+  };
+}
+
+export async function savePricing(organizationId, { laborRates, quoteParameters }) {
+  if (!isDatabaseConfigured || !organizationId) return null;
+
+  if (laborRates) {
+    // ponytail: reemplazo completo, son ~10 filas por empresa.
+    const { error: deleteError } = await supabase.from("labor_rate_catalog").delete().eq("organization_id", organizationId);
+    if (deleteError) throw deleteError;
+    if (laborRates.length) {
+      const { error } = await supabase.from("labor_rate_catalog").insert(laborRates.map((rate) => laborToDb(rate, organizationId)));
+      if (error) throw error;
+    }
+  }
+  if (quoteParameters) {
+    const { error } = await supabase.from("quote_calculation_profiles").upsert(profileToDb(quoteParameters, organizationId), { onConflict: "organization_id,id" });
+    if (error) throw error;
+  }
   return true;
 }
 

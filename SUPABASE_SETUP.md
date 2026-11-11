@@ -149,6 +149,24 @@ curl -X POST "https://<project-ref>.supabase.co/functions/v1/create-organization
   -d '{"organizationName":"Nombre Empresa Cliente","email":"admin@empresa.com","password":"password-temporal","fullName":"Nombre Admin"}'
 ```
 
+## 9. Operar como super admin (panel de plataforma)
+
+El super admin no pertenece a ninguna empresa. En el encabezado elige la **empresa activa** y
+el ERP completo (clientes, presupuestos, OT, usuarios, configuracion) pasa a operar sobre esa
+empresa, con su numeracion y sus tarifas. La eleccion se guarda en `profiles.acting_organization_id`.
+
+En **Plataforma** puede crear, renombrar, suspender/reactivar y borrar empresas (escribiendo el
+nombre para confirmar; borra datos, archivos y usuarios). En **Usuarios** crea usuarios en la
+empresa activa y cambia contrasenas con el boton "Clave". En **Configuracion** edita marca,
+tarifas de mano de obra y parametros de calculo de la empresa activa.
+
+Requisitos: migracion `20261111120000_super_admin_panel.sql` aplicada (`npm run db:push`) y
+la funcion `admin-create-user` redeployada:
+
+```bash
+npm.cmd run supabase -- functions deploy admin-create-user
+```
+
 Verificar organizaciones existentes:
 
 ```sql

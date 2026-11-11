@@ -193,6 +193,32 @@ async function main() {
     const { data: platformRead, error: platformReadError } = await platform.userClient.from("companies").select("id").in("id", [companyA?.id, companyB?.id]);
     assertTrue(!platformReadError && (platformRead || []).length === 2, "super admin can read companies of both organizations");
 
+    // --- Empresa activa: el super admin elige org A y sus altas quedan en org A ---
+    const { error: actingError } = await platform.userClient
+      .from("profiles")
+      .update({ acting_organization_id: orgA.id })
+      .eq("id", platform.userId);
+    assertTrue(!actingError, `super admin can set its acting organization (error: ${actingError?.message})`);
+
+    const { data: actingCompany, error: actingInsertError } = await platform.userClient
+      .from("companies")
+      .insert({ name: `Cargada por plataforma ${stamp}` })
+      .select("id, organization_id")
+      .single();
+    assertTrue(!actingInsertError, `super admin with acting org can insert (error: ${actingInsertError?.message})`);
+    assertTrue(actingCompany?.organization_id === orgA.id, "super admin's insert is stamped with the acting organization");
+
+    const { data: actingNumber, error: actingNumberError } = await platform.userClient.rpc("next_document_number", { counter_code: "quote" });
+    assertTrue(!actingNumberError && typeof actingNumber === "string", `super admin with acting org can generate document numbers (error: ${actingNumberError?.message})`);
+
+    // Un admin de empresa no puede tocar acting_organization_id.
+    const { data: adminActing, error: adminActingError } = await adminA.userClient
+      .from("profiles")
+      .update({ acting_organization_id: orgB.id })
+      .eq("id", adminA.userId)
+      .select("id");
+    assertTrue(!!adminActingError || (adminActing || []).length === 0, "org admin cannot set acting_organization_id");
+
     // --- Escalada de privilegios desde la propia sesion ---
     const { data: selfEscalateAttempt, error: selfEscalateError } = await adminA.userClient
       .from("profiles")

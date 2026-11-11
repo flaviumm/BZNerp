@@ -16,7 +16,7 @@ export const screens = [
   { key: "auditoria", label: "Auditoria", icon: "activity", roles: ["admin", "direccion"] },
   { key: "usuarios", label: "Usuarios", icon: "userCog", roles: ["admin"] },
   { key: "reportes", label: "Reportes", icon: "chart", roles: ["admin", "direccion", "finanzas"] },
-  { key: "organizaciones", label: "Organizaciones", icon: "building", roles: [] },
+  { key: "organizaciones", label: "Plataforma", icon: "building", roles: [] },
   { key: "configuracion", label: "Configuracion", icon: "userCog", roles: ["admin"] },
 ];
 
@@ -35,6 +35,8 @@ export const accountStatuses = ["pending", "active", "suspended"];
 export function canAccessScreen(screen, profileOrRole) {
   const profile = typeof profileOrRole === "string" ? { role: profileOrRole, menuKeys: null } : profileOrRole || {};
   if (screen.key === "organizaciones") return Boolean(profile.isSuperAdmin);
+  // El super admin opera cualquier empresa con todos los modulos.
+  if (profile.isSuperAdmin) return true;
   if (screen.key === "configuracion") return profile.role === "admin";
   const roleAllowed = screen.roles.includes(profile.role || "ventas");
   if (!roleAllowed) return false;
