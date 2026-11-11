@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 
 const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -14,8 +14,13 @@ const supabase = createClient(url, serviceRoleKey, {
   auth: { persistSession: false },
 });
 
+// Mismo orden que restoreOrder en restore-supabase.mjs (organizations primero por las FK).
 const tables = [
+  "organizations",
   "profiles",
+  "material_price_catalog",
+  "labor_rate_catalog",
+  "quote_calculation_profiles",
   "companies",
   "opportunities",
   "quotes",
@@ -28,6 +33,9 @@ const tables = [
   "document_counters",
   "document_files",
   "audit_log",
+  "captured_leads",
+  "lead_interactions",
+  "lead_tasks",
 ];
 
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -77,8 +85,7 @@ async function downloadFolder(prefix = "") {
 
     const bytes = Buffer.from(await blob.arrayBuffer());
     const fullPath = join(storageRoot, ...path.split("/"));
-    const dir = fullPath.slice(0, fullPath.lastIndexOf("\\"));
-    if (dir && !existsSync(dir)) mkdirSync(dir, { recursive: true });
+    mkdirSync(dirname(fullPath), { recursive: true });
     writeFileSync(fullPath, bytes);
     manifest.storage.push({ bucket: "erp-documents", path, bytes: bytes.length });
   }

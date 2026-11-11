@@ -56,17 +56,19 @@ export default function MiniErpBizonPrototype() {
   const [profile, setProfile] = useState(isDatabaseConfigured ? null : useLocalDemo ? { id: "demo", fullName: "Modo demo", role: "admin", status: "active", menuKeys: null } : null);
   const [authLoading, setAuthLoading] = useState(isDatabaseConfigured);
   const [recoveringPassword, setRecoveringPassword] = useState(false);
-  const [companies, setCompanies] = useState(initialCompanies);
-  const [opportunities, setOpportunities] = useState(initialOpportunities);
-  const [quotes, setQuotes] = useState(initialQuotes);
-  const [workOrders, setWorkOrders] = useState(initialWorkOrders);
-  const [inventoryItems, setInventoryItems] = useState(inventory);
-  const [purchaseOrders, setPurchaseOrders] = useState(purchases);
-  const [customerInvoices, setCustomerInvoices] = useState(invoices);
-  const [staff, setStaff] = useState(employees);
-  const [taskList, setTaskList] = useState(tasks);
-  const [documents, setDocuments] = useState(initialDocuments);
-  const [auditLog, setAuditLog] = useState(initialAuditLog);
+  // Con base real el estado arranca vacio: los datos demo son solo para el modo local.
+  const seed = (demoRows) => (isDatabaseConfigured ? [] : demoRows);
+  const [companies, setCompanies] = useState(() => seed(initialCompanies));
+  const [opportunities, setOpportunities] = useState(() => seed(initialOpportunities));
+  const [quotes, setQuotes] = useState(() => seed(initialQuotes));
+  const [workOrders, setWorkOrders] = useState(() => seed(initialWorkOrders));
+  const [inventoryItems, setInventoryItems] = useState(() => seed(inventory));
+  const [purchaseOrders, setPurchaseOrders] = useState(() => seed(purchases));
+  const [customerInvoices, setCustomerInvoices] = useState(() => seed(invoices));
+  const [staff, setStaff] = useState(() => seed(employees));
+  const [taskList, setTaskList] = useState(() => seed(tasks));
+  const [documents, setDocuments] = useState(() => seed(initialDocuments));
+  const [auditLog, setAuditLog] = useState(() => seed(initialAuditLog));
   const [userProfiles, setUserProfiles] = useState([]);
   const [organizations, setOrganizations] = useState([]);
   const [organizationsError, setOrganizationsError] = useState("");
@@ -166,17 +168,19 @@ export default function MiniErpBizonPrototype() {
       try {
         const remoteData = await loadErpData();
         if (cancelled || !remoteData) return;
-        setCompanies(remoteData.companies.length ? remoteData.companies : initialCompanies);
-        setOpportunities(remoteData.opportunities.length ? remoteData.opportunities : initialOpportunities);
-        setQuotes(remoteData.quotes.length ? remoteData.quotes : initialQuotes);
-        setWorkOrders(remoteData.workOrders.length ? remoteData.workOrders : initialWorkOrders);
-        setInventoryItems(remoteData.inventory.length ? remoteData.inventory : inventory);
-        setPurchaseOrders(remoteData.purchases.length ? remoteData.purchases : purchases);
-        setCustomerInvoices(remoteData.invoices.length ? remoteData.invoices : invoices);
-        setStaff(remoteData.employees.length ? remoteData.employees : employees);
-        setTaskList(remoteData.tasks.length ? remoteData.tasks : tasks);
-        setDocuments(remoteData.documents?.length ? remoteData.documents : initialDocuments);
-        setAuditLog(remoteData.audit?.length ? remoteData.audit : initialAuditLog);
+        // Nunca rellenar con demo: una organizacion nueva vacia veria clientes
+        // y presupuestos falsos de Bizon.
+        setCompanies(remoteData.companies || []);
+        setOpportunities(remoteData.opportunities || []);
+        setQuotes(remoteData.quotes || []);
+        setWorkOrders(remoteData.workOrders || []);
+        setInventoryItems(remoteData.inventory || []);
+        setPurchaseOrders(remoteData.purchases || []);
+        setCustomerInvoices(remoteData.invoices || []);
+        setStaff(remoteData.employees || []);
+        setTaskList(remoteData.tasks || []);
+        setDocuments(remoteData.documents || []);
+        setAuditLog(remoteData.audit || []);
         setDatabaseStatus("Conectado a Supabase");
       } catch (error) {
         console.error("No se pudo cargar la base de datos:", error);

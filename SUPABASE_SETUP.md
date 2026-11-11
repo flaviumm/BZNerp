@@ -40,6 +40,10 @@ Para una puesta limpia, conviene ejecutar todos los scripts antes de cargar usua
 
 En `Authentication > Providers`, dejar activo `Email`.
 
+En `Authentication > Sign In / Providers`, desactivar `Allow new users to sign up`: el ERP no
+tiene registro publico. Los usuarios los crea un admin desde `Usuarios` y las empresas el
+super admin desde `Organizaciones`.
+
 Para pruebas rapidas, en `Authentication > Sign In / Providers > Email`, se puede desactivar temporalmente la confirmacion de email. Para operacion real, conviene activarla.
 
 En `Authentication > URL Configuration`, configurar:
@@ -55,14 +59,14 @@ Si el email de confirmacion manda a `localhost`, esta configuracion esta pendien
 
 ## 4. Crear primer usuario admin
 
-1. Entrar al ERP y usar `Crear usuario`.
+1. En Supabase, `Authentication > Users > Add user` (email + password, con `Auto Confirm`).
+   El trigger `handle_new_user` crea el perfil en estado `pending`.
 2. Luego ejecutar en Supabase:
 
 ```sql
 update profiles
-set role = 'admin'
-where full_name = 'NOMBRE DEL USUARIO'
-   or id = 'UUID_DEL_USUARIO';
+set role = 'admin', status = 'active'
+where id = 'UUID_DEL_USUARIO';
 ```
 
 Roles validos:
@@ -91,8 +95,9 @@ Antes de redeploy:
 - Confirmacion de email activa para operacion real.
 - `Authentication > URL Configuration` apuntando a `https://erp-snowy-one.vercel.app`.
 - Bucket `erp-documents` creado como privado por `database/documents.sql`.
-- `VITE_ALLOW_DEMO_MODE=false` en Vercel.
+- `Allow new users to sign up` desactivado.
 - No cargar `SUPABASE_SERVICE_ROLE_KEY` en variables `VITE_*`.
+- Secrets `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` cargados en GitHub para el backup nocturno (ver `BACKUP.md`).
 
 ## 6. Cargar variables en Vercel
 
@@ -101,13 +106,6 @@ Desde la terminal del proyecto:
 ```bash
 vercel env add VITE_SUPABASE_URL production
 vercel env add VITE_SUPABASE_ANON_KEY production
-vercel env add VITE_ALLOW_DEMO_MODE production
-```
-
-Para `VITE_ALLOW_DEMO_MODE`, usar:
-
-```text
-false
 ```
 
 Despues redeploy:
@@ -120,7 +118,8 @@ vercel --prod
 
 - No subir `.env.local`.
 - No usar `SUPABASE_SERVICE_ROLE_KEY` en Vercel frontend.
-- El modo demo esta bloqueado por defecto en produccion si faltan las variables de Supabase.
+- El modo demo no existe en builds de produccion: si faltan las variables de Supabase se muestra la pantalla de configuracion.
+- Los usuarios de la plataforma (super admin) no cargan datos operativos: no tienen organizacion y la base rechaza esos inserts.
 
 ## 8. Multiempresa: crear el primer super-admin
 
@@ -128,7 +127,7 @@ El sistema es multiempresa: cada organizacion tiene sus datos aislados. Un
 super-admin (vos) crea cada organizacion nueva y su primer usuario admin
 invocando la funcion `create-organization`.
 
-1. Crear un usuario normal desde `Crear usuario` en el ERP (o via
+1. Crear un usuario desde `Authentication > Users > Add user` en Supabase (o via
    `admin-create-user` si ya existe una organizacion).
 2. Promoverlo a super-admin en Supabase:
 

@@ -34,23 +34,6 @@ export async function signInWithEmail(email, password) {
   return data.session;
 }
 
-export async function signUpWithEmail(email, password, fullName) {
-  const emailRedirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
-
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      emailRedirectTo,
-      data: {
-        full_name: fullName,
-      },
-    },
-  });
-  if (error) throw error;
-  return data.session;
-}
-
 export async function requestPasswordReset(email) {
   const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
@@ -130,7 +113,7 @@ export async function updateUserProfile(id, patch) {
     .from("profiles")
     .update(payload)
     .eq("id", id)
-    .select("id, full_name, role, status, company_name, menu_keys, created_at")
+    .select("id, full_name, role, status, company_name, menu_keys, organization_id, is_super_admin, created_at")
     .single();
 
   if (error) throw error;

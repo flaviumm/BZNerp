@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Button, Panel, Field, TextInput } from "../ui";
-import { requestPasswordReset, signInWithEmail, signUpWithEmail, updatePassword } from "../../lib/authRepository";
+import { requestPasswordReset, signInWithEmail, updatePassword } from "../../lib/authRepository";
 
-const TITLES = { login: "Ingresar", signup: "Crear usuario", reset: "Recuperar contraseña" };
+// Sin registro publico: los usuarios los crea un admin desde Usuarios (o el
+// super admin desde Organizaciones). Desactivar tambien "Enable signups" en
+// Supabase Auth.
+const TITLES = { login: "Ingresar", reset: "Recuperar contraseña" };
 
 export function LoginScreen({ onSessionReady }) {
   const [mode, setMode] = useState("login");
-  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -24,15 +26,8 @@ export function LoginScreen({ onSessionReady }) {
         return;
       }
 
-      const session = mode === "login"
-        ? await signInWithEmail(email, password)
-        : await signUpWithEmail(email, password, fullName || email);
-
-      if (session) {
-        onSessionReady(session);
-      } else {
-        setMessage("Usuario creado. Revisar el email si Supabase exige confirmacion.");
-      }
+      const session = await signInWithEmail(email, password);
+      onSessionReady(session);
     } catch (error) {
       setMessage(error.message || "No se pudo iniciar sesion");
     } finally {
@@ -51,11 +46,6 @@ export function LoginScreen({ onSessionReady }) {
         </div>
 
         <form onSubmit={submit} className="grid gap-3">
-          {mode === "signup" && (
-            <Field label="Nombre">
-              <TextInput value={fullName} onChange={(event) => setFullName(event.target.value)} placeholder="Nombre y apellido" />
-            </Field>
-          )}
           <Field label="Email">
             <TextInput type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="usuario@bizon.com" />
           </Field>
@@ -65,17 +55,15 @@ export function LoginScreen({ onSessionReady }) {
             </Field>
           )}
           {message && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{message}</p>}
-          <Button type="submit">{loading ? "Procesando..." : mode === "login" ? "Ingresar" : mode === "signup" ? "Crear cuenta" : "Enviar link"}</Button>
+          <Button type="submit">{loading ? "Procesando..." : mode === "login" ? "Ingresar" : "Enviar link"}</Button>
         </form>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          <Button variant="ghost" onClick={() => setMode(mode === "login" ? "signup" : "login")}>
-            {mode === "login" ? "Crear usuario" : "Ya tengo usuario"}
+          <Button variant="ghost" onClick={() => setMode(mode === "login" ? "reset" : "login")}>
+            {mode === "login" ? "Olvidé mi contraseña" : "Volver a ingresar"}
           </Button>
-          {mode === "login" && (
-            <Button variant="ghost" onClick={() => setMode("reset")}>Olvidé mi contraseña</Button>
-          )}
         </div>
+        <p className="mt-4 text-xs text-[var(--text-muted)]">Sin cuenta? Pedile al administrador de tu empresa que te dé de alta.</p>
       </Panel>
     </div>
   );

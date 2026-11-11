@@ -7,6 +7,7 @@ const corsHeaders = {
 
 const roles = new Set(["admin", "direccion", "ventas", "operaciones", "compras", "finanzas", "rrhh", "cliente"]);
 const statuses = new Set(["pending", "active", "suspended"]);
+// Mantener en sincronia con src/lib/navigation.js
 const screenKeys = new Set([
   "dashboard",
   "clientes",
@@ -14,11 +15,8 @@ const screenKeys = new Set([
   "importar",
   "presupuestos",
   "cotizador",
+  "ventas",
   "ot",
-  "inventario",
-  "compras",
-  "finanzas",
-  "rrhh",
   "tareas",
   "calendario",
   "documentos",

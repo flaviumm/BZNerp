@@ -20,8 +20,13 @@ const supabase = createClient(url, serviceRoleKey, {
   auth: { persistSession: false },
 });
 
+// Mismo orden que tables en backup-supabase.mjs.
 const restoreOrder = [
+  "organizations",
   "profiles",
+  "material_price_catalog",
+  "labor_rate_catalog",
+  "quote_calculation_profiles",
   "companies",
   "opportunities",
   "quotes",
@@ -34,6 +39,9 @@ const restoreOrder = [
   "document_counters",
   "document_files",
   "audit_log",
+  "captured_leads",
+  "lead_interactions",
+  "lead_tasks",
 ];
 
 for (const table of restoreOrder) {

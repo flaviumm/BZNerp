@@ -6,83 +6,70 @@ Mantener una copia recuperable de datos operativos, documentos y auditoria del E
 
 ## Alcance del backup
 
-El script `npm.cmd run backup` exporta:
+`scripts/backup-supabase.mjs` exporta a JSON:
 
-- tablas operativas: clientes, CRM, presupuestos, OT, inventario, compras, facturas, RRHH y tareas;
-- perfiles y roles;
-- numeradores;
-- documentos metadata;
-- auditoria;
+- organizaciones y perfiles (roles, estado, super admin);
+- catalogos de precios (materiales global, mano de obra y perfiles de calculo por organizacion);
+- clientes, CRM, presupuestos, OT, inventario, compras, facturas, RRHH y tareas;
+- numeradores, metadata de documentos y auditoria;
+- leads capturados e interacciones;
 - archivos del bucket Supabase Storage `erp-documents`.
 
-Los backups se guardan en `backups/YYYY-MM-DDTHH-mm-ss-*`.
+Cada corrida escribe `backups/YYYY-MM-DDTHH-mm-ss-*/` con un `manifest.json`.
 
-## Variables requeridas
+## Backup automatico (GitHub Actions)
 
-Configurar en la terminal o en el entorno del servidor:
+`.github/workflows/backup.yml` corre todas las noches (01:00 Argentina) y guarda la carpeta
+como artifact con retencion de 90 dias. Tambien se puede lanzar a mano desde la pestaña
+Actions del repo.
+
+Secrets del repositorio (Settings > Secrets and variables > Actions):
+
+- `SUPABASE_URL`: la Project URL.
+- `SUPABASE_SERVICE_ROLE_KEY`: la service role key (administrativa, nunca va al frontend ni se commitea).
+
+Para bajar un backup: Actions > Backup Supabase > elegir la corrida > Artifacts.
+
+## Backup manual
 
 ```powershell
 $env:VITE_SUPABASE_URL="https://TU-PROYECTO.supabase.co"
 $env:SUPABASE_SERVICE_ROLE_KEY="TU_SERVICE_ROLE_KEY"
-```
-
-La `service_role_key` es administrativa. No debe usarse con prefijo `VITE_`, no debe ir al navegador y no debe commitearse.
-
-## Crear backup manual
-
-```powershell
 npm.cmd run backup
 ```
 
-## Restaurar backup
+## Restaurar
 
-Primero crear el proyecto Supabase y ejecutar las migraciones en este orden:
+1. Crear el proyecto Supabase (o usar el existente) y aplicar las migraciones:
 
-1. `database/schema.sql`
-2. `database/auth_policies.sql`
-3. `database/numbering.sql`
-4. `database/documents.sql`
-5. `database/audit.sql`
+```powershell
+npm.cmd run supabase -- link --project-ref TU_PROJECT_REF
+npm.cmd run db:push
+```
 
-Luego restaurar:
+2. Restaurar tablas y archivos:
 
 ```powershell
 npm.cmd run restore -- C:\ruta\al\backup
 ```
 
-Nota sobre usuarios: Supabase Auth guarda usuarios en `auth.users`, que no se exporta desde este backup de tablas públicas. En una restauración a un proyecto nuevo hay que recrear usuarios desde Supabase Auth y reasignar roles en `profiles`. En una restauración sobre el mismo proyecto, los `profiles` existentes deberían conservar la relación.
-
-## Programar backup en Windows
-
-Crear una tarea programada que ejecute:
-
-```powershell
-powershell.exe -ExecutionPolicy Bypass -File C:\ruta\ERP\scripts\run-backup.ps1
-```
-
-La tarea debe tener las variables `VITE_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` disponibles para el usuario que ejecuta el proceso.
-
-Frecuencia recomendada:
-
-- diario a las 23:00 para operación normal;
-- cada 6 horas si hay carga administrativa alta;
-- retener 30 backups diarios y 12 backups mensuales.
+Usuarios: Supabase Auth guarda las cuentas en `auth.users`, que no se exporta. En una
+restauracion a un proyecto nuevo hay que recrear los usuarios desde `Authentication > Users`
+con el mismo UUID (o recrear y reasignar `profiles`). Sobre el mismo proyecto, los `profiles`
+conservan la relacion.
 
 ## Prueba de restauracion
 
 Una vez por mes:
 
 1. Crear un proyecto Supabase de prueba.
-2. Ejecutar migraciones.
-3. Restaurar el backup más reciente.
-4. Correr el ERP contra ese proyecto.
+2. Aplicar migraciones (`db:push`).
+3. Restaurar el backup mas reciente.
+4. Correr el ERP contra ese proyecto (`.env.local` apuntando al proyecto de prueba).
 5. Validar login, clientes, presupuestos, OT, documentos y auditoria.
+6. Borrar el proyecto de prueba.
 
 ## Criterios de recuperacion
 
-- RPO objetivo: máximo 24 horas de pérdida de datos.
-- RTO objetivo: restauración funcional en menos de 2 horas.
-
-## Pendiente recomendado
-
-Agregar un destino externo para copiar la carpeta `backups`: OneDrive empresarial, S3, Google Drive, SharePoint o almacenamiento del proveedor cloud.
+- RPO objetivo: maximo 24 horas de perdida de datos.
+- RTO objetivo: restauracion funcional en menos de 2 horas.
