@@ -379,10 +379,10 @@ export function normalizeLeadRow(row) {
 }
 
 export function toneForStatus(status) {
-  if (["Activo", "Ganado", "Cobrada", "Recibida", "Disponible"].includes(status)) return "green";
-  if (["Pendiente", "Por vencer", "Programada", "Autorizacion", "Contactado"].includes(status)) return "amber";
+  if (["Activo", "Ganado", "Cobrada", "Recibida", "Disponible", "Aprobado", "Terminada"].includes(status)) return "green";
+  if (["Pendiente", "Por vencer", "Programada", "Autorizacion", "Contactado", "Enviado", "En revision", "En ejecucion", "Negociacion"].includes(status)) return "amber";
   if (["Borrador", "Prospecto", "Nuevo prospecto"].includes(status)) return "blue";
-  if (["Vencida", "Bloqueado", "PERDIDO"].includes(status)) return "red";
+  if (["Vencida", "Bloqueado", "PERDIDO", "Perdido", "Rechazado", "Inactivo"].includes(status)) return "red";
   return "zinc";
 }
 

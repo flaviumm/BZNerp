@@ -15,8 +15,6 @@ export function buildCalendarEvents(data) {
     events.push({ id: `ot-start-${item.number}`, date: item.start, title: item.number, type: "Inicio OT", detail: item.client, tone: "green" });
     events.push({ id: `ot-end-${item.number}`, date: item.end, title: item.number, type: "Fin OT", detail: item.client, tone: "red" });
   });
-  data.purchases.forEach((item) => events.push({ id: `po-${item.number}`, date: item.due, title: item.number, type: "Compra", detail: item.supplier, tone: "amber" }));
-  data.invoices.forEach((item) => events.push({ id: `iv-${item.number}`, date: item.due, title: item.number, type: "Factura", detail: item.client, tone: item.status === "Cobrada" ? "green" : "red" }));
   data.tasks.forEach((item) => events.push({ id: `task-${item.id}`, date: item.due, title: item.text, type: item.eventType || "Tarea", detail: item.owner, tone: item.priority === "Alta" ? "red" : "blue", task: item }));
   return events.filter((item) => toDateKey(item.date));
 }

@@ -1,34 +1,80 @@
-import { Panel, StatCard, SectionTitle } from "../ui";
-import { money, pct, sum, weightedPipeline } from "../../lib/utils";
+import { Panel, StatCard, SectionTitle, DataTable, CleanBarList } from "../ui";
+import { money, pct, sum, weightedPipeline, addDaysIso, overdueWorkOrders } from "../../lib/utils";
+import { QUOTE_STATUSES } from "./Presupuestos";
 
+// Indicadores calculados sobre clientes, oportunidades, presupuestos, OT y tareas reales.
 export function Reportes({ data }) {
-  const pipeline = sum(data.opportunities, "amount");
-  const won = sum(data.opportunities.filter((item) => item.stage === "Ganado"), "amount");
-  const quoteTotal = sum(data.quotes, "total");
-  const purchasing = sum(data.purchases, "total");
-  const stockValue = data.inventory.reduce((total, item) => total + item.stock * item.cost, 0);
-  const indicators = [
-    { label: "Conversion comercial", value: pct((won / pipeline) * 100), tone: "green" },
-    { label: "Presupuestos emitidos", value: money(quoteTotal), tone: "blue" },
-    { label: "Compras comprometidas", value: money(purchasing), tone: "amber" },
-    { label: "Inventario valorizado", value: money(stockValue), tone: "green" },
-  ];
+  const today = addDaysIso(0);
+  const { companies, opportunities, quotes, workOrders, tasks } = data;
+
+  const won = opportunities.filter((item) => item.stage === "Ganado");
+  const lost = opportunities.filter((item) => item.stage === "Perdido");
+  const closed = won.length + lost.length;
+  const openPipeline = opportunities.filter((item) => !["Ganado", "Perdido"].includes(item.stage));
+
+  const approvedQuotes = quotes.filter((item) => item.status === "Aprobado");
+  const decidedQuotes = quotes.filter((item) => ["Aprobado", "Rechazado"].includes(item.status));
+  const quoteRows = QUOTE_STATUSES.map((status) => {
+    const list = quotes.filter((item) => item.status === status);
+    return [status, list.length, money(sum(list, "total"))];
+  });
+
+  const executing = workOrders.filter((item) => item.status === "En ejecucion");
+  const lateOrders = overdueWorkOrders(executing, today);
+  const overdueTasks = tasks.filter((task) => task.due && String(task.due).slice(0, 10) < today);
+
+  const companiesByStatus = ["Activo", "Negociacion", "Contactado", "Prospecto", "Inactivo"].map((status) => ({
+    label: status,
+    value: companies.filter((item) => item.status === status).length,
+  }));
+  const topCompanies = [...companies]
+    .sort((a, b) => Number(b.value || 0) - Number(a.value || 0))
+    .slice(0, 5)
+    .map((item) => ({ label: item.name, value: Number(item.value || 0), caption: `${item.status} - ${item.city || ""}` }));
 
   return (
     <div className="space-y-5 p-4 md:p-6">
-      <SectionTitle title="Reportes gerenciales" subtitle="Indicadores integrados de ventas, operaciones, compras y caja" />
+      <SectionTitle title="Reportes gerenciales" subtitle="Ventas, presupuestos y operacion con datos reales" />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {indicators.map((item) => <StatCard key={item.label} title={item.label} value={item.value} subtitle="Calculado sobre datos demo" tone={item.tone} />)}
+        <StatCard title="Pipeline abierto" value={money(sum(openPipeline, "amount"))} subtitle={`forecast ponderado ${money(weightedPipeline(openPipeline))}`} tone="blue" />
+        <StatCard title="Conversion comercial" value={closed ? pct((won.length / closed) * 100) : "-"} subtitle={`${won.length} ganadas de ${closed} cerradas`} tone="green" />
+        <StatCard title="Presupuestos aprobados" value={money(sum(approvedQuotes, "total"))} subtitle={decidedQuotes.length ? `${pct((approvedQuotes.length / decidedQuotes.length) * 100)} de los decididos` : "sin decisiones todavia"} tone="green" />
+        <StatCard title="OT atrasadas" value={lateOrders.length} subtitle={`${executing.length} en ejecucion`} tone={lateOrders.length ? "red" : "amber"} />
       </div>
-      <Panel className="p-4">
-        <SectionTitle title="Resumen ejecutivo" subtitle="Lectura rapida para reunion semanal" />
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--text)]">El pipeline total es de <strong>{money(pipeline)}</strong>, con forecast ponderado de <strong>{money(weightedPipeline(data.opportunities))}</strong>.</p>
-          <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--text)]">Hay <strong>{data.inventory.filter((item) => item.stock <= item.min).length}</strong> materiales bajo minimo y <strong>{data.workOrders.filter((item) => item.status === "En ejecucion").length}</strong> ordenes en ejecucion.</p>
-          <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--text)]">Las cuentas por cobrar abiertas suman <strong>{money(sum(data.invoices.filter((item) => item.status !== "Cobrada"), "total"))}</strong>.</p>
-          <p className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--text)]">La dotacion registra <strong>{sum(data.employees, "hours")}</strong> horas mensuales informadas.</p>
-        </div>
-      </Panel>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel className="p-5">
+          <SectionTitle title="Presupuestos por estado" subtitle="Cantidad e importe" />
+          <div className="mt-4">
+            <DataTable headers={["Estado", "Cantidad", "Importe"]} rows={quoteRows} />
+          </div>
+        </Panel>
+        <Panel className="p-5">
+          <SectionTitle title="Clientes por estado" subtitle={`${companies.length} empresas cargadas`} />
+          <div className="mt-5">
+            <CleanBarList items={companiesByStatus} />
+          </div>
+        </Panel>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel className="p-5">
+          <SectionTitle title="Top clientes por valor potencial" subtitle="Segun la ficha comercial" />
+          <div className="mt-5">
+            {topCompanies.length ? <CleanBarList items={topCompanies} valueFormatter={money} /> : <p className="text-sm text-[var(--text-muted)]">Sin clientes con valor cargado.</p>}
+          </div>
+        </Panel>
+        <Panel className="p-5">
+          <SectionTitle title="Operacion" subtitle="Ordenes de trabajo y tareas" />
+          <div className="mt-4 grid gap-3 text-sm">
+            <p className="flex justify-between gap-3 text-[var(--text-muted)]">OT en ejecucion <strong className="text-[var(--text)]">{executing.length}</strong></p>
+            <p className="flex justify-between gap-3 text-[var(--text-muted)]">OT atrasadas <strong className={lateOrders.length ? "text-[var(--danger)]" : "text-[var(--text)]"}>{lateOrders.length}</strong></p>
+            <p className="flex justify-between gap-3 text-[var(--text-muted)]">OT terminadas <strong className="text-[var(--text)]">{workOrders.filter((item) => item.status === "Terminada").length}</strong></p>
+            <p className="flex justify-between gap-3 text-[var(--text-muted)]">Tareas abiertas <strong className="text-[var(--text)]">{tasks.length}</strong></p>
+            <p className="flex justify-between gap-3 text-[var(--text-muted)]">Tareas vencidas <strong className={overdueTasks.length ? "text-[var(--danger)]" : "text-[var(--text)]"}>{overdueTasks.length}</strong></p>
+          </div>
+        </Panel>
+      </div>
     </div>
   );
 }

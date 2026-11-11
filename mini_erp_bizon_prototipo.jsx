@@ -1,14 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import * as XLSX from "xlsx";
 import { deleteErpRecord, isDatabaseConfigured, loadErpData, logAuditEvent, nextDocumentNumber, saveErpRecord, shouldBlockUnconfiguredDatabase, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
-import { createOrganization, createUserAccount, getCurrentProfile, getInitialSession, getOrganization, listenAuthChanges, listOrganizations, listUserProfiles, signInWithEmail, signOutUser, signUpWithEmail, updateOrganization, updateUserProfile } from "./src/lib/authRepository";
+import { createOrganization, createUserAccount, getCurrentProfile, getInitialSession, getOrganization, listenAuthChanges, listOrganizations, listUserProfiles, signOutUser, updateOrganization, updateUserProfile } from "./src/lib/authRepository";
 import { applyBrandTheme, applyColorScheme, getInitialTheme, persistTheme } from "./src/lib/theme";
-import { laborRates, quoteParameters } from "./src/lib/pricingData";
-import { initialCompanies, initialOpportunities, initialQuotes, initialWorkOrders, inventory, purchases, invoices, employees, tasks, initialDocuments, initialAuditLog, localDatabaseKey } from "./src/lib/demoData";
+import { initialCompanies, initialOpportunities, initialQuotes, initialWorkOrders, tasks, initialDocuments, initialAuditLog, localDatabaseKey } from "./src/lib/demoData";
 import { screens, menuSections, creatableScreens, canAccessScreen } from "./src/lib/navigation";
-import { money, pct, clamp, sum, quoteLineTotal, catalogPrice, htmlEscape, openQuotePdfWindow, generateQuotePdf, withTimeout, weightedPipeline, nextLocalNumber, normalizeKey, worksheetToRows, addDaysIso, isValidDateValue, formatDate, formatDateTime, normalizeLeadRow, toneForStatus } from "./src/lib/utils";
-import { companyContacts, companyDetails, companySearchText, initialCompanyForm, companyRecordFromForm } from "./src/lib/companyUtils";
-import { Button, Badge, Panel, Field, TextInput, Select, TextArea, Header, Sidebar, MobileNav, StatCard, SectionTitle, Progress, DataTable, SearchBar, CleanBarList, DashboardLineChart, DashboardRadialChart, DashboardStackChart, ProgressRing, GlobalStyles } from "./src/components/ui";
+import { money, sum, withTimeout, weightedPipeline, nextLocalNumber, normalizeKey, addDaysIso } from "./src/lib/utils";
+import { companyContacts, companyRecordFromForm } from "./src/lib/companyUtils";
+import { Panel, Header, Sidebar, MobileNav, GlobalStyles } from "./src/components/ui";
 import { Dashboard } from "./src/components/screens/Dashboard";
 import { ClientesCards } from "./src/components/screens/Clientes";
 import { ImportarLeads } from "./src/components/screens/ImportarLeads";
@@ -31,11 +29,9 @@ import { ProcesoVentas } from "./src/components/screens/ProcesoVentas";
 
 function runTests() {
   const pipelineTotal = sum(initialOpportunities, "amount");
-  const stockAlerts = inventory.filter((item) => item.stock <= item.min);
   console.assert(initialCompanies.length >= 5, "Debe haber al menos 5 clientes demo");
   console.assert(pipelineTotal === 47300000, "El pipeline demo debe sumar 47.300.000");
   console.assert(weightedPipeline(initialOpportunities) === 25415000, "El pipeline ponderado debe ser 25.415.000");
-  console.assert(stockAlerts.length === 2, "Debe detectar 2 alertas de stock");
   console.assert(screens.length >= 10, "Debe incluir los modulos centrales del ERP");
   console.assert(money(1000).includes("1.000") || money(1000).includes("1000"), "Debe formatear moneda ARS");
 }
@@ -61,10 +57,6 @@ export default function MiniErpBizonPrototype() {
   const [opportunities, setOpportunities] = useState(() => seed(initialOpportunities));
   const [quotes, setQuotes] = useState(() => seed(initialQuotes));
   const [workOrders, setWorkOrders] = useState(() => seed(initialWorkOrders));
-  const [inventoryItems, setInventoryItems] = useState(() => seed(inventory));
-  const [purchaseOrders, setPurchaseOrders] = useState(() => seed(purchases));
-  const [customerInvoices, setCustomerInvoices] = useState(() => seed(invoices));
-  const [staff, setStaff] = useState(() => seed(employees));
   const [taskList, setTaskList] = useState(() => seed(tasks));
   const [documents, setDocuments] = useState(() => seed(initialDocuments));
   const [auditLog, setAuditLog] = useState(() => seed(initialAuditLog));
@@ -141,10 +133,6 @@ export default function MiniErpBizonPrototype() {
         setOpportunities(localData.opportunities?.length ? localData.opportunities : initialOpportunities);
         setQuotes(localData.quotes?.length ? localData.quotes : initialQuotes);
         setWorkOrders(localData.workOrders?.length ? localData.workOrders : initialWorkOrders);
-        setInventoryItems(localData.inventory?.length ? localData.inventory : inventory);
-        setPurchaseOrders(localData.purchases?.length ? localData.purchases : purchases);
-        setCustomerInvoices(localData.invoices?.length ? localData.invoices : invoices);
-        setStaff(localData.employees?.length ? localData.employees : employees);
         setTaskList(localData.tasks?.length ? localData.tasks : tasks);
         setDocuments(localData.documents?.length ? localData.documents : initialDocuments);
         setAuditLog(localData.auditLog?.length ? localData.auditLog : initialAuditLog);
@@ -173,10 +161,6 @@ export default function MiniErpBizonPrototype() {
         setOpportunities(remoteData.opportunities || []);
         setQuotes(remoteData.quotes || []);
         setWorkOrders(remoteData.workOrders || []);
-        setInventoryItems(remoteData.inventory || []);
-        setPurchaseOrders(remoteData.purchases || []);
-        setCustomerInvoices(remoteData.invoices || []);
-        setStaff(remoteData.employees || []);
         setTaskList(remoteData.tasks || []);
         setDocuments(remoteData.documents || []);
         setAuditLog(remoteData.audit || []);
@@ -287,14 +271,10 @@ export default function MiniErpBizonPrototype() {
     opportunities,
     quotes,
     workOrders,
-    inventory: inventoryItems,
-    purchases: purchaseOrders,
-    invoices: customerInvoices,
-    employees: staff,
     tasks: taskList,
     documents,
     auditLog,
-  }), [companies, opportunities, quotes, workOrders, inventoryItems, purchaseOrders, customerInvoices, staff, taskList, documents, auditLog]);
+  }), [companies, opportunities, quotes, workOrders, taskList, documents, auditLog]);
 
   useEffect(() => {
     if (!useLocalDemo || !localDatabaseReady) return;
@@ -347,10 +327,6 @@ export default function MiniErpBizonPrototype() {
     setOpportunities(initialOpportunities);
     setQuotes(initialQuotes);
     setWorkOrders(initialWorkOrders);
-    setInventoryItems(inventory);
-    setPurchaseOrders(purchases);
-    setCustomerInvoices(invoices);
-    setStaff(employees);
     setTaskList(tasks);
     setDocuments(initialDocuments);
     setAuditLog(initialAuditLog);
@@ -517,10 +493,6 @@ export default function MiniErpBizonPrototype() {
       opportunities: "oportunidad",
       quotes: "presupuesto",
       workOrders: "orden de trabajo",
-      inventory: "item de inventario",
-      purchases: "orden de compra",
-      invoices: "factura",
-      employees: "empleado",
       tasks: "tarea",
       documents: "documento",
     };
@@ -531,10 +503,6 @@ export default function MiniErpBizonPrototype() {
     if (module === "opportunities") setOpportunities((items) => items.filter((item) => item.id !== key));
     if (module === "quotes") setQuotes((items) => items.filter((item) => item.number !== key));
     if (module === "workOrders") setWorkOrders((items) => items.filter((item) => item.number !== key));
-    if (module === "inventory") setInventoryItems((items) => items.filter((item) => item.sku !== key));
-    if (module === "purchases") setPurchaseOrders((items) => items.filter((item) => item.number !== key));
-    if (module === "invoices") setCustomerInvoices((items) => items.filter((item) => item.number !== key));
-    if (module === "employees") setStaff((items) => items.filter((item) => item.id !== key));
     if (module === "tasks") setTaskList((items) => items.filter((item) => item.id !== key));
     if (module === "documents") setDocuments((items) => items.filter((item) => item.id !== key));
     persistDelete(module, key);
