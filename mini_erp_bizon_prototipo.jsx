@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
-import CaptadorLeads from "./src/components/CaptadorLeads";
 import { deleteErpRecord, isDatabaseConfigured, loadErpData, logAuditEvent, nextDocumentNumber, saveErpRecord, shouldBlockUnconfiguredDatabase, updateErpRecord, uploadDocumentFile } from "./src/lib/erpRepository";
 import { createOrganization, createUserAccount, getCurrentProfile, getInitialSession, getOrganization, listenAuthChanges, listOrganizations, listUserProfiles, signInWithEmail, signOutUser, signUpWithEmail, updateOrganization, updateUserProfile } from "./src/lib/authRepository";
 import { applyBrandTheme, applyColorScheme, getInitialTheme, persistTheme } from "./src/lib/theme";
 import { laborRates, quoteParameters } from "./src/lib/pricingData";
 import { initialCompanies, initialOpportunities, initialQuotes, initialWorkOrders, inventory, purchases, invoices, employees, tasks, initialDocuments, initialAuditLog, localDatabaseKey } from "./src/lib/demoData";
-import { screens, menuSections, userRoles, accountStatuses, canAccessScreen, screensForRole } from "./src/lib/navigation";
+import { screens, menuSections, creatableScreens, canAccessScreen } from "./src/lib/navigation";
 import { money, pct, clamp, sum, quoteLineTotal, catalogPrice, htmlEscape, openQuotePdfWindow, generateQuotePdf, withTimeout, weightedPipeline, nextLocalNumber, normalizeKey, worksheetToRows, addDaysIso, isValidDateValue, formatDate, formatDateTime, normalizeLeadRow, toneForStatus } from "./src/lib/utils";
 import { companyContacts, companyDetails, companySearchText, initialCompanyForm, companyRecordFromForm } from "./src/lib/companyUtils";
 import { Button, Badge, Panel, Field, TextInput, Select, TextArea, Header, Sidebar, MobileNav, StatCard, SectionTitle, Progress, DataTable, SearchBar, CleanBarList, DashboardLineChart, DashboardRadialChart, DashboardStackChart, ProgressRing, GlobalStyles } from "./src/components/ui";
@@ -16,7 +15,7 @@ import { ImportarLeads } from "./src/components/screens/ImportarLeads";
 import { CRMCanvas } from "./src/components/screens/CRM";
 import { Presupuestos } from "./src/components/screens/Presupuestos";
 import { Cotizador } from "./src/components/screens/Cotizador";
-import { OrdenesTrabajo, Inventario, Compras, Finanzas, RRHH, Tareas } from "./src/components/screens/Operacion";
+import { OrdenesTrabajo, Tareas } from "./src/components/screens/Operacion";
 import { Calendario } from "./src/components/screens/Calendario";
 import { Documentos } from "./src/components/screens/Documentos";
 import { Auditoria } from "./src/components/screens/Auditoria";
@@ -382,19 +381,24 @@ export default function MiniErpBizonPrototype() {
     }
   }
 
+  // Devuelve el registro tal como quedo guardado (con el id real de la base) o
+  // null si fallo. Los llamadores deben usar lo devuelto para el estado local:
+  // con un id inventado las ediciones y borrados posteriores no llegan a la base.
   async function persistRecord(module, record) {
     if (!isDatabaseConfigured) {
       audit("create", module, record, `Alta en ${module}`);
-      return;
+      return record;
     }
 
     try {
-      await saveErpRecord(module, record);
-      audit("create", module, record, `Alta en ${module}`);
+      const saved = (await saveErpRecord(module, record)) || record;
+      audit("create", module, saved, `Alta en ${module}`);
       setDatabaseStatus("Conectado a Supabase");
+      return saved;
     } catch (error) {
       console.error("No se pudo guardar el registro:", error);
       setDatabaseStatus("Error de base");
+      return null;
     }
   }
 
@@ -500,22 +504,6 @@ export default function MiniErpBizonPrototype() {
       setWorkOrders((items) => items.map((item) => item.number === record.number ? record : item));
       persistUpdate("workOrders", record.number, record);
     }
-    if (module === "inventario") {
-      setInventoryItems((items) => items.map((item) => item.sku === record.sku ? record : item));
-      persistUpdate("inventory", record.sku, record);
-    }
-    if (module === "compras") {
-      setPurchaseOrders((items) => items.map((item) => item.number === record.number ? record : item));
-      persistUpdate("purchases", record.number, record);
-    }
-    if (module === "finanzas") {
-      setCustomerInvoices((items) => items.map((item) => item.number === record.number ? record : item));
-      persistUpdate("invoices", record.number, record);
-    }
-    if (module === "rrhh") {
-      setStaff((items) => items.map((item) => item.id === record.id ? record : item));
-      persistUpdate("employees", record.id, record);
-    }
     if (module === "tareas") {
       setTaskList((items) => items.map((item) => item.id === record.id ? record : item));
       persistUpdate("tasks", record.id, record);
@@ -523,7 +511,7 @@ export default function MiniErpBizonPrototype() {
     setEditTarget(null);
   }
 
-  function removeRecord(module, key) {
+  function removeRecord(module, key, options = {}) {
     const labels = {
       companies: "cliente",
       opportunities: "oportunidad",
@@ -537,7 +525,7 @@ export default function MiniErpBizonPrototype() {
       documents: "documento",
     };
 
-    if (!window.confirm(`Borrar ${labels[module] || "registro"}?`)) return;
+    if (!options.silent && !window.confirm(`Borrar ${labels[module] || "registro"}?`)) return;
 
     if (module === "companies") setCompanies((items) => items.filter((item) => item.id !== key));
     if (module === "opportunities") setOpportunities((items) => items.filter((item) => item.id !== key));
@@ -588,7 +576,7 @@ export default function MiniErpBizonPrototype() {
     audit("upload", "documents", record, `Documento cargado: ${record.name}`);
   }
 
-  function createCalendarEvent(event) {
+  async function createCalendarEvent(event) {
     const record = {
       id: Date.now(),
       text: event.text,
@@ -600,8 +588,8 @@ export default function MiniErpBizonPrototype() {
       endTime: event.endTime || null,
       notes: event.notes || "",
     };
-    setTaskList((items) => [...items, record]);
-    persistRecord("tasks", record);
+    const saved = (await persistRecord("tasks", record)) || record;
+    setTaskList((items) => [...items, saved]);
   }
 
   async function importLeads(leads, context = {}) {
@@ -677,80 +665,49 @@ export default function MiniErpBizonPrototype() {
       }
     });
 
-    const mergedCompanies = [...companyMap.values()];
-    setCompanies(mergedCompanies);
-    if (opportunityRecords.length) setOpportunities((items) => [...items, ...opportunityRecords]);
-
     for (const item of companyRecords) {
+      let saved = item.record;
       if (item.exists) await persistUpdate("companies", item.record.id, item.record);
-      else await persistRecord("companies", item.record);
+      else saved = (await persistRecord("companies", item.record)) || item.record;
+      companyMap.set(normalizeKey(saved.name), saved);
     }
+    setCompanies([...companyMap.values()]);
+
+    const savedOpportunities = [];
     for (const opportunity of opportunityRecords) {
-      await persistRecord("opportunities", opportunity);
+      savedOpportunities.push((await persistRecord("opportunities", opportunity)) || opportunity);
     }
+    if (savedOpportunities.length) setOpportunities((items) => [...items, ...savedOpportunities]);
 
     audit("import", "opportunities", { recordKey: context.fileName || "leads" }, `Carga masiva de ${leads.length} leads desde ${context.fileName || "Excel"}`, context);
     return { companiesCreated, companiesUpdated, contactsAdded, opportunitiesCreated };
   }
 
+  // Alta rapida desde NewRecordModal. Los campos vienen de createFields en modals.jsx.
   async function createRecord(module, form) {
-    const amount = Number(form.amount || 0);
-    if (module === "clientes") {
-      const record = companyRecordFromForm(form);
-      setCompanies((items) => [...items, record]);
-      persistRecord("companies", record);
-      return;
-    }
-    if (module === "crm") {
-      const record = { id: Date.now(), company: form.name, service: form.detail, stage: "Nuevo prospecto", amount, probability: 20, owner: "Ventas", due: "2026-05-15" };
-      setOpportunities((items) => [...items, record]);
-      persistRecord("opportunities", record);
-      return;
-    }
-    if (module === "presupuestos") {
-      const subtotal = Math.round(amount / 1.21);
-      const number = await getDocumentNumber("quote", quotes, "P", 4);
-      const record = { number, client: form.name, service: form.detail, subtotal, tax: amount - subtotal, total: amount, status: "Borrador", validUntil: "2026-05-30" };
-      setQuotes((items) => [...items, record]);
-      persistRecord("quotes", record);
-      return;
-    }
-    if (module === "ot") {
-      const number = await getDocumentNumber("work_order", workOrders, "OT", 4);
-      const record = { number, client: form.name, service: form.detail, status: "Pendiente", progress: 0, margin: 30, start: "2026-05-15", end: "2026-05-30", team: "Sin asignar" };
-      setWorkOrders((items) => [...items, record]);
-      persistRecord("workOrders", record);
-      return;
-    }
-    if (module === "inventario") {
-      const record = { sku: `MAT-${String(inventoryItems.length + 1).padStart(3, "0")}`, name: form.name, category: form.detail || "General", stock: Number(form.amount || 0), min: 5, unit: "unidades", cost: 0 };
-      setInventoryItems((items) => [...items, record]);
-      persistRecord("inventory", record);
-      return;
-    }
-    if (module === "compras") {
-      const number = await getDocumentNumber("purchase_order", purchaseOrders, "OC", 4);
-      const record = { number, supplier: form.name, area: form.detail || "General", total: amount, status: "Pendiente", due: "2026-05-20" };
-      setPurchaseOrders((items) => [...items, record]);
-      persistRecord("purchases", record);
-      return;
-    }
-    if (module === "finanzas") {
-      const number = await getDocumentNumber("invoice", customerInvoices, "F", 5);
-      const record = { number, client: form.name, concept: form.detail, total: amount, status: "Pendiente", due: "2026-05-20" };
-      setCustomerInvoices((items) => [...items, record]);
-      persistRecord("invoices", record);
-      return;
-    }
-    if (module === "rrhh") {
-      const record = { id: Date.now(), name: form.name, role: form.detail || "Sin rol", team: "Sin asignar", status: "Disponible", hours: Number(form.amount || 0) };
-      setStaff((items) => [...items, record]);
-      persistRecord("employees", record);
-      return;
-    }
-    const record = { id: Date.now(), text: form.detail || form.name, owner: form.name || "General", priority: amount > 0 ? "Alta" : "Media", due: "2026-05-20" };
-    setTaskList((items) => [...items, record]);
-    persistRecord("tasks", record);
+    const builders = {
+      clientes: () => ["companies", companyRecordFromForm(form)],
+      crm: () => ["opportunities", { id: Date.now(), company: form.name, service: form.detail, stage: "Nuevo prospecto", amount: Number(form.amount || 0), probability: 20, owner: profile?.fullName || "Ventas", due: addDaysIso(30) }],
+      ot: async () => ["workOrders", {
+        number: await getDocumentNumber("work_order", workOrders, "OT", 4),
+        client: form.client,
+        service: form.service,
+        status: "Pendiente",
+        progress: 0,
+        margin: Number(form.margin || 30),
+        start: form.start || null,
+        end: form.end || null,
+        team: form.team || "Sin asignar",
+      }],
+      tareas: () => ["tasks", { id: Date.now(), text: form.text, owner: form.owner || profile?.fullName || "General", priority: form.priority || "Media", due: form.due || null, eventType: "Tarea", notes: form.notes || "" }],
+    };
+    const setters = { companies: setCompanies, opportunities: setOpportunities, workOrders: setWorkOrders, tasks: setTaskList };
+    if (!builders[module]) return;
+
+    const [key, record] = await builders[module]();
+    const saved = await persistRecord(key, record);
+    if (!saved) throw new Error("No se pudo guardar. Revisa la conexion e intenta de nuevo.");
+    setters[key]((items) => [...items, saved]);
   }
 
   const screenProps = { data, setActive, companies, setCompanies, opportunities, setOpportunities, quotes, setQuotes, workOrders, setWorkOrders, persistRecord, persistUpdate, getDocumentNumber, openEditor, openCotizador, removeRecord, uploadDocument, createCalendarEvent, userProfiles, currentProfile: profile, onCreateUserProfile: createManagedUser, onUpdateUserProfile: persistUserProfile, onRefreshUsers: refreshUserProfiles, onImportLeads: importLeads, onNewRecord: () => setModalOpen(true), organizations, organizationsError, onCreateOrganization: createOrganizationAccount, onRefreshOrganizations: refreshOrganizations, organization, onUpdateOrganization: saveOrganizationSettings };
@@ -759,15 +716,10 @@ export default function MiniErpBizonPrototype() {
     clientes: <ClientesCards {...screenProps} />,
     crm: <CRMCanvas {...screenProps} />,
     importar: <ImportarLeads {...screenProps} />,
-    captador_leads: <CaptadorLeads {...screenProps} />, 
     presupuestos: <Presupuestos {...screenProps} />,
     cotizador: <Cotizador {...screenProps} editingQuote={editingQuote} />,
     ventas: <ProcesoVentas />,
     ot: <OrdenesTrabajo {...screenProps} />,
-    inventario: <Inventario {...screenProps} inventory={data.inventory} />,
-    compras: <Compras {...screenProps} purchases={data.purchases} />,
-    finanzas: <Finanzas {...screenProps} invoices={data.invoices} />,
-    rrhh: <RRHH {...screenProps} employees={data.employees} />,
     tareas: <Tareas {...screenProps} />,
     calendario: <Calendario {...screenProps} />,
     documentos: <Documentos {...screenProps} />,
@@ -821,7 +773,7 @@ export default function MiniErpBizonPrototype() {
           onExportBackup={exportBackup}
           onResetLocal={useLocalDemo ? resetLocalDatabase : null}
           onSignOut={isDatabaseConfigured ? handleSignOut : null}
-          onNew={["usuarios", "organizaciones", "configuracion"].includes(active) ? null : () => setModalOpen(true)}
+          onNew={active === "presupuestos" ? () => openCotizador() : creatableScreens.has(active) ? () => setModalOpen(true) : null}
         />
         <main className="min-h-screen flex-1">
           <Header
@@ -837,7 +789,7 @@ export default function MiniErpBizonPrototype() {
         </main>
       </div>
       {modalOpen && <NewRecordModal active={active} data={data} onClose={() => setModalOpen(false)} onCreate={createRecord} />}
-      {editTarget && <EditRecordModal editTarget={editTarget} onClose={() => setEditTarget(null)} onSave={saveEditedRecord} />}
+      {editTarget && <EditRecordModal editTarget={editTarget} data={data} onClose={() => setEditTarget(null)} onSave={saveEditedRecord} />}
     </div>
   );
 }

@@ -1,22 +1,35 @@
-import { useState } from "react";
-import { Button, Badge, Panel, Field, Select, StatCard, SectionTitle, DataTable, ProgressRing } from "../ui";
-import { money, clamp, sum, toneForStatus } from "../../lib/utils";
+import { Button, Badge, Panel, Select, StatCard, SectionTitle, DataTable, ProgressRing } from "../ui";
+import { clamp, toneForStatus } from "../../lib/utils";
 
-export function OrdenesTrabajo({ workOrders, setWorkOrders, persistUpdate, openEditor, removeRecord, currentProfile }) {
+export const WORK_ORDER_STATUSES = ["Pendiente", "En ejecucion", "Terminada"];
+export const TASK_PRIORITIES = ["Alta", "Media", "Baja"];
+
+export function OrdenesTrabajo({ workOrders, setWorkOrders, persistUpdate, openEditor, removeRecord, currentProfile, onNewRecord }) {
   const readOnlyClient = currentProfile?.role === "cliente";
   const visibleWorkOrders = readOnlyClient && currentProfile?.companyName ? workOrders.filter((order) => order.client === currentProfile.companyName) : workOrders;
 
-  function setProgress(number, progress) {
+  function patchOrder(number, patch) {
     if (readOnlyClient) return;
     const current = workOrders.find((item) => item.number === number);
-    const updated = { ...current, progress: clamp(progress, 0, 100), status: progress >= 100 ? "Terminada" : current.status };
+    const updated = { ...current, ...patch };
     setWorkOrders((items) => items.map((item) => item.number === number ? updated : item));
     persistUpdate("workOrders", number, updated);
   }
 
+  function setProgress(number, progress) {
+    const value = clamp(Number(progress), 0, 100);
+    const current = workOrders.find((item) => item.number === number);
+    patchOrder(number, { progress: value, status: value >= 100 ? "Terminada" : value > 0 && current.status === "Pendiente" ? "En ejecucion" : current.status });
+  }
+
   return (
     <div className="space-y-5 p-4 md:p-6">
-      <SectionTitle title="Ordenes de trabajo" subtitle={readOnlyClient ? `Ordenes visibles para ${currentProfile?.companyName || "tu empresa"}` : "Planificacion, equipo asignado, avance y margen"} />
+      <SectionTitle
+        title="Ordenes de trabajo"
+        subtitle={readOnlyClient ? `Ordenes visibles para ${currentProfile?.companyName || "tu empresa"}` : "Planificacion, equipo asignado, avance y margen"}
+        action={readOnlyClient ? null : "Nueva orden"}
+        onAction={readOnlyClient ? null : onNewRecord}
+      />
       <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
         {visibleWorkOrders.map((order) => {
           const marginTone = order.margin < 30 ? "text-[var(--danger)]" : "text-[var(--brand-hover)]";
@@ -28,7 +41,13 @@ export function OrdenesTrabajo({ workOrders, setWorkOrders, persistUpdate, openE
                   <h3 className="mt-1 line-clamp-2 text-base font-semibold leading-tight text-[var(--text)]">{order.client}</h3>
                   <p className="mt-1 line-clamp-1 text-xs font-medium text-[var(--text-muted)]">{order.service}</p>
                 </div>
-                <Badge tone={toneForStatus(order.status)}>{order.status}</Badge>
+                {readOnlyClient ? (
+                  <Badge tone={toneForStatus(order.status)}>{order.status}</Badge>
+                ) : (
+                  <Select value={order.status} onChange={(event) => patchOrder(order.number, { status: event.target.value })}>
+                    {WORK_ORDER_STATUSES.map((status) => <option key={status}>{status}</option>)}
+                  </Select>
+                )}
               </div>
 
               <div className="mt-5">
@@ -46,11 +65,11 @@ export function OrdenesTrabajo({ workOrders, setWorkOrders, persistUpdate, openE
                 </div>
                 <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-3">
                   <p className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Inicio</p>
-                  <p className="mt-1 font-semibold text-[var(--text)]">{order.start}</p>
+                  <p className="mt-1 font-semibold text-[var(--text)]">{order.start || "-"}</p>
                 </div>
                 <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-raised)] p-3">
                   <p className="font-semibold uppercase tracking-wide text-[var(--text-muted)]">Entrega</p>
-                  <p className="mt-1 font-semibold text-[var(--text)]">{order.end}</p>
+                  <p className="mt-1 font-semibold text-[var(--text)]">{order.end || "-"}</p>
                 </div>
               </div>
 
@@ -79,156 +98,34 @@ export function OrdenesTrabajo({ workOrders, setWorkOrders, persistUpdate, openE
   );
 }
 
-export function Inventario({ inventory, openEditor, removeRecord }) {
-  const [category, setCategory] = useState("Todos");
-  const categories = ["Todos", ...Array.from(new Set(inventory.map((item) => item.category)))];
-  const rows = inventory.filter((item) => category === "Todos" || item.category === category);
-  const totalValue = inventory.reduce((total, item) => total + item.stock * item.cost, 0);
+export function Tareas({ data, openEditor, removeRecord, onNewRecord }) {
+  const tasks = [...data.tasks].sort((a, b) => String(a.due || "9999").localeCompare(String(b.due || "9999")));
+  const highPriority = tasks.filter((task) => task.priority === "Alta").length;
+  const today = new Date().toISOString().slice(0, 10);
+  const overdue = tasks.filter((task) => task.due && task.due < today).length;
 
   return (
     <div className="space-y-5 p-4 md:p-6">
-      <SectionTitle title="Inventario" subtitle="Stock minimo, valorizacion y reposicion" />
+      <SectionTitle title="Tareas" subtitle="Seguimiento de pendientes por responsable y fecha" action="Nueva tarea" onAction={onNewRecord} />
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="Valor de stock" value={money(totalValue)} subtitle="Costo promedio demo" tone="green" />
-        <StatCard title="Items bajo minimo" value={inventory.filter((item) => item.stock <= item.min).length} subtitle="Requieren compra" tone="red" />
-        <Panel className="p-4">
-          <Field label="Categoria">
-            <Select value={category} onChange={(event) => setCategory(event.target.value)}>
-              {categories.map((item) => <option key={item}>{item}</option>)}
-            </Select>
-          </Field>
-        </Panel>
-      </div>
-      <DataTable
-        headers={["SKU", "Material", "Categoria", "Stock", "Minimo", "Unidad", "Costo", "Estado", "Acciones"]}
-        rows={rows.map((item) => [
-          item.sku,
-          <strong className="text-[var(--text)]">{item.name}</strong>,
-          item.category,
-          item.stock,
-          item.min,
-          item.unit,
-          money(item.cost),
-          <Badge tone={item.stock <= item.min ? "red" : "green"}>{item.stock <= item.min ? "Reponer" : "OK"}</Badge>,
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => openEditor("inventario", item)}>Editar</Button>
-            <Button variant="danger" onClick={() => removeRecord("inventory", item.sku)}>Borrar</Button>
-          </div>,
-        ])}
-      />
-    </div>
-  );
-}
-
-export function Compras({ purchases, openEditor, removeRecord }) {
-  return (
-    <div className="space-y-5 p-4 md:p-6">
-      <SectionTitle title="Compras" subtitle="Ordenes de compra, autorizaciones y entregas" />
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="Compras abiertas" value={money(sum(purchases.filter((item) => item.status !== "Recibida"), "total"))} subtitle="Pendiente de recibir" tone="amber" />
-        <StatCard title="OC pendientes" value={purchases.filter((item) => item.status !== "Recibida").length} subtitle="Seguimiento semanal" tone="blue" />
-        <StatCard title="OC recibidas" value={purchases.filter((item) => item.status === "Recibida").length} subtitle="Ultimos movimientos" tone="green" />
-      </div>
-      <DataTable
-        headers={["OC", "Proveedor", "Area", "Total", "Estado", "Fecha esperada", "Acciones"]}
-        rows={purchases.map((item) => [
-          item.number,
-          item.supplier,
-          item.area,
-          money(item.total),
-          <Badge tone={toneForStatus(item.status)}>{item.status}</Badge>,
-          item.due,
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => openEditor("compras", item)}>Editar</Button>
-            <Button variant="danger" onClick={() => removeRecord("purchases", item.number)}>Borrar</Button>
-          </div>,
-        ])}
-      />
-    </div>
-  );
-}
-
-export function Finanzas({ invoices, openEditor, removeRecord }) {
-  const collected = sum(invoices.filter((item) => item.status === "Cobrada"), "total");
-  const pending = sum(invoices.filter((item) => item.status !== "Cobrada"), "total");
-
-  return (
-    <div className="space-y-5 p-4 md:p-6">
-      <SectionTitle title="Finanzas" subtitle="Facturacion, cobranzas y caja proyectada" />
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="Cobrado" value={money(collected)} subtitle="Facturas cerradas" tone="green" />
-        <StatCard title="Por cobrar" value={money(pending)} subtitle="Pendiente y por vencer" tone="amber" />
-        <StatCard title="Caja proyectada" value={money(collected + pending)} subtitle="Ingresos demo" tone="blue" />
-      </div>
-      <DataTable
-        headers={["Factura", "Cliente", "Concepto", "Total", "Estado", "Vencimiento", "Acciones"]}
-        rows={invoices.map((invoice) => [
-          invoice.number,
-          invoice.client,
-          invoice.concept,
-          money(invoice.total),
-          <Badge tone={toneForStatus(invoice.status)}>{invoice.status}</Badge>,
-          invoice.due,
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => openEditor("finanzas", invoice)}>Editar</Button>
-            <Button variant="danger" onClick={() => removeRecord("invoices", invoice.number)}>Borrar</Button>
-          </div>,
-        ])}
-      />
-    </div>
-  );
-}
-
-export function RRHH({ employees, openEditor, removeRecord }) {
-  return (
-    <div className="space-y-5 p-4 md:p-6">
-      <SectionTitle title="RRHH" subtitle="Dotacion, equipos, disponibilidad y horas" />
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="Personas activas" value={employees.length} subtitle="Dotacion demo" tone="green" />
-        <StatCard title="Horas mensuales" value={sum(employees, "hours")} subtitle="Carga declarada" tone="blue" />
-        <StatCard title="Disponibles" value={employees.filter((item) => item.status === "Disponible").length} subtitle="Sin asignacion critica" tone="amber" />
-      </div>
-      <DataTable
-        headers={["Nombre", "Rol", "Equipo", "Estado", "Horas", "Acciones"]}
-        rows={employees.map((employee) => [
-          <strong className="text-[var(--text)]">{employee.name}</strong>,
-          employee.role,
-          employee.team,
-          <Badge tone={toneForStatus(employee.status)}>{employee.status}</Badge>,
-          employee.hours,
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => openEditor("rrhh", employee)}>Editar</Button>
-            <Button variant="danger" onClick={() => removeRecord("employees", employee.id)}>Borrar</Button>
-          </div>,
-        ])}
-      />
-    </div>
-  );
-}
-
-export function Tareas({ data, openEditor, removeRecord }) {
-  const highPriority = data.tasks.filter((task) => task.priority === "Alta").length;
-
-  return (
-    <div className="space-y-5 p-4 md:p-6">
-      <SectionTitle title="Tareas" subtitle="Seguimiento de pendientes por responsable y fecha" />
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="Tareas abiertas" value={data.tasks.length} subtitle="Pendientes registradas" tone="blue" />
+        <StatCard title="Tareas abiertas" value={tasks.length} subtitle="Pendientes registradas" tone="blue" />
         <StatCard title="Alta prioridad" value={highPriority} subtitle="Requieren seguimiento" tone={highPriority ? "red" : "green"} />
-        <StatCard title="Responsables" value={new Set(data.tasks.map((task) => task.owner)).size} subtitle="Areas involucradas" tone="green" />
+        <StatCard title="Vencidas" value={overdue} subtitle="Con fecha pasada" tone={overdue ? "red" : "green"} />
       </div>
       <DataTable
         headers={["Tarea", "Responsable", "Prioridad", "Vencimiento", "Acciones"]}
-        rows={data.tasks.map((task) => [
+        rows={tasks.map((task) => [
           <strong className="text-[var(--text)]">{task.text}</strong>,
           task.owner,
-          <Badge tone={task.priority === "Alta" ? "red" : "amber"}>{task.priority}</Badge>,
-          task.due,
+          <Badge tone={task.priority === "Alta" ? "red" : task.priority === "Baja" ? "green" : "amber"}>{task.priority}</Badge>,
+          <span className={task.due && task.due < today ? "font-semibold text-[var(--danger)]" : ""}>{task.due || "-"}</span>,
           <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => removeRecord("tasks", task.id, { label: "tarea", silent: true })}>Hecha</Button>
             <Button variant="ghost" onClick={() => openEditor("tareas", task)}>Editar</Button>
             <Button variant="danger" onClick={() => removeRecord("tasks", task.id)}>Borrar</Button>
           </div>,
         ])}
+        empty="No hay tareas pendientes"
       />
     </div>
   );

@@ -55,8 +55,9 @@ export function Cotizador({ companies, setCompanies, quotes, setQuotes, persistR
   }
 
   async function createCompany(record) {
-    setCompanies((items) => [...items, record]);
-    await persistRecord("companies", record);
+    const saved = (await persistRecord("companies", record)) || record;
+    setCompanies((items) => [...items, saved]);
+    return saved;
   }
 
   // Dispara el workflow de GitHub que scrapea proveedores y redeploya (~5 min).

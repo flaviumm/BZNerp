@@ -3,15 +3,65 @@ import { Button, Field, TextInput, Select, TextArea } from "../ui";
 import { initialCompanyForm, companyRecordFromForm } from "../../lib/companyUtils";
 import { screens } from "../../lib/navigation";
 
+// Campos del alta rapida por pantalla. Tipo "company" = selector de clientes cargados.
+const createFields = {
+  crm: [
+    ["name", "Empresa", "company"],
+    ["detail", "Servicio / oportunidad"],
+    ["amount", "Importe estimado", "number"],
+  ],
+  ot: [
+    ["client", "Cliente", "company"],
+    ["service", "Servicio / trabajo"],
+    ["team", "Equipo asignado"],
+    ["start", "Inicio", "date"],
+    ["end", "Entrega", "date"],
+    ["margin", "Margen %", "number"],
+  ],
+  tareas: [
+    ["text", "Tarea"],
+    ["owner", "Responsable"],
+    ["priority", "Prioridad", "select", ["Alta", "Media", "Baja"]],
+    ["due", "Vencimiento", "date"],
+    ["notes", "Notas"],
+  ],
+};
+
+function FieldInput({ type = "text", value, onChange, options = [], companies = [], disabled }) {
+  if (type === "select") {
+    return <Select value={value} onChange={onChange} disabled={disabled}>{options.map((option) => <option key={option}>{option}</option>)}</Select>;
+  }
+  if (type === "company") {
+    return (
+      <>
+        <TextInput list="erp-company-names" required value={value} onChange={onChange} placeholder="Elegir o escribir" />
+        <datalist id="erp-company-names">{companies.map((company) => <option key={company.id} value={company.name} />)}</datalist>
+      </>
+    );
+  }
+  return <TextInput type={type} value={value} onChange={onChange} disabled={disabled} />;
+}
+
 export function NewRecordModal({ active, data, onClose, onCreate }) {
-  const [form, setForm] = useState({ name: "", detail: "", amount: "" });
+  const fields = createFields[active] || [];
+  const [form, setForm] = useState(() => Object.fromEntries(fields.map(([key, , type, options]) => [key, type === "select" ? options[1] || options[0] : ""])));
   const [companyForm, setCompanyForm] = useState(() => initialCompanyForm());
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const title = `Nuevo registro - ${screens.find((item) => item.key === active)?.label || "ERP"}`;
 
   async function submit(event) {
     event.preventDefault();
-    await onCreate(active, active === "clientes" ? companyForm : form);
-    onClose();
+    setSaving(true);
+    setError("");
+    try {
+      await onCreate(active, active === "clientes" ? companyForm : form);
+      onClose();
+    } catch (submitError) {
+      setError(submitError.message || "No se pudo guardar.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -27,15 +77,24 @@ export function NewRecordModal({ active, data, onClose, onCreate }) {
         {active === "clientes" ? (
           <CompanyFormFields form={companyForm} setForm={setCompanyForm} />
         ) : (
-          <div className="mt-5 grid gap-3">
-            <Field label="Nombre / cliente"><TextInput required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder={data.companies[0]?.name || "Cliente"} /></Field>
-            <Field label="Detalle / servicio"><TextInput required value={form.detail} onChange={(event) => setForm({ ...form, detail: event.target.value })} placeholder="Servicio, concepto o tarea" /></Field>
-            <Field label="Importe estimado"><TextInput type="number" value={form.amount} onChange={(event) => setForm({ ...form, amount: event.target.value })} placeholder="0" /></Field>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {fields.map(([key, label, type = "text", options], index) => (
+              <Field key={key} label={label}>
+                <FieldInput
+                  type={type}
+                  value={form[key] ?? ""}
+                  options={options}
+                  companies={data.companies}
+                  onChange={(event) => setForm({ ...form, [key]: event.target.value })}
+                />
+              </Field>
+            ))}
           </div>
         )}
+        {error && <p className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button type="submit">{active === "clientes" ? "Guardar empresa" : "Crear"}</Button>
+          <Button type="submit" disabled={saving}>{saving ? "Guardando..." : active === "clientes" ? "Guardar empresa" : "Crear"}</Button>
         </div>
       </form>
     </div>
@@ -116,51 +175,19 @@ const editFields = {
   ],
   ot: [
     ["number", "Numero"],
-    ["client", "Cliente"],
+    ["client", "Cliente", "company"],
     ["service", "Servicio"],
-    ["status", "Estado"],
+    ["status", "Estado", "select", ["Pendiente", "En ejecucion", "Terminada"]],
     ["progress", "Avance", "number"],
     ["margin", "Margen", "number"],
     ["start", "Inicio", "date"],
     ["end", "Fin", "date"],
     ["team", "Equipo"],
   ],
-  inventario: [
-    ["sku", "SKU"],
-    ["name", "Material"],
-    ["category", "Categoria"],
-    ["stock", "Stock", "number"],
-    ["min", "Stock minimo", "number"],
-    ["unit", "Unidad"],
-    ["cost", "Costo", "number"],
-  ],
-  compras: [
-    ["number", "Numero"],
-    ["supplier", "Proveedor"],
-    ["area", "Area"],
-    ["total", "Total", "number"],
-    ["status", "Estado"],
-    ["due", "Fecha esperada", "date"],
-  ],
-  finanzas: [
-    ["number", "Factura"],
-    ["client", "Cliente"],
-    ["concept", "Concepto"],
-    ["total", "Total", "number"],
-    ["status", "Estado"],
-    ["due", "Vencimiento", "date"],
-  ],
-  rrhh: [
-    ["name", "Nombre"],
-    ["role", "Rol"],
-    ["team", "Equipo"],
-    ["status", "Estado"],
-    ["hours", "Horas", "number"],
-  ],
   tareas: [
     ["text", "Tarea"],
     ["owner", "Responsable"],
-    ["priority", "Prioridad"],
+    ["priority", "Prioridad", "select", ["Alta", "Media", "Baja"]],
     ["due", "Vencimiento", "date"],
     ["eventType", "Tipo"],
     ["startTime", "Inicio", "time"],
@@ -169,7 +196,7 @@ const editFields = {
   ],
 };
 
-export function EditRecordModal({ editTarget, onClose, onSave }) {
+export function EditRecordModal({ editTarget, data, onClose, onSave }) {
   const [form, setForm] = useState(editTarget.record);
   const [companyForm, setCompanyForm] = useState(() => initialCompanyForm(editTarget.module === "clientes" ? editTarget.record : null));
   const fields = editFields[editTarget.module] || [];
@@ -194,11 +221,13 @@ export function EditRecordModal({ editTarget, onClose, onSave }) {
           <CompanyFormFields form={companyForm} setForm={setCompanyForm} />
         ) : (
           <div className="mt-5 grid gap-3 md:grid-cols-2">
-            {fields.map(([key, label, type = "text"]) => (
+            {fields.map(([key, label, type = "text", options]) => (
               <Field key={key} label={label}>
-                <TextInput
+                <FieldInput
                   type={type}
                   value={form[key] ?? ""}
+                  options={options}
+                  companies={data?.companies || []}
                   onChange={(event) => setForm({ ...form, [key]: type === "number" ? Number(event.target.value || 0) : event.target.value })}
                   disabled={["number", "sku"].includes(key)}
                 />
